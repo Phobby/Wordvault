@@ -1,16 +1,15 @@
 #!/usr/bin/env node
-'use strict';
 
 // Generates the PNG icons in src/icons without any image dependency: the shapes are rasterised
 // from signed distance functions and written with a minimal PNG encoder.
 // Run `node tools/make-icons.js` only when the icon design changes; the output is committed.
 
-const fs = require('node:fs');
-const path = require('node:path');
-const zlib = require('node:zlib');
+import fs from 'node:fs';
+import path from 'node:path';
+import zlib from 'node:zlib';
 
 const SIZES = [16, 32, 48, 96, 128];
-const OUT_DIR = path.join(__dirname, '..', 'src', 'icons');
+const OUT_DIR = path.join(import.meta.dirname, '..', 'src', 'icons');
 
 const BG_TOP = [99, 102, 241]; // #6366f1
 const BG_BOTTOM = [67, 56, 202]; // #4338ca

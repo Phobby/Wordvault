@@ -1,0 +1,140 @@
+// The synchronised document: what travels between a user's devices.
+//
+//   { v: 1, e: { "<id>": <record> | <tombstone>, ... } }
+//
+//   record     a word in the vault        { w, t, sl, tl, c, b, n, u, r }
+//   tombstone  a word that was removed    { d, r }
+//
+//   w  word                  t  translation          sl / tl  source / target language
+//   c  context sentence      b  Leitner box          n  next review (ms since the epoch)
+//   u  updated at (ms)       d  deleted at (ms)      r  revision (see merge.js)
+//
+// The keys are short because the document has to fit into small quotas (browser sync holds
+// about 100 KB). Empty values are left out. The id is the key and is derived from the word and
+// its language pair (lib/vault.js: entryId), so it is not repeated inside the value.
+//
+// Deliberately NOT part of the document: page addresses and titles, the alternatives and the
+// dictionary data of a word, the translation cache, settings, API keys and sign-in tokens.
+
+import { WordvaultError } from '../lib/errors.js';
+import { entryId } from '../lib/vault.js';
+
+export const SCHEMA_VERSION = 1;
+/** Tombstones older than this are dropped at the next synchronisation. */
+export const TOMBSTONE_TTL_MS = 90 * 24 * 60 * 60 * 1000;
+/** "A short context sentence": the full one stays on the device it was saved on. */
+const MAX_CONTEXT_CHARS = 160;
+
+const RECORD_KEYS = new Set(['w', 't', 'sl', 'tl', 'c', 'b', 'n', 'u', 'r']);
+
+const isObject = (value) => Boolean(value) && typeof value === 'object' && !Array.isArray(value);
+const isTime = (value) => Number.isFinite(value) && value > 0;
+const isRevision = (value) => Number.isInteger(value) && value > 0;
+
+/** @returns {boolean} Whether a value of the document stands for a removed word. */
+export function isTombstone(value) {
+  return isObject(value) && value.w === undefined && isTime(value.d);
+}
+
+/** The moment a record or tombstone was last changed. */
+export const timeOf = (value) => (isTombstone(value) ? value.d : value.u);
+
+export function emptyDocument() {
+  return { v: SCHEMA_VERSION, e: {} };
+}
+
+/** Cuts a sentence at a word boundary so that it fits the context limit. */
+function shorten(sentence) {
+  const text = typeof sentence === 'string' ? sentence.trim() : '';
+  if (text.length <= MAX_CONTEXT_CHARS) return text;
+  const cut = text.slice(0, MAX_CONTEXT_CHARS - 1);
+  return `${cut.slice(0, cut.lastIndexOf(' ') > MAX_CONTEXT_CHARS / 2 ? cut.lastIndexOf(' ') : cut.length).trimEnd()}…`;
+}
+
+/**
+ * The synchronised form of a vault entry.
+ * @param {import('../lib/vault.js').VaultEntry} entry
+ */
+export function toRecord(entry) {
+  const record = { ...(isObject(entry.syncExtra) ? entry.syncExtra : {}), w: entry.text, u: entry.updatedAt, r: entry.rev };
+  if (entry.translation) record.t = entry.translation;
+  if (entry.sourceLang) record.sl = entry.sourceLang;
+  if (entry.targetLang) record.tl = entry.targetLang;
+  const context = shorten(entry.sentence);
+  if (context) record.c = context;
+  if (entry.box > 0) record.b = entry.box;
+  if (entry.dueAt > 0) record.n = entry.dueAt;
+  return record;
+}
+
+/** @param {import('../lib/vault.js').Tombstone} tombstone */
+export function toTombstone(tombstone) {
+  return { d: tombstone.deletedAt, r: tombstone.rev };
+}
+
+/**
+ * The vault entry for a synchronised record. Everything a device knows about the word beyond
+ * the record (page address, dictionary data, the full sentence) is taken from the entry it
+ * already has, if any.
+ * @param {string} id
+ * @param {object} record
+ * @param {import('../lib/vault.js').VaultEntry | null} existing
+ * @returns {import('../lib/vault.js').VaultEntry}
+ */
+export function fromRecord(id, record, existing) {
+  const context = record.c || '';
+  const extra = Object.fromEntries(Object.entries(record).filter(([key]) => !RECORD_KEYS.has(key)));
+  const entry = {
+    id,
+    text: record.w,
+    sourceLang: record.sl || '',
+    targetLang: record.tl || '',
+    translation: record.t || '',
+    alternatives: existing?.alternatives || [],
+    // This device's own, longer sentence survives if the synchronised one is its short form.
+    sentence: existing?.sentence && shorten(existing.sentence) === context ? existing.sentence : context,
+    url: existing?.url || '',
+    title: existing?.title || '',
+    createdAt: existing?.createdAt || record.u,
+    updatedAt: record.u,
+    rev: record.r,
+    box: record.b || 0,
+    dueAt: record.n || 0,
+    dictionary: existing?.dictionary || null,
+  };
+  if (Object.keys(extra).length > 0) entry.syncExtra = extra;
+  return entry;
+}
+
+function validRecord(id, value) {
+  return (
+    typeof value.w === 'string' &&
+    value.w.trim() !== '' &&
+    isTime(value.u) &&
+    isRevision(value.r) &&
+    ['t', 'sl', 'tl', 'c'].every((key) => value[key] === undefined || typeof value[key] === 'string') &&
+    ['b', 'n'].every((key) => value[key] === undefined || (Number.isFinite(value[key]) && value[key] >= 0)) &&
+    entryId({ text: value.w, sourceLang: value.sl, targetLang: value.tl }) === id
+  );
+}
+
+/**
+ * Checks a document that came from outside (the cloud, another device) and returns a clean
+ * copy. Entries that are not well-formed are dropped. A document written by a newer version of
+ * the format is refused as a whole, so that this version never rewrites data it does not
+ * understand.
+ *
+ * @param {unknown} raw   Parsed JSON, or null/undefined for "nothing stored yet".
+ * @returns {{ v: number, e: Record<string, object> }}
+ */
+export function normalizeDocument(raw) {
+  if (raw === null || raw === undefined) return emptyDocument();
+  if (!isObject(raw) || !Number.isInteger(raw.v) || raw.v < 1 || !isObject(raw.e)) throw new WordvaultError('sync_bad_document');
+  if (raw.v > SCHEMA_VERSION) throw new WordvaultError('sync_newer_schema', `document version ${raw.v}, supported ${SCHEMA_VERSION}`);
+  const document = emptyDocument();
+  for (const [id, value] of Object.entries(raw.e)) {
+    if (!isObject(value)) continue;
+    if (isTombstone(value) ? isRevision(value.r) : validRecord(id, value)) document.e[id] = value;
+  }
+  return document;
+}

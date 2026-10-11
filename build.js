@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-'use strict';
 
 // Builds dist/firefox and dist/chrome. There is no bundling or transpiling: src/ is copied as is
 // and the browser-specific manifest is written next to it as manifest.json.
@@ -8,10 +7,10 @@
 //   node build.js firefox    build one target
 //   node build.js --watch    rebuild whenever src/ or a manifest changes
 
-const fs = require('node:fs');
-const path = require('node:path');
+import fs from 'node:fs';
+import path from 'node:path';
 
-const ROOT = __dirname;
+const ROOT = import.meta.dirname;
 const SRC = path.join(ROOT, 'src');
 const DIST = path.join(ROOT, 'dist');
 const TARGETS = ['firefox', 'chrome'];

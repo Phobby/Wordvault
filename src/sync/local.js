@@ -1,0 +1,80 @@
+// This device's side of synchronisation: the vault as a document, and a document back into the
+// vault. The synchronisation engine reads the local document, merges it with the remote one and
+// applies the result here.
+
+import { ENTRY_PREFIX, TOMBSTONE_PREFIX, entryKey, tombstoneKey } from '../lib/vault.js';
+import { compareVersions } from './merge.js';
+import { emptyDocument, fromRecord, isTombstone, toRecord, toTombstone } from './model.js';
+
+async function readState() {
+  const all = await chrome.storage.local.get(null);
+  const entries = {};
+  const tombstones = {};
+  for (const [key, value] of Object.entries(all)) {
+    if (!value || typeof value !== 'object') continue;
+    if (key.startsWith(ENTRY_PREFIX)) entries[key.slice(ENTRY_PREFIX.length)] = value;
+    else if (key.startsWith(TOMBSTONE_PREFIX)) tombstones[key.slice(TOMBSTONE_PREFIX.length)] = value;
+  }
+  return { entries, tombstones };
+}
+
+/** Entries written before synchronisation existed have no revision or update time yet. */
+const withDefaults = (entry) => ({ ...entry, updatedAt: entry.updatedAt || entry.createdAt, rev: entry.rev || 1, box: entry.box || 0, dueAt: entry.dueAt || 0 });
+
+function documentFrom({ entries, tombstones }) {
+  const document = emptyDocument();
+  // An id has either an entry or a tombstone; should both exist, the entry is the live one.
+  for (const [id, tombstone] of Object.entries(tombstones)) document.e[id] = toTombstone(tombstone);
+  for (const [id, entry] of Object.entries(entries)) document.e[id] = toRecord(withDefaults(entry));
+  return document;
+}
+
+/** The vault of this device, removals included, as a synchronised document. */
+export async function readLocalDocument() {
+  return documentFrom(await readState());
+}
+
+/**
+ * Brings the vault in line with a document that already contains everything this device has
+ * (the result of merging the local document with a remote one).
+ *
+ * Words are only removed here when the document carries a tombstone for them. A word that the
+ * document simply does not mention is left alone, so that no mistake elsewhere can empty a vault.
+ *
+ * @returns {Promise<{ added: number, updated: number, removed: number }>} What changed locally.
+ */
+export async function applyDocument(document) {
+  const { entries, tombstones } = await readState();
+  const writes = {};
+  const removals = [];
+  const changes = { added: 0, updated: 0, removed: 0 };
+
+  for (const [id, value] of Object.entries(document.e)) {
+    const local = entries[id];
+    if (isTombstone(value)) {
+      if (local) {
+        removals.push(entryKey(id));
+        changes.removed += 1;
+      }
+      const known = tombstones[id];
+      if (!known || known.deletedAt !== value.d || known.rev !== value.r) writes[tombstoneKey(id)] = { id, deletedAt: value.d, rev: value.r };
+      continue;
+    }
+    if (!local) {
+      writes[entryKey(id)] = fromRecord(id, value, null);
+      changes.added += 1;
+    } else if (compareVersions(value, toRecord(withDefaults(local))) !== 0) {
+      writes[entryKey(id)] = fromRecord(id, value, local);
+      changes.updated += 1;
+    }
+    if (tombstones[id]) removals.push(tombstoneKey(id));
+  }
+  // Tombstones the document no longer carries have expired.
+  for (const id of Object.keys(tombstones)) {
+    if (!(id in document.e)) removals.push(tombstoneKey(id));
+  }
+
+  if (Object.keys(writes).length > 0) await chrome.storage.local.set(writes);
+  if (removals.length > 0) await chrome.storage.local.remove(removals);
+  return changes;
+}

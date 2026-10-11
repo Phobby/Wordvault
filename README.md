@@ -8,6 +8,9 @@ kaydet, sonra kısa quizlerle tekrar et. Her şey tarayıcında çalışır; Wor
 > ve hedef dil ile çift tıklama ayarlarını içeren ayarlar sayfası.
 > Sırada: sağ tık menüsü, çeviri penceresinde kelime türü etiketi, önbellek ve 7 günlük temizlik,
 > quiz, altyazılar, ayarlar sayfasının kalanı (sağlayıcı ve API anahtarı) ve gizlilik politikası.
+>
+> Cihazlar arası senkronizasyon (`SPEC-SYNC.md`) yedi aşamada ekleniyor; şu an 1. aşama hazır:
+> veri modeli, birleştirme ve silme kayıtları. Henüz hiçbir yere veri gönderilmiyor.
 
 ## Derleme
 
@@ -17,6 +20,12 @@ Bağımlılık yok, bundler yok. Node.js 22.2 veya üstü yeterli.
 node build.js            # dist/firefox ve dist/chrome klasörlerini üretir
 node build.js --watch    # src/ değiştikçe yeniden üretir
 node build.js firefox    # tek hedef
+```
+
+Testler de bağımlılıksızdır (Node'un yerleşik `node:test` modülü):
+
+```sh
+npm test                 # tests/ altındaki bütün testler
 ```
 
 `build.js` yalnızca `src/` klasörünü kopyalar ve tarayıcıya özel manifesti (`manifest.firefox.json`
@@ -38,10 +47,12 @@ eklentiyle bağlantısını kaybeder.
 ## Proje yapısı
 
 ```
+SPEC.md, SPEC-SYNC.md   İstenen davranışın tanımı (eklenti ve senkronizasyon)
 manifest.firefox.json   Firefox manifesti (background.scripts, gecko ayarları)
 manifest.chrome.json    Chrome manifesti (background.service_worker)
 build.js                dist/ klasörlerini üretir
 tools/make-icons.js     src/icons altındaki PNG'leri üretir (yalnızca tasarım değişince)
+tests/                  node:test testleri (tarayıcı API'leri bellek içi bir taklitle sağlanır)
 src/
   background/           Arka plan betiği: mesaj yönlendirme, tüm ağ istekleri
   shared/               Hem sayfaya eklenen betiklerin hem eklenti sayfalarının kullandığı arayüz
@@ -64,6 +75,10 @@ src/
     pronunciation.js    Wikimedia Commons'taki telaffuz kayıtlarını bulur ve indirir
     backup.js           JSON dışa/içe aktarma
   providers/            Çeviri sağlayıcıları (ortak arayüz: providers/index.js)
+  sync/                 Senkronizasyon
+    model.js            Eşitlenen belgenin biçimi; kasa kaydı <-> eşitleme kaydı dönüşümü
+    merge.js            İki belgeyi birleştirme, silme kayıtlarının temizliği
+    local.js            Bu cihazın kasasını belge olarak okuma ve belgeyi kasaya uygulama
   _locales/             Arayüz metinleri (en, tr)
   icons/
 ```
@@ -101,6 +116,35 @@ Kasayı arka plan betiğinin konsolundan görmek için:
 ```js
 chrome.storage.local.get(null).then((all) => console.table(Object.entries(all).filter(([k]) => k.startsWith('vault:')).map(([, v]) => v)))
 ```
+
+### Senkronizasyonun veri modeli
+
+Cihazlar arasında dolaşan şey tek bir belgedir (`sync/model.js`):
+
+```json
+{ "v": 1, "e": { "en|tr|book": { "w": "book", "t": "kitap", "sl": "en", "tl": "tr", "c": "A good book.", "b": 2, "n": 1791700000000, "u": 1791682256926, "r": 3 },
+                 "en|tr|door": { "d": 1791690000000, "r": 2 } } }
+```
+
+`w` kelime, `t` çeviri, `sl`/`tl` dil çifti, `c` kısa bağlam cümlesi (en çok 160 karakter), `b` Leitner
+kutusu, `n` sonraki tekrar, `u` son değişiklik zamanı, `r` sürüm sayacı. Silinen kelimenin yerinde
+`{ d, r }` biçiminde bir silme kaydı kalır; 90 gün sonra bir sonraki eşitlemede temizlenir. Boş değerler
+yazılmaz. Belgeye **girmeyenler**: sayfa adresleri ve başlıkları, diğer karşılıklar, sözlük verisi,
+ayarlar, API anahtarları, oturum bilgileri.
+
+Birleştirme (`sync/merge.js`) her kelime için iki sürümden yenisini alır. "Yeni"nin sırası: büyük `r`,
+sonra geç zaman, sonra silme kaydı, en son içeriğin sabit sıralı JSON metni. Bu bir tam sıralama olduğu
+için birleştirme değişmeli, birleşmeli ve tekrar uygulanabilirdir; cihazlar hangi sırayla, kaç kez
+eşitlerse eşitlesin aynı belgeye varır.
+
+`r` kelime başına bir Lamport sayacıdır: bir cihaz n. sürümü gördükten sonra yaptığı her değişikliği
+(düzeltme, silme, yeniden ekleme) n+1 olarak yazar. Böylece başka bir değişikliği bilerek yapılan
+değişiklik, cihazların saati ne derse desin onu yener. Saat yalnızca birbirinden habersiz yapılmış
+(aynı `r`) değişiklikler arasında karar verir. Yalnızca saate bakılsaydı saati ileride olan bir cihaz
+bütün çakışmaları kazanır, saati geride olan bir cihazın sildiği kelime geri gelirdi.
+
+Belgenin `v` alanı biçim sürümüdür. Daha yeni bir sürümle yazılmış belge bütünüyle reddedilir (üzerine
+yazılmaz); aynı sürümde tanınmayan alanlar kayıtla birlikte korunur.
 
 ### Telaffuz
 
