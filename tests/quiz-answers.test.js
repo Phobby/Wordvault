@@ -6,7 +6,7 @@ import { beforeEach, test } from 'node:test';
 import { updateSettings } from '../src/lib/settings.js';
 import { addEntry, getEntry, removeEntry } from '../src/lib/vault.js';
 import { TUNING } from '../src/quiz/learning.js';
-import { buildTestQuestion, getDiagnostics, getQuizState, recordAnswer, runScheduledQuiz } from '../src/quiz/scheduler.js';
+import { getDiagnostics, getQuizState, recordAnswer, showQuiz, testQuiz } from '../src/quiz/scheduler.js';
 import { applyDocument, readLocalDocument } from '../src/sync/local.js';
 import { mergeDocuments, serializeDocument } from '../src/sync/merge.js';
 import { normalizeDocument } from '../src/sync/model.js';
@@ -70,7 +70,7 @@ test('wrong, "I don\'t know", and the ways of not answering', async (t) => {
     result = await recordAnswer({ id, outcome, correct: true, ms: 100 });
     const entry = await getEntry(id);
     assert.equal(result.quality, null, outcome);
-    assert.deepEqual([entry.quiz.a, entry.quiz.l, entry.quiz.e, entry.quiz.x], [0, 0, 2.5, T0 + index], `${outcome}: nothing is held against the word`);
+    assert.equal(entry.quiz, null, `${outcome}: nothing is held against the word; it has still never been answered`);
     assert.equal(entry.dueAt, T0 + index + TUNING.POSTPONE_MINUTES * MINUTE, `${outcome}: it comes back shortly`);
     assert.equal(result.status, 'new');
   }
@@ -101,11 +101,11 @@ test('the user\'s pace is learned from right answers only and stays on the devic
   assert.ok(!text.includes('speed') && !text.includes('recent') && !text.includes('quizState'), 'the pace and the timer state are not part of the synchronised document');
 });
 
-test('the timer asks different words in a row and remembers what it asked', async () => {
+test('quizzes ask different words in a row and remember what they asked', async () => {
   await fill();
   const asked = [];
   for (let round = 0; round < 40; round++) {
-    assert.equal(await runScheduledQuiz(), 'shown');
+    assert.equal((await showQuiz()).reason, 'shown');
     asked.push(device.browser.sent.at(-1).message.payload.id);
   }
   for (let index = 1; index < asked.length; index++) {
@@ -114,12 +114,14 @@ test('the timer asks different words in a row and remembers what it asked', asyn
   assert.deepEqual((await getQuizState()).recent, asked.slice(-5));
   // a quiz that was not shown asked nothing
   device.browser.reply = () => ({ shown: false, reason: 'typing' });
-  await runScheduledQuiz();
+  await showQuiz();
   assert.deepEqual((await getQuizState()).recent, asked.slice(-5));
   // "Test now" follows the same rule
-  const test1 = await buildTestQuestion();
-  assert.ok(!asked.slice(-3).includes(test1.question.id));
-  assert.equal((await getQuizState()).recent.at(-1), test1.question.id);
+  device.browser.reply = () => ({ shown: true });
+  assert.deepEqual(await testQuiz(), { ok: true });
+  const tested = device.browser.sent.at(-1).message.payload.id;
+  assert.ok(!asked.slice(-3).includes(tested));
+  assert.equal((await getQuizState()).recent.at(-1), tested);
 });
 
 test('words answered wrongly come up more often than words that are known', async (t) => {
@@ -139,7 +141,7 @@ test('words answered wrongly come up more often than words that are known', asyn
   at(t, now + 400 * DAY);
   const counts = {};
   for (let round = 0; round < 600; round++) {
-    await runScheduledQuiz();
+    await showQuiz();
     const id = device.browser.sent.at(-1).message.payload.id;
     counts[id] = (counts[id] || 0) + 1;
   }
@@ -154,19 +156,19 @@ test('nothing due: by default the hardest word is asked early; switched off, no 
   await recordAnswer({ id: ID, correct: false, ms: 4000, chars: 20 });
   at(t, T0 + MINUTE); // everything was answered a minute ago; the earliest is due in nine minutes
   assert.equal((await getDiagnostics()).due, 0);
-  assert.equal(await runScheduledQuiz(), 'shown');
+  assert.equal((await showQuiz()).reason, 'shown');
   assert.equal(device.browser.sent.at(-1).message.payload.id, ID, 'the hardest word');
 
   await updateSettings({ quizAllowNotDue: false });
   const before = device.browser.sent.length;
-  assert.equal(await runScheduledQuiz(), 'nothing_due');
+  assert.equal((await showQuiz()).reason, 'nothing_due');
   assert.equal(device.browser.sent.length, before);
   assert.equal((await getDiagnostics()).standingReason, 'nothing_due');
-  assert.equal((await buildTestQuestion()).ok, true, '"Test now" still shows one');
+  assert.equal((await testQuiz()).ok, true, '"Test now" still shows one');
 
   at(t, T0 + 11 * MINUTE);
   assert.equal((await getDiagnostics()).due, 12);
-  assert.equal(await runScheduledQuiz(), 'shown');
+  assert.equal((await showQuiz()).reason, 'shown');
 });
 
 test('statistics synchronise with the word and merge by the usual rule', async (t) => {

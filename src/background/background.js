@@ -10,7 +10,7 @@ import { WordvaultError, serializeError } from '../lib/errors.js';
 import { fetchRecording } from '../lib/pronunciation.js';
 import { getPreferences, setSiteSourceLanguage, setTargetLanguage, translate } from '../lib/translator.js';
 import { addEntry, entryId, getEntry, hasEntry, removeEntry, updateEntry } from '../lib/vault.js';
-import { ALARM_NAME, buildTestQuestion, ensureScheduled, recordAnswer, runScheduledQuiz } from '../quiz/scheduler.js';
+import { ALARM_NAME, ensureScheduled, recordAnswer, runScheduledQuiz, testQuiz } from '../quiz/scheduler.js';
 
 /** Host name of the web page a message came from ('' for extension pages). */
 function hostOf(sender) {
@@ -68,8 +68,10 @@ const handlers = {
   'wv:vault:add': save,
   'wv:vault:enrich': (payload) => enrich(payload?.id),
   'wv:vault:remove': (payload) => removeEntry(entryId(payload || {})),
-  'wv:quiz:test': () => buildTestQuestion(),
+  'wv:quiz:test': () => testQuiz(),
   'wv:quiz:answer': (payload) => recordAnswer(payload),
+  // The options page asks for this after a quiz setting was changed; see the timer below.
+  'wv:quiz:reschedule': () => ensureScheduled(),
 };
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
@@ -86,7 +88,9 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
 // --- Quiz timer --------------------------------------------------------------------------------
 // The alarm survives the background script being stopped, but not always a browser restart, so
-// it is checked whenever this script starts, whatever the reason it was started for.
+// it is checked whenever this script starts, whatever the reason it was started for. A change
+// of the settings is acted on at once: the frequency that is set now counts from now, and with
+// the quiz switched off there is no alarm at all.
 
 const scheduleQuiz = () => ensureScheduled().catch(() => {});
 

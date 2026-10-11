@@ -342,8 +342,84 @@
     "description": "Options page: heading of the quiz section."
   },
   "optQuizHelp": {
-    "message": "From time to time Wordvault asks you about a saved word, in the top right corner of the page you are on.",
+    "message": "From time to time Wordvault asks you about a saved word. Every word in the vault gets its turn; the ones you get wrong come back sooner.",
     "description": "Options page: what the quiz is."
+  },
+  "optQuizEnabled": {
+    "message": "Ask flash cards",
+    "description": "Options page: the main quiz switch."
+  },
+  "optQuizEnabledHelp": {
+    "message": "While this is off no quiz appears and the timer does not run.",
+    "description": "Options page: explanation of the main quiz switch."
+  },
+  "optQuizInterval": {
+    "message": "How often",
+    "description": "Options page: label of the quiz frequency setting."
+  },
+  "optQuizIntervalHelp": {
+    "message": "A quiz comes this often while you browse. A change counts from the moment you make it.",
+    "description": "Options page: explanation of the quiz frequency setting."
+  },
+  "optQuizIntervalCustom": {
+    "message": "Minutes between quizzes (1 to 1440)",
+    "description": "Options page: accessible name of the custom frequency field."
+  },
+  "quizEveryMinute": {
+    "message": "Every minute",
+    "description": "Quiz frequency."
+  },
+  "quizEveryMinutes": {
+    "message": "Every $1 minutes",
+    "description": "Quiz frequency. $1 is a number of minutes greater than 1."
+  },
+  "quizEveryHour": {
+    "message": "Every hour",
+    "description": "Quiz frequency."
+  },
+  "quizEveryHours": {
+    "message": "Every $1 hours",
+    "description": "Quiz frequency. $1 is a number of hours greater than 1."
+  },
+  "quizEveryTesting": {
+    "message": "Every minute (for testing)",
+    "description": "Quiz frequency that is only offered while the extension is loaded for development."
+  },
+  "quizEveryCustom": {
+    "message": "Custom…",
+    "description": "Quiz frequency: lets the user type a number of minutes."
+  },
+  "optMinutes": {
+    "message": "minutes",
+    "description": "Unit after a number field."
+  },
+  "optSeconds": {
+    "message": "seconds",
+    "description": "Unit after a number field."
+  },
+  "optQuizAllowNotDue": {
+    "message": "Also ask words that are not due yet",
+    "description": "Options page: switch."
+  },
+  "optQuizAllowNotDueHelp": {
+    "message": "When no word is due for review, the hardest one is asked anyway. Off: no quiz until a word is due.",
+    "description": "Options page: explanation of the switch."
+  },
+  "optQuizMinCards": {
+    "message": "Words needed to start",
+    "description": "Options page: label of the minimum number of saved words."
+  },
+  "optQuizMinCardsHelp": {
+    "message": "The quiz starts once the vault holds this many words.",
+    "description": "Options page: explanation."
+  },
+  "optQuizTimeout": {
+    "message": "Time to answer",
+    "description": "Options page: label of the answer timeout."
+  },
+  "optQuizTimeoutHelp": {
+    "message": "A card nobody answers closes after this long and does not count.",
+    "description": "Options page: explanation of the answer timeout."
   },
   "quizDiagTitle": {
     "message": "Why is there no quiz?",
@@ -389,10 +465,6 @@
     "message": "How often",
     "description": "Diagnostics row label."
   },
-  "quizDiagIntervalValue": {
-    "message": "at most every $1 minutes",
-    "description": "Diagnostics value. $1 minutes."
-  },
   "quizDiagNext": {
     "message": "Next quiz",
     "description": "Diagnostics row label."
@@ -401,13 +473,29 @@
     "message": "not scheduled",
     "description": "Diagnostics value."
   },
-  "quizDiagNoAlarm": {
-    "message": "the timer is not set; reload the extension",
-    "description": "Diagnostics warning appended to the next-quiz time."
+  "quizDiagAlarm": {
+    "message": "Timer (alarm)",
+    "description": "Diagnostics row label. The browser alarm that wakes the extension up for the next quiz."
   },
-  "quizDiagLast": {
-    "message": "Last attempt",
+  "quizDiagAlarmSet": {
+    "message": "set for $1",
+    "description": "Diagnostics value. $1 is a time."
+  },
+  "quizDiagAlarmMissing": {
+    "message": "not set; reload the extension",
+    "description": "Diagnostics value: the quiz is on but no alarm exists."
+  },
+  "quizDiagAlarmOff": {
+    "message": "not set (the quiz is off)",
+    "description": "Diagnostics value."
+  },
+  "quizDiagLastShown": {
+    "message": "Last quiz shown",
     "description": "Diagnostics row label."
+  },
+  "quizDiagLastSkip": {
+    "message": "Last quiz skipped",
+    "description": "Diagnostics row label. Followed by a time and the reason."
   },
   "quizDiagNever": {
     "message": "none yet",
@@ -510,7 +598,7 @@
     "description": "Options page: button that shows a quiz immediately."
   },
   "quizTestHelp": {
-    "message": "Shows a quiz right here, skipping the timer and every condition above.",
+    "message": "Shows a quiz right now the way the timer would, skipping the timer and every condition above.",
     "description": "Options page: explanation of the test button."
   },
   "quizTestFailed": {

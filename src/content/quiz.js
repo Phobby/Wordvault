@@ -3,6 +3,9 @@
 // Shows a quiz in this page when the background script says one is due, unless this is a bad
 // moment for it. The page knows things the background script cannot see: whether a video is
 // playing, whether the user is typing.
+//
+// Runs in web pages as a content script and in the extension's own options page, so that a quiz
+// can appear there like anywhere else.
 
 (function (WV) {
   // Quizzes belong to the page the user is looking at, not to frames inside it.
@@ -40,7 +43,7 @@
     if (document.visibilityState !== 'visible') return 'tab_hidden';
     if (!document.hasFocus()) return 'window_not_focused';
     if (WV.quizCard.isOpen()) return 'already_showing';
-    if (WV.popup.isOpen()) return 'popup_open';
+    if (WV.popup?.isOpen()) return 'popup_open';
     if (document.fullscreenElement) return 'fullscreen';
     if (videoPlaying()) return 'video_playing';
     if (focusedEditable() && Date.now() - lastTypedAt < TYPING_WINDOW_MS) return 'typing';
@@ -49,7 +52,8 @@
 
   chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (message?.type !== 'wv:quiz:show') return false;
-    const reason = blockedReason();
+    // "Test now" shows the quiz whatever the moment is like; the timer does not.
+    const reason = message.force ? '' : blockedReason();
     if (reason) {
       sendResponse({ shown: false, reason });
     } else {

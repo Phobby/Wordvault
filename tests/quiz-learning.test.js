@@ -159,11 +159,10 @@ test('longer choices are given more time, and do not make the user look slow', (
 test('"ask later" and unanswered questions cost nothing', () => {
   const stats = after(4, 4, 1);
   const later = postpone(stats, T0 + 5);
-  assert.deepEqual({ ...later.stats, x: 0 }, { ...stats, x: 0 }, 'nothing but "last asked" changes');
-  assert.equal(later.stats.x, T0 + 5);
+  assert.deepEqual(later.stats, stats, 'nothing about the word changes, not even "last answered"');
   assert.equal(later.dueAt, T0 + 5 + TUNING.POSTPONE_MINUTES * MINUTE);
   const fresh = postpone(null, T0);
-  assert.equal(fresh.stats.a, 0);
+  assert.equal(fresh.stats, null, 'a word that was never answered still has no history');
   assert.equal(statusOf(fresh.stats), 'new', 'a postponed new word is still new');
 });
 

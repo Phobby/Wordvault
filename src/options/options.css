@@ -81,6 +81,51 @@ body {
 }
 .switch-text strong { font-weight: 650; }
 
+/* A group of settings inside a card: switches and labelled fields, one per row. */
+.fields {
+  display: grid;
+  gap: 14px;
+  margin-top: 14px;
+}
+.field {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 16px;
+}
+.field-text {
+  flex: 1 1 240px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.field-text strong { font-weight: 650; }
+.field-control {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.field select,
+.field input[type="number"] {
+  box-sizing: border-box;
+  height: 32px;
+  padding: 0 8px;
+  border: 1px solid var(--wv-border);
+  border-radius: 8px;
+  background: var(--wv-bg);
+  color: var(--wv-fg);
+  font: inherit;
+  font-size: 13.5px;
+}
+.field input[type="number"] { width: 84px; }
+.field select:focus-visible,
+.field input:focus-visible { outline: 2px solid var(--wv-accent); outline-offset: 1px; }
+.inline { display: inline-flex; align-items: center; gap: 6px; }
+.inline[hidden] { display: none; }
+.unit { color: var(--wv-muted); font-size: 13px; }
+
 .buttons {
   display: flex;
   flex-wrap: wrap;

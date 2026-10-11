@@ -12,10 +12,11 @@ kaydet, sonra kısa quizlerle tekrar et. Her şey tarayıcında çalışır; Wor
 > Cihazlar arası senkronizasyon (`SPEC-SYNC.md`) yedi aşamada ekleniyor; şu an 1. aşama hazır:
 > veri modeli, birleştirme ve silme kayıtları. Henüz hiçbir yere veri gönderilmiyor.
 >
-> Flash card sistemi (`SPEC-QUIZ.md`) altı aşamada ekleniyor; şu an ilk üç aşama hazır: zamanlayıcı,
-> "Neden quiz çıkmıyor?" tanı paneli, "Şimdi test et", öğrenme algoritması, soru seçimi, şık üretimi
-> ve quiz kartı (süre ölçümü, "Bilmiyorum", "Sonra sor", zaman aşımı). Flash card ayarları, kelime
-> durumlarının kasada gösterimi ve "Şimdi çalış" modu sonraki aşamalarda.
+> Flash card sistemi (`SPEC-QUIZ.md`) altı aşamada ekleniyor; şu an hazır olanlar: zamanlayıcı,
+> "Neden quiz çıkmıyor?" tanı paneli, "Şimdi test et", öğrenme algoritması, soru seçimi, şık üretimi,
+> quiz kartı (süre ölçümü, "Bilmiyorum", "Sonra sor", zaman aşımı) ve Flash card ayarları (aç/kapat,
+> sıklık, en az kelime, cevap süresi, vadesi gelmemişleri sorma). Günlük soru sınırı, sessiz saatler,
+> kelime durumlarının kasada gösterimi ve "Şimdi çalış" modu sonraki aşamalarda.
 
 ## Derleme
 
@@ -69,13 +70,14 @@ src/
     speech.js           Telaffuz: tarayıcı sesi (speechSynthesis) ya da ses kaydı (Web Audio)
     stopwatch.js        Cevap süresi: yalnızca sayfa kullanıcının önündeyken işleyen kronometre
     quiz-card.js        Quiz kartı (web sayfalarında ve ayarlardaki "Şimdi test et"te)
-  content/              Yalnızca web sayfalarına eklenen betikler
+  content/              Web sayfalarına eklenen betikler
     selection.js        Seçim, bağlam cümlesi ve dil yardımcıları
     popup.js            Çeviri penceresi
-    quiz.js             Quiz'i sayfada gösterir; "şu an uygun mu" kontrolleri
+    quiz.js             Quiz'i sayfada gösterir; "şu an uygun mu" kontrolleri (ayarlar sayfası da yükler)
     triggers.js         Pencereyi açan tetikleyiciler (çift tıklama)
   popup/                Araç çubuğu simgesinin açtığı kasa: liste, arama, detay, dışa aktarma
-  options/              Ayarlar sayfası: hedef dil, çift tıklama, yedekleme (dışa/içe aktarma)
+  options/              Ayarlar sayfası: hedef dil, çift tıklama, Flash card ayarları ve tanı paneli,
+                        yedekleme (dışa/içe aktarma)
   lib/                  Arka plan ve eklenti sayfalarının paylaştığı ES modülleri
     translator.js       Hedef/kaynak dil kararı ve sağlayıcı çağrısı
     settings.js         Ayarlar ve site bazlı kaynak dil
@@ -135,19 +137,62 @@ chrome.storage.local.get(null).then((all) => console.table(Object.entries(all).f
 
 Arka plan betiği her an durdurulabildiği için zamanlayıcının hiçbir şeyi bellekte durmaz:
 
-- Sıradaki quiz'in zamanı `chrome.storage.local` içinde `quizState.sonrakiQuizZamani` olarak saklanır.
+- Sıradaki quiz'in zamanı `chrome.storage.local` içinde `quizState.sonrakiQuizZamani` olarak saklanır;
+  yanında o planın hangi sıklıkla yapıldığı durur (`planInterval`). Karar veren bu kayıttır, alarm
+  yalnızca uyandırır: planlanan zamandan önce çalan bir alarm quiz göstermez, doğru alarmı kurar.
 - Uyandırma `chrome.alarms` ile yapılır. Arka plan betiği her başladığında (kurulum, tarayıcı açılışı,
-  herhangi bir uyanış) alarmın yerinde olup olmadığına bakar ve yoksa saklanan zamana göre yeniden
-  kurar. Zamanı geçmiş bir quiz bir sonraki uygun anda, bir kez gösterilir.
+  herhangi bir uyanış) alarmın plana uyup uymadığına bakar ve gerekirse yeniden kurar. Zamanı geçmiş
+  bir quiz bir sonraki uygun anda, bir kez gösterilir.
+- Alarm tekrarlıdır (`periodInMinutes` = sıklık). Her quizden sonra bir sonraki plana göre yeniden
+  kurulur; tekrar yalnızca güvenlik ağıdır: arka plan betiği bir alarmı işlerken durdurulursa
+  zamanlayıcı susmaz, bir sıklık sonra kaldığı yerden devam eder.
+- Ayar değişince zamanlayıcı hemen yeniden kurulur: sıklık değiştiyse yeni sıklık o andan itibaren
+  sayılır, quiz kapatıldıysa plan da alarm da silinir.
 - Zamanı gelince quiz yalnızca öndeki pencerenin aktif sekmesine, o sekmenin ana çerçevesine gönderilir.
   Sayfa "şu an uygun değil" derse (video oynuyor, tam ekran, yazı yazılıyor, çeviri penceresi açık)
-  quiz atlanmaz, birkaç dakika sonra yeniden denenir.
-- Her denemenin sonucu (`gösterildi` ya da gösterilmeme nedeni) `quizState.lastAttempt` içine yazılır.
-  Ayarlar sayfasındaki **Neden quiz çıkmıyor?** paneli bunu, kasadaki kelime ve anlam sayılarını ve
-  sıradaki quiz'in zamanını gösterir. **Şimdi test et** zamanlayıcıyı ve koşulları atlayıp quiz'i
-  ayarlar sayfasında hemen gösterir.
+  quiz atlanmaz, 3 dakika sonra (sıklık daha kısaysa o kadar sonra) yeniden denenir.
+- Quiz'i ekrana getiren tek yol `quiz/scheduler.js` içindeki `showQuiz()` fonksiyonudur. Zamanlayıcı da
+  **Şimdi test et** de onu çağırır; test yalnızca zamanlayıcıyı ve koşulları (anahtar, kelime sayısı,
+  vade, sayfanın durumu) atlar ve zamanlayıcının planına ve kayıtlarına dokunmaz. Ayarlar sayfası da
+  diğer sayfalar gibi quiz gösterebilir (`content/quiz.js` orada da yüklüdür).
 
-Quiz için kasada en az 10 kelime ve hedef dilde en az 4 farklı anlam gerekir.
+Ayarlar sayfasındaki **Flash card** bölümü:
+
+| Ayar | Anahtar | Varsayılan |
+| --- | --- | --- |
+| Flash card sor (ana anahtar) | `quizEnabled` | açık |
+| Soru sıklığı: 5, 10, 15, 20, 30 dakika, 1, 2, 4 saat ya da özel süre (1–1440 dakika) | `quizIntervalMinutes` | 20 dakika |
+| Vadesi gelmemiş kelimeleri de sor | `quizAllowNotDue` | açık |
+| Başlamak için gereken kelime | `quizMinCards` | 10 |
+| Cevap süresi (5–300 saniye) | `quizTimeoutSeconds` | 30 saniye |
+
+Eklenti geliştirme için yüklendiğinde (`about:debugging` ya da "Load unpacked") sıklık listesinde
+**Dakikada bir (deneme için)** seçeneği de çıkar; zamanlayıcıyı beklemeden izlemek içindir.
+
+**Neden quiz çıkmıyor?** paneli gerçek zamanlayıcının durumunu gösterir ("Şimdi test et" buraya iz
+bırakmaz): quiz açık mı, kasada kaç kelime var, kaçı sorulabilir, kaçının vadesi gelmiş, sıklık,
+sıradaki quiz'in zamanı, alarmın kurulu olup olmadığı, son gösterilen quiz, son atlanan quiz ve nedeni
+(`quizState.lastShown`, `lastSkip`), son sorunun nasıl bittiği.
+
+Quiz için kasada en az 10 kelime (ayarlanır) ve hedef dilde en az 4 farklı anlam gerekir.
+
+#### Zamanlayıcıyı denemek
+
+1. Kasada en az 10 kelime olsun. Ayarlar → **Flash card** → **Soru sıklığı** → **Dakikada bir (deneme
+   için)**. Panelde "Sıradaki quiz" bir dakika sonrasını, "Zamanlayıcı (alarm)" aynı saati göstermeli.
+2. Sıradan bir web sayfası açık ve önde olsun, bir şeye dokunmadan bekle. Bir dakika sonra quiz
+   kendiliğinden çıkar; cevapla. Bir dakika sonra başka bir kelimeyle yeniden çıkar. Üç kez üst üste
+   izle: her seferinde farklı bir kelime sorulmalı.
+3. Arka plan betiğinin konsolunda (Chrome: `chrome://extensions` → Wordvault → **Service worker**;
+   Firefox: `about:debugging` → Bu Firefox → Wordvault → **İncele**) zamanlayıcının durumu:
+
+```js
+chrome.storage.local.get('quizState').then(({ quizState: s }) => console.log({ sıradaki: new Date(s.sonrakiQuizZamani).toLocaleTimeString(), sonGösterilen: s.lastShown && new Date(s.lastShown.at).toLocaleTimeString(), sonAtlanan: s.lastSkip, sonSorulanlar: s.recent.map((id) => id.split('|')[2]) }))
+chrome.alarms.getAll().then((alarms) => console.table(alarms.map((a) => ({ ad: a.name, zaman: new Date(a.scheduledTime).toLocaleTimeString(), tekrarDakika: a.periodInMinutes }))))
+```
+
+   `sonSorulanlar` her quizden sonra bir kelime uzar ve aynı kelime art arda görünmez; alarmın zamanı
+   her quizden sonra bir dakika ileri gider.
 
 #### Quiz kartı
 
@@ -202,8 +247,9 @@ Kelimenin geçmişi bir özet olarak kelimeyle birlikte durur (kasa kaydının `
 dökümü tutulmaz, yani kayıt kullandıkça büyümez:
 
 `a` cevap sayısı, `k` doğru sayısı, `s` art arda doğru, `e` kolaylık katsayısı, `i` şimdiki aralık
-(dakika), `l` yanlış sayısı, `m` ortalama cevap süresi (ms), `d` zorluk, `x` en son sorulduğu an.
-Sonraki tekrar zamanı kaydın `dueAt`, kademesi `box` alanındadır.
+(dakika), `l` yanlış sayısı, `m` ortalama cevap süresi (ms), `d` zorluk, `x` en son cevaplandığı an
+(ertelenen ya da cevapsız kalan soru sayılmaz). Sonraki tekrar zamanı kaydın `dueAt`, kademesi `box`
+alanındadır.
 
 #### Soru seçimi ve şıklar
 
@@ -212,6 +258,12 @@ Sonraki tekrar zamanı kaydın `dueAt`, kademesi `box` alanındadır.
   kendi aralığı cinsinden ölçülür ve en çok 2 sayılır.
 - Son üç soruda sorulan kelime seçilmez; kelime azsa bu gevşer ama aynı kelime hiçbir zaman art arda
   sorulmaz.
+- **Kasa sırayla döner.** Sorular turlar halinde gider: bir turda cevaplanan kelime, vadesi yeniden
+  gelse bile, diğer kelimelere sıra gelene kadar bekler. Tek istisna son cevabı yanlış ya da
+  tereddütlü olan kelimedir; o, tur bitmeden (10 dakika ve birkaç soru sonra) geri gelir. Zor
+  kelimelerin daha sık sorulması böyle olur. Her kelimeye sıra geldiğinde yeni tur başlar
+  (`quizState.roundStartedAt`). "Sonra sor", zaman aşımı ve kartın kapatılması kelimenin sırasını
+  harcamaz.
 - Zamanı gelmiş kelime yoksa en zor kelime, eşitlikte en uzun süredir sorulmayan sorulur
   (`quizAllowNotDue`, varsayılan açık; kapalıysa quiz çıkmaz).
 - Yanlış şıklar (`quiz/question.js`) kasadaki diğer çevirilerden seçilir: doğru cevap, kelimenin diğer

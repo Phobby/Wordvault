@@ -50,12 +50,17 @@ export function createDevice(name = 'device', { uiLanguage = 'en-US', detect = (
     reply: () => ({ shown: true }),
     /** Messages delivered to the tab. */
     sent: [],
+    /** Every alarm that was ever created, in order. */
+    alarmsCreated: [],
   };
   const alarmMap = new Map();
   const alarms = {
     get: async (alarmName) => alarmMap.get(alarmName),
     create: async (alarmName, info) => {
-      alarmMap.set(alarmName, { name: alarmName, scheduledTime: info.when ?? Date.now() + (info.delayInMinutes || 0) * 60_000 });
+      const alarm = { name: alarmName, scheduledTime: info.when ?? Date.now() + (info.delayInMinutes || 0) * 60_000 };
+      if (info.periodInMinutes) alarm.periodInMinutes = info.periodInMinutes;
+      alarmMap.set(alarmName, alarm);
+      browser.alarmsCreated.push({ ...alarm });
     },
     clear: async (alarmName) => alarmMap.delete(alarmName),
   };
@@ -74,6 +79,19 @@ export function createDevice(name = 'device', { uiLanguage = 'en-US', detect = (
     browser,
     /** Name -> time of every alarm that is set. */
     alarmTimes: () => Object.fromEntries([...alarmMap].map(([alarmName, alarm]) => [alarmName, alarm.scheduledTime])),
+    /** The alarm as the browser holds it, or undefined. */
+    alarm: (alarmName) => alarmMap.get(alarmName),
+    /**
+     * The browser fires an alarm: a one-off alarm is gone afterwards, a repeating one moves on
+     * by its period. Returns false if there is no such alarm.
+     */
+    fireAlarm: (alarmName) => {
+      const alarm = alarmMap.get(alarmName);
+      if (!alarm) return false;
+      if (alarm.periodInMinutes) alarm.scheduledTime += alarm.periodInMinutes * 60_000;
+      else alarmMap.delete(alarmName);
+      return true;
+    },
     /** A browser restart, as far as timers go: alarms are gone, storage stays. */
     forgetAlarms: () => alarmMap.clear(),
     chrome: { storage: { local }, i18n, alarms, tabs, windows, runtime: { getManifest: () => ({ version: '0.0.0-test' }) } },

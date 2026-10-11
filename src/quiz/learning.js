@@ -80,7 +80,8 @@ export const TUNING = Object.freeze({
  * @property {number} l  Lapses: wrong answers.
  * @property {number} m  Average answer time in ms (0 = none measured).
  * @property {number} d  Difficulty, 0 to 1.
- * @property {number} x  When the word was last asked (ms since the epoch; 0 = never).
+ * @property {number} x  When the word was last answered (ms since the epoch; 0 = never). A
+ *                       question that was postponed or left unanswered does not count.
  */
 
 const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
@@ -237,12 +238,15 @@ export function applyAnswer(previous, answer, now, usual) {
 }
 
 /**
- * "Ask later", or a question that went unanswered: nothing is held against the word, it just
- * comes back a little later.
- * @returns {{ stats: CardStats, dueAt: number }}
+ * "Ask later", or a question that went unanswered: nothing is held against the word and nothing
+ * about it changes, it just comes back a little later.
+ * ASSUMPTION: such a question does not use up the word's turn in the current round of questions
+ * (selection.js), so that "a little later" really is that and not "in the next round".
+ * @returns {{ stats: CardStats | null, dueAt: number }}  `stats` stays null for a word that has
+ *   never been answered.
  */
 export function postpone(previous, now) {
-  return { stats: { ...(previous || newStats()), x: now }, dueAt: now + TUNING.POSTPONE_MINUTES * MINUTE };
+  return { stats: previous ? { ...previous } : null, dueAt: now + TUNING.POSTPONE_MINUTES * MINUTE };
 }
 
 /**

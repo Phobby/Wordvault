@@ -4,9 +4,9 @@
 import { downloadBackup, restoreBackup } from '../lib/backup.js';
 import { getSettings, updateSettings } from '../lib/settings.js';
 import { getPreferences, setTargetLanguage } from '../lib/translator.js';
-import { getDiagnostics } from '../quiz/scheduler.js';
+import { INTERVAL_MINUTES, TIMEOUT_SECONDS, getDiagnostics } from '../quiz/scheduler.js';
 
-const { h, t, languages, speech, quizCard } = globalThis.WV;
+const { h, t, languages, speech } = globalThis.WV;
 
 globalThis.WV.adoptStyles(globalThis.WV.styles.tokens + globalThis.WV.styles.controls);
 document.documentElement.lang = languages.uiLanguage();
@@ -118,6 +118,128 @@ const backupSection = h(
   backupStatus,
 );
 
+// --- Flash cards: settings -----------------------------------------------------------------------
+
+/** The frequencies offered, in minutes; anything else is entered under "Custom".
+ *  ASSUMPTION: 20 minutes is offered next to the frequencies the specification lists, because
+ *  it is the default: without it a fresh installation would show its frequency as "Custom". */
+const INTERVAL_PRESETS = [5, 10, 15, 20, 30, 60, 120, 240];
+/** Offered only while the extension is loaded for development: short enough to watch the timer work. */
+const INTERVAL_TESTING = 1;
+const MIN_CARDS_MAX = 1000;
+let developmentInstall = false;
+
+function intervalLabel(minutes) {
+  if (minutes === 1) return t('quizEveryMinute');
+  if (minutes % 60 !== 0) return t('quizEveryMinutes', [String(minutes)]);
+  return minutes === 60 ? t('quizEveryHour') : t('quizEveryHours', [String(minutes / 60)]);
+}
+
+/** Stores quiz settings. The background script rebuilds the timer when the settings change;
+ *  it is also told directly, in case that change does not wake it up. */
+async function saveQuiz(patch) {
+  await updateSettings(patch);
+  flashSaved();
+  await globalThis.WV.send('wv:quiz:reschedule').catch(() => {});
+  renderQuiz(); // the alarm has been set by now; setting it is not a change this page hears about
+}
+
+/** A whole number from a field, or null if what is typed there is not one within the limits. */
+function numberIn(input, min, max) {
+  const value = Number(input.value);
+  return input.value.trim() !== '' && Number.isInteger(value) && value >= min && value <= max ? value : null;
+}
+
+const quizEnabled = h('input', { type: 'checkbox', onchange: () => saveQuiz({ quizEnabled: quizEnabled.checked }) });
+const quizAllowNotDue = h('input', { type: 'checkbox', onchange: () => saveQuiz({ quizAllowNotDue: quizAllowNotDue.checked }) });
+
+const quizIntervalCustom = h('input', {
+  type: 'number',
+  inputmode: 'numeric',
+  min: String(INTERVAL_MINUTES.MIN),
+  max: String(INTERVAL_MINUTES.MAX),
+  step: '1',
+  'aria-label': t('optQuizIntervalCustom'),
+  onchange: () => {
+    const minutes = numberIn(quizIntervalCustom, INTERVAL_MINUTES.MIN, INTERVAL_MINUTES.MAX);
+    if (minutes !== null) saveQuiz({ quizIntervalMinutes: minutes });
+    else renderQuizSettings(quizIntervalCustom); // back to the value that is in force
+  },
+});
+const quizIntervalCustomRow = h('span', { class: 'inline', hidden: true }, quizIntervalCustom, h('span', { class: 'unit', text: t('optMinutes') }));
+const quizInterval = h('select', {
+  'aria-label': t('optQuizInterval'),
+  onchange: () => {
+    if (quizInterval.value === 'custom') {
+      // Nothing is saved until a number is entered; the frequency in force stays in the field.
+      quizIntervalCustomRow.hidden = false;
+      quizIntervalCustom.focus();
+      quizIntervalCustom.select();
+    } else {
+      saveQuiz({ quizIntervalMinutes: Number(quizInterval.value) });
+    }
+  },
+});
+
+const quizMinCards = h('input', {
+  type: 'number',
+  inputmode: 'numeric',
+  min: '1',
+  max: String(MIN_CARDS_MAX),
+  step: '1',
+  'aria-label': t('optQuizMinCards'),
+  onchange: () => {
+    const count = numberIn(quizMinCards, 1, MIN_CARDS_MAX);
+    if (count !== null) saveQuiz({ quizMinCards: count });
+    else renderQuizSettings(quizMinCards);
+  },
+});
+const quizTimeout = h('input', {
+  type: 'number',
+  inputmode: 'numeric',
+  min: String(TIMEOUT_SECONDS.MIN),
+  max: String(TIMEOUT_SECONDS.MAX),
+  step: '1',
+  'aria-label': t('optQuizTimeout'),
+  onchange: () => {
+    const seconds = numberIn(quizTimeout, TIMEOUT_SECONDS.MIN, TIMEOUT_SECONDS.MAX);
+    if (seconds !== null) saveQuiz({ quizTimeoutSeconds: seconds });
+    else renderQuizSettings(quizTimeout);
+  },
+});
+
+/** @param {HTMLInputElement} [rejected]  A field whose content was not accepted and is put back. */
+async function renderQuizSettings(rejected) {
+  const [settings, d] = await Promise.all([getSettings(), getDiagnostics()]);
+  // A field that is being typed in is left alone.
+  const free = (field) => field === rejected || document.activeElement !== field;
+  quizEnabled.checked = settings.quizEnabled;
+  quizAllowNotDue.checked = settings.quizAllowNotDue;
+
+  const minutes = d.intervalMinutes;
+  const offered = [...(developmentInstall ? [INTERVAL_TESTING] : []), ...INTERVAL_PRESETS];
+  const custom = !offered.includes(minutes);
+  quizInterval.replaceChildren(
+    ...offered.map((value) => h('option', { value: String(value), text: value === INTERVAL_TESTING ? t('quizEveryTesting') : intervalLabel(value) })),
+    h('option', { value: 'custom', text: t('quizEveryCustom') }),
+  );
+  quizInterval.value = custom ? 'custom' : String(minutes);
+  quizIntervalCustomRow.hidden = !custom;
+  if (free(quizIntervalCustom)) quizIntervalCustom.value = String(minutes);
+  if (free(quizMinCards)) quizMinCards.value = String(d.minCards);
+  if (free(quizTimeout)) quizTimeout.value = String(d.timeoutSeconds);
+}
+
+/** A labelled setting: name and explanation on the left, the control on the right. */
+function fieldRow(titleKey, helpKey, ...controls) {
+  return h(
+    'div',
+    { class: 'field' },
+    h('div', { class: 'field-text' }, h('strong', { text: t(titleKey) }), helpKey && h('span', { class: 'help', text: t(helpKey) })),
+    h('div', { class: 'field-control' }, controls),
+  );
+}
+
 // --- Flash cards: "Why is there no quiz?" --------------------------------------------------------
 
 /** Reason codes (quiz/scheduler.js, content/quiz.js) and the messages that explain them. */
@@ -180,37 +302,39 @@ async function renderQuiz() {
   quizVerdict.textContent = d.standingReason ? t('quizVerdictNo', [reasonText(d.standingReason, d)]) : t('quizVerdictYes', [d.nextAt ? timeText(d.nextAt) : t('quizDiagNotScheduled')]);
   quizVerdict.className = d.standingReason ? 'verdict no' : 'verdict yes';
 
-  let next = d.nextAt ? timeText(d.nextAt) : t('quizDiagNotScheduled');
-  // The plan says a quiz is due but nothing is set to wake the extension up for it.
-  if (d.enabled && !d.alarmAt) next += ` — ${t('quizDiagNoAlarm')}`;
+  // What the timer itself is doing; "Test now" leaves none of this behind.
+  // The alarm is what wakes the extension up: a plan without one would never be carried out.
+  const alarm = d.alarmAt ? t('quizDiagAlarmSet', [timeText(d.alarmAt)]) : t(d.enabled ? 'quizDiagAlarmMissing' : 'quizDiagAlarmOff');
   const facts = [
     ['quizDiagEnabled', t(d.enabled ? 'quizOn' : 'quizOff')],
     ['quizDiagCards', t('quizDiagCardsValue', [String(d.total), String(d.minCards)])],
     ['quizDiagAskable', t('quizDiagAskableValue', [String(d.askable), languages.name(d.targetLang), String(d.meanings), String(d.neededMeanings)])],
     ['quizDiagDue', String(d.due)],
-    ['quizDiagInterval', t('quizDiagIntervalValue', [String(d.intervalMinutes)])],
-    ['quizDiagNext', next],
-    ['quizDiagLast', d.lastAttempt ? `${timeText(d.lastAttempt.at)}: ${reasonText(d.lastAttempt.reason, d)}` : t('quizDiagNever')],
+    ['quizDiagInterval', intervalLabel(d.intervalMinutes)],
+    ['quizDiagNext', d.nextAt ? timeText(d.nextAt) : t('quizDiagNotScheduled')],
+    ['quizDiagAlarm', alarm],
+    ['quizDiagLastShown', d.lastShown ? timeText(d.lastShown.at) : t('quizDiagNever')],
+    ['quizDiagLastSkip', d.lastSkip ? `${timeText(d.lastSkip.at)}: ${reasonText(d.lastSkip.reason, d)}` : t('quizDiagNever')],
     ['quizDiagLastAnswer', lastAnswerText(d.lastAnswer)],
   ];
   quizFacts.replaceChildren(...facts.flatMap(([labelKey, value]) => [h('dt', { text: t(labelKey) }), h('dd', { text: value })]));
 }
 
+/**
+ * "Test now": asks the background script to show a quiz the way the timer does, with the timer
+ * and the conditions left out. The quiz comes back to this page like to any other page the user
+ * might be looking at (content/quiz.js is loaded here too); nothing is drawn from here.
+ */
 async function testQuiz() {
   quizTestResult.textContent = '';
-  let built;
+  let result;
   try {
-    // Through the background script on purpose: if that is not running, this is where it shows.
-    built = await globalThis.WV.send('wv:quiz:test');
+    result = await globalThis.WV.send('wv:quiz:test');
   } catch {
     quizTestResult.textContent = t('quizTestFailed');
     return;
   }
-  if (!built.ok) {
-    quizTestResult.textContent = reasonText(built.reason, quizDiagnostics || (await getDiagnostics()));
-    return;
-  }
-  quizCard.show(built.question, { timeoutSeconds: built.timeoutSeconds, onResult: (result) => globalThis.WV.send('wv:quiz:answer', result).catch(() => {}) });
+  if (!result.ok) quizTestResult.textContent = reasonText(result.reason, quizDiagnostics || (await getDiagnostics()));
 }
 
 const quizSection = h(
@@ -218,6 +342,15 @@ const quizSection = h(
   { class: 'card', id: 'quiz' },
   h('h2', { text: t('optQuizTitle') }),
   h('p', { class: 'help', text: t('optQuizHelp') }),
+  h(
+    'div',
+    { class: 'fields' },
+    switchRow(quizEnabled, 'optQuizEnabled', 'optQuizEnabledHelp'),
+    fieldRow('optQuizInterval', 'optQuizIntervalHelp', quizInterval, quizIntervalCustomRow),
+    switchRow(quizAllowNotDue, 'optQuizAllowNotDue', 'optQuizAllowNotDueHelp'),
+    fieldRow('optQuizMinCards', 'optQuizMinCardsHelp', quizMinCards),
+    fieldRow('optQuizTimeout', 'optQuizTimeoutHelp', h('span', { class: 'inline' }, quizTimeout, h('span', { class: 'unit', text: t('optSeconds') }))),
+  ),
   h('h3', { text: t('quizDiagTitle') }),
   quizVerdict,
   quizFacts,
@@ -260,10 +393,21 @@ if (location.hash === '#backup') {
 function render() {
   renderTarget();
   renderSwitches();
+  renderQuizSettings();
 }
 
+let settleTimer = 0;
 render();
 renderQuiz();
+// The one-minute frequency is for watching the timer work, not for learning: it is only
+// offered where the extension is loaded from its source (about:debugging, "Load unpacked").
+chrome.management
+  ?.getSelf()
+  .then((self) => {
+    developmentInstall = self.installType === 'development';
+    if (developmentInstall) renderQuizSettings();
+  })
+  .catch(() => {});
 // Settings can also change from the translation popup while this page is open; words are
 // added and quizzes come due in the background.
 chrome.storage.onChanged.addListener((changes, area) => {
@@ -272,6 +416,9 @@ chrome.storage.onChanged.addListener((changes, area) => {
   // What "Test now" last said may no longer be true once the vault has changed.
   if (Object.keys(changes).some((key) => key.startsWith('vault:'))) quizTestResult.textContent = '';
   renderQuiz();
+  // The timer writes its plan first and sets the alarm right after; look again once it has.
+  clearTimeout(settleTimer);
+  settleTimer = setTimeout(renderQuiz, 600);
 });
 // The panel shows times relative to now.
 setInterval(renderQuiz, 20_000);

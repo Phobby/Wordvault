@@ -258,7 +258,64 @@
     "message": "Flash card"
   },
   "optQuizHelp": {
-    "message": "Wordvault ara sıra, bulunduğun sayfanın sağ üst köşesinde kayıtlı bir kelimeyi sorar."
+    "message": "Wordvault ara sıra kasandaki bir kelimeyi sorar. Kasadaki her kelimeye sıra gelir; yanlış bildiklerin daha çabuk geri döner."
+  },
+  "optQuizEnabled": {
+    "message": "Flash card sor"
+  },
+  "optQuizEnabledHelp": {
+    "message": "Kapalıyken hiçbir quiz çıkmaz ve zamanlayıcı çalışmaz."
+  },
+  "optQuizInterval": {
+    "message": "Soru sıklığı"
+  },
+  "optQuizIntervalHelp": {
+    "message": "Gezinirken bu sıklıkta bir quiz gelir. Değişiklik, yaptığın andan itibaren sayılır."
+  },
+  "optQuizIntervalCustom": {
+    "message": "İki quiz arasındaki dakika (1-1440)"
+  },
+  "quizEveryMinute": {
+    "message": "Dakikada bir"
+  },
+  "quizEveryMinutes": {
+    "message": "$1 dakikada bir"
+  },
+  "quizEveryHour": {
+    "message": "Saatte bir"
+  },
+  "quizEveryHours": {
+    "message": "$1 saatte bir"
+  },
+  "quizEveryTesting": {
+    "message": "Dakikada bir (deneme için)"
+  },
+  "quizEveryCustom": {
+    "message": "Özel…"
+  },
+  "optMinutes": {
+    "message": "dakika"
+  },
+  "optSeconds": {
+    "message": "saniye"
+  },
+  "optQuizAllowNotDue": {
+    "message": "Vadesi gelmemiş kelimeleri de sor"
+  },
+  "optQuizAllowNotDueHelp": {
+    "message": "Tekrar zamanı gelen kelime yoksa en zor kelime yine de sorulur. Kapalıysa bir kelimenin zamanı gelene kadar quiz çıkmaz."
+  },
+  "optQuizMinCards": {
+    "message": "Başlamak için gereken kelime"
+  },
+  "optQuizMinCardsHelp": {
+    "message": "Kasada bu kadar kelime olunca quiz başlar."
+  },
+  "optQuizTimeout": {
+    "message": "Cevap süresi"
+  },
+  "optQuizTimeoutHelp": {
+    "message": "Cevaplanmayan kart bu süre sonunda kapanır ve sayılmaz."
   },
   "quizDiagTitle": {
     "message": "Neden quiz çıkmıyor?"
@@ -293,20 +350,29 @@
   "quizDiagInterval": {
     "message": "Sıklık"
   },
-  "quizDiagIntervalValue": {
-    "message": "en fazla $1 dakikada bir"
-  },
   "quizDiagNext": {
     "message": "Sıradaki quiz"
   },
   "quizDiagNotScheduled": {
     "message": "planlı değil"
   },
-  "quizDiagNoAlarm": {
-    "message": "zamanlayıcı kurulu değil; eklentiyi yeniden yükle"
+  "quizDiagAlarm": {
+    "message": "Zamanlayıcı (alarm)"
   },
-  "quizDiagLast": {
-    "message": "Son deneme"
+  "quizDiagAlarmSet": {
+    "message": "$1 için kurulu"
+  },
+  "quizDiagAlarmMissing": {
+    "message": "kurulu değil; eklentiyi yeniden yükle"
+  },
+  "quizDiagAlarmOff": {
+    "message": "kurulu değil (quiz kapalı)"
+  },
+  "quizDiagLastShown": {
+    "message": "Son gösterilen quiz"
+  },
+  "quizDiagLastSkip": {
+    "message": "Son atlanan quiz"
   },
   "quizDiagNever": {
     "message": "henüz yok"
@@ -384,7 +450,7 @@
     "message": "Şimdi test et"
   },
   "quizTestHelp": {
-    "message": "Zamanlayıcıyı ve yukarıdaki koşulları atlayıp quiz’i hemen burada gösterir."
+    "message": "Quiz’i, zamanlayıcının göstereceği yoldan hemen gösterir; zamanlayıcıyı ve yukarıdaki koşulları atlar."
   },
   "quizTestFailed": {
     "message": "Arka plan betiği yanıt vermedi. Eklentiyi yeniden yükle."
