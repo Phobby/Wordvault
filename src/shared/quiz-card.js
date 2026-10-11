@@ -35,7 +35,7 @@
     if (!correct) buttons[index].classList.add('wv-wrong');
     feedback.textContent = t(correct ? 'quizCorrect' : 'quizWrong');
     feedback.classList.add(correct ? 'wv-right' : 'wv-wrong');
-    onAnswer?.({ id: question.id, correct, choice: index });
+    onAnswer?.({ id: question.id, correct, choice: index, ms: Date.now() - current.shownAt, chars: question.chars });
     timer = setTimeout(close, correct ? RIGHT_MS : WRONG_MS);
   }
 
@@ -68,7 +68,7 @@
       ),
     );
     surface.mount(null);
-    current = { question, buttons, feedback, answered: false, onAnswer, onClose };
+    current = { question, buttons, feedback, answered: false, shownAt: Date.now(), onAnswer, onClose };
   }
 
   WV.quizCard = { show, close, isOpen: () => Boolean(current) };

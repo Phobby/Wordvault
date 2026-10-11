@@ -3,7 +3,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { CHOICE_COUNT, askableCards, buildQuestion, countMeanings } from '../src/quiz/question.js';
+import { CHOICE_COUNT, askableCards, buildQuestion, countMeanings, questionFor, tooSimilar } from '../src/quiz/question.js';
 import { createRandom } from './helpers/random.js';
 
 const card = (text, translation, fields = {}) => ({ id: `en|tr|${text.toLowerCase()}`, text, translation, sourceLang: 'en', targetLang: 'tr', alternatives: [], ...fields });
@@ -65,4 +65,84 @@ test('the same word saved in two language pairs does not give the answer away', 
     if (question.word !== 'gift') continue;
     assert.ok(!(question.choices.includes('hediye') && question.choices.includes('zehir')));
   }
+});
+
+test('answers that are the same or nearly the same are recognised', () => {
+  for (const [a, b] of [['kitap', 'Kitap '], ['kitap', 'kitaplar'], ['kitap', 'kitab'], ['kitap', 'kitabı'], ['ışık', 'ışığı'], ['açık', 'acik'], ['rezervasyon', 'rezervasyon yapın'], ['to run', 'run'], ['understanding', 'understandings'], ['', 'x']]) {
+    assert.equal(tooSimilar(a, b), true, `${a} / ${b}`);
+    assert.equal(tooSimilar(b, a), true, `${b} / ${a}`);
+  }
+  for (const [a, b] of [['kitap', 'kapı'], ['ev', 'evet'], ['su', 'süt'], ['ağaç', 'açık'], ['masa', 'kasa yok'], ['yol', 'yıldız'], ['deniz', 'dünya'], ['understand', 'underwear']]) {
+    assert.equal(tooSimilar(a, b), false, `${a} / ${b}`);
+  }
+});
+
+test('choices too close to the right answer, to its other meanings or to each other are never offered', () => {
+  const asked = card('light', 'ışık', { alternatives: ['hafif', 'açık'] });
+  const vault = [
+    asked,
+    card('lights', 'ışıklar'), // another form of the answer
+    card('lamp', 'Işık'), // the answer itself, saved for another word
+    card('easy', 'hafif'), // another meaning of the asked word
+    card('bright', 'açık renk'), // contains another meaning
+    card('book', 'kitap'),
+    card('books', 'kitaplar'), // too close to "kitap": only one of the two may appear
+    card('door', 'kapı'),
+    card('tree', 'ağaç'),
+    card('water', 'su'),
+  ];
+  const random = createRandom(21);
+  for (let round = 0; round < 500; round++) {
+    const question = questionFor(asked, vault, random.next);
+    assert.equal(question.choices.length, CHOICE_COUNT);
+    assert.equal(question.choices[question.answer], 'ışık');
+    const wrong = question.choices.filter((_, index) => index !== question.answer);
+    for (const choice of wrong) {
+      for (const taken of ['ışık', 'hafif', 'açık']) assert.equal(tooSimilar(choice, taken), false, `${choice} is too close to ${taken}`);
+    }
+    assert.ok(!(wrong.includes('kitap') && wrong.includes('kitaplar')), 'two forms of one word are not both offered');
+    assert.equal(question.chars, question.choices.join('').length);
+  }
+});
+
+test('a word with too few usable wrong answers gets no question; the vault may still have others', () => {
+  const vault = [card('light', 'ışık'), card('lights', 'ışıklar'), card('lamp', 'ışığı'), card('door', 'kapı'), card('tree', 'ağaç')];
+  assert.equal(questionFor(vault[0], vault), null, 'only two usable wrong answers for "ışık"');
+  // The builder passes such a word over and asks one that does work, if there is any.
+  const random = createRandom(8);
+  for (let round = 0; round < 200; round++) {
+    const built = buildQuestion(vault, 'tr', random.next);
+    assert.equal(built.ok, true);
+    assert.notEqual(built.question.word, 'light');
+  }
+  // Four different translations, but two are forms of one word: no fair question exists.
+  const tight = [card('light', 'ışık'), card('lights', 'ışıklar'), card('door', 'kapı'), card('tree', 'ağaç')];
+  assert.equal(countMeanings(tight), 4);
+  assert.deepEqual(buildQuestion(tight, 'tr'), { ok: false, reason: 'not_enough_choices' });
+});
+
+test('wrong answers resemble the right one: same kind of word, similar length', () => {
+  const noun = { groups: [{ partOfSpeech: 'Noun', definitions: [] }] };
+  const verb = { groups: [{ partOfSpeech: 'Verb', definitions: [] }] };
+  const asked = card('house', 'ev', { dictionary: noun });
+  const nouns = ['su', 'at', 'göz', 'yol', 'taş', 'kuş', 'dağ', 'gül'].map((t, i) => card(`noun${i}`, t, { dictionary: noun }));
+  const verbs = ['koşmak', 'yürümek', 'düşünmek', 'anlamak', 'beklemek', 'çalışmak', 'öğrenmek', 'konuşmak'].map((t, i) => card(`verb${i}`, t, { dictionary: verb }));
+  const phrases = ['bir şeyin üzerinde durmak', 'uzun bir yolculuğa çıkmak', 'hiçbir şey anlamamak'].map((t, i) => card(`phrase${i}`, t));
+  const vault = [asked, ...nouns, ...verbs, ...phrases];
+  const random = createRandom(13);
+  const seen = new Set();
+  let nounChoices = 0;
+  let total = 0;
+  for (let round = 0; round < 400; round++) {
+    const question = questionFor(asked, vault, random.next);
+    for (const [index, choice] of question.choices.entries()) {
+      if (index === question.answer) continue;
+      seen.add(choice);
+      total += 1;
+      if (nouns.some((n) => n.translation === choice)) nounChoices += 1;
+      assert.ok(!phrases.some((p) => p.translation === choice), 'a long phrase is never offered next to a two-letter answer');
+    }
+  }
+  assert.equal(nounChoices, total, 'with enough nouns of similar length, every wrong answer is one');
+  assert.ok(seen.size >= 5, `the wrong answers vary between questions (${seen.size} different ones)`);
 });

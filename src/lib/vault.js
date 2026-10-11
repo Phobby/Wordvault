@@ -5,6 +5,7 @@
 // small tombstone ("tomb:<id>") behind, so that the removal can travel to the user's other
 // devices instead of the word coming back from them (see src/sync).
 
+import { normalizeStats } from '../quiz/learning.js';
 import { normalizeDictionary } from './dictionary.js';
 import { WordvaultError } from './errors.js';
 
@@ -14,7 +15,7 @@ export const TOMBSTONE_PREFIX = 'tomb:';
 const LIMITS = { text: 500, translation: 1000, alternative: 200, alternatives: 8, sentence: 600, url: 2000, title: 300, lang: 35, box: 20 };
 
 /** The fields that are synchronised between devices. Changing one of them is an edit. */
-const SYNCED_FIELDS = ['text', 'translation', 'sourceLang', 'targetLang', 'sentence', 'box', 'dueAt'];
+const SYNCED_FIELDS = ['text', 'translation', 'sourceLang', 'targetLang', 'sentence', 'box', 'dueAt', 'quiz'];
 
 /**
  * @typedef {Object} VaultEntry
@@ -31,8 +32,10 @@ const SYNCED_FIELDS = ['text', 'translation', 'sourceLang', 'targetLang', 'sente
  * @property {number} updatedAt     When a synchronised field last changed.
  * @property {number} rev           Edit counter of this word across all devices: every edit made
  *                                  after seeing revision n is revision n + 1 (see sync/merge.js).
- * @property {number} box           Leitner box (0 = new).
+ * @property {number} box           How far the word has come (0 = new or learning); see quiz/learning.js: levelOf().
  * @property {number} dueAt         When the word is next due for review (0 = not scheduled).
+ * @property {import('../quiz/learning.js').CardStats | null} quiz
+ *   Summary of how the word has been answered in quizzes; null until it has been asked.
  * @property {import('./dictionary.js').DictionaryData | null} dictionary
  *   Word types, definitions and examples from Wiktionary; null until they have been fetched.
  * @property {Record<string, unknown>} [syncExtra]
@@ -94,6 +97,7 @@ export function normalizeEntry(raw) {
     rev: Math.max(1, Math.floor(positive(raw.rev, 1))),
     box: Number.isInteger(box) && box >= 0 && box <= LIMITS.box ? box : 0,
     dueAt: positive(raw.dueAt, 0),
+    quiz: normalizeStats(raw.quiz),
     dictionary: normalizeDictionary(raw.dictionary),
   };
 }
@@ -107,10 +111,13 @@ function upgrade(entry) {
     rev: positive(entry.rev, 1),
     box: positive(entry.box, 0),
     dueAt: positive(entry.dueAt, 0),
+    quiz: entry.quiz || null,
   };
 }
 
-const editedFields = (before, after) => SYNCED_FIELDS.some((field) => before[field] !== after[field]);
+/** JSON text for comparing field values; the quiz statistics are an object. */
+const comparable = (value) => (value && typeof value === 'object' ? JSON.stringify(value) : value ?? null);
+const editedFields = (before, after) => SYNCED_FIELDS.some((field) => comparable(before[field]) !== comparable(after[field]));
 
 /** @returns {Promise<VaultEntry | null>} */
 export async function getEntry(id) {
@@ -142,6 +149,7 @@ export async function addEntry(raw) {
     entry.dictionary ||= existing.dictionary || null;
     if (raw.box === undefined) entry.box = existing.box;
     if (raw.dueAt === undefined) entry.dueAt = existing.dueAt;
+    if (raw.quiz === undefined) entry.quiz = existing.quiz;
     if (existing.syncExtra) entry.syncExtra = existing.syncExtra;
     const edited = editedFields(existing, entry);
     entry.rev = edited ? existing.rev + 1 : existing.rev;

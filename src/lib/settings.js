@@ -30,6 +30,8 @@ export const DEFAULT_SETTINGS = Object.freeze({
   quizIntervalMinutes: 20,
   /** The quiz starts once the vault holds this many words. */
   quizMinCards: 10,
+  /** When no word is due for review, ask one anyway (the hardest) instead of skipping the quiz. */
+  quizAllowNotDue: true,
 });
 
 /** @returns {Promise<typeof DEFAULT_SETTINGS>} */

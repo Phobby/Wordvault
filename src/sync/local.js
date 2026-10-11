@@ -19,7 +19,7 @@ async function readState() {
 }
 
 /** Entries written before synchronisation existed have no revision or update time yet. */
-const withDefaults = (entry) => ({ ...entry, updatedAt: entry.updatedAt || entry.createdAt, rev: entry.rev || 1, box: entry.box || 0, dueAt: entry.dueAt || 0 });
+const withDefaults = (entry) => ({ ...entry, updatedAt: entry.updatedAt || entry.createdAt, rev: entry.rev || 1, box: entry.box || 0, dueAt: entry.dueAt || 0, quiz: entry.quiz || null });
 
 function documentFrom({ entries, tombstones }) {
   const document = emptyDocument();

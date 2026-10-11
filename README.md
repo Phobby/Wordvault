@@ -12,9 +12,10 @@ kaydet, sonra kısa quizlerle tekrar et. Her şey tarayıcında çalışır; Wor
 > Cihazlar arası senkronizasyon (`SPEC-SYNC.md`) yedi aşamada ekleniyor; şu an 1. aşama hazır:
 > veri modeli, birleştirme ve silme kayıtları. Henüz hiçbir yere veri gönderilmiyor.
 >
-> Flash card sistemi (`SPEC-QUIZ.md`) altı aşamada ekleniyor; şu an 1. aşama hazır: zamanlayıcı,
-> basit quiz kartı, "Neden quiz çıkmıyor?" tanı paneli ve "Şimdi test et". Öğrenme algoritması,
-> akıllı şık seçimi, kartın tam arayüzü ve ayarları sonraki aşamalarda.
+> Flash card sistemi (`SPEC-QUIZ.md`) altı aşamada ekleniyor; şu an ilk iki aşama hazır: zamanlayıcı,
+> basit quiz kartı, "Neden quiz çıkmıyor?" tanı paneli, "Şimdi test et", öğrenme algoritması, soru
+> seçimi ve şık üretimi. Kartın tam arayüzü ("Bilmiyorum", "Sonra sor", zaman aşımı), ayarları ve
+> kelime durumlarının kasada gösterimi sonraki aşamalarda.
 
 ## Derleme
 
@@ -83,7 +84,9 @@ src/
     backup.js           JSON dışa/içe aktarma
   providers/            Çeviri sağlayıcıları (ortak arayüz: providers/index.js)
   quiz/                 Flash card
-    scheduler.js        Zamanlayıcı (chrome.alarms), quiz'in gösterilmesi, tanı bilgisi
+    scheduler.js        Zamanlayıcı (chrome.alarms), quiz'in gösterilmesi, cevabın kaydı, tanı bilgisi
+    learning.js         Öğrenme algoritması: cevabın kalitesi, sonraki tekrar, zorluk, durum (TUNING)
+    selection.js        Sıradaki kelimenin seçimi (SELECTION)
     question.js         Soru ve şık üretimi
   sync/                 Senkronizasyon
     model.js            Eşitlenen belgenin biçimi; kasa kaydı <-> eşitleme kaydı dönüşümü
@@ -145,20 +148,72 @@ Arka plan betiği her an durdurulabildiği için zamanlayıcının hiçbir şeyi
 
 Quiz için kasada en az 10 kelime ve hedef dilde en az 4 farklı anlam gerekir.
 
+#### Öğrenme algoritması
+
+`quiz/learning.js` saf fonksiyonlardan oluşur (depoya ve saate dokunmaz) ve davranışı belirleyen bütün
+sayılar dosyanın başındaki `TUNING` nesnesindedir. Temeli SM-2'dir; farkı, cevabın kalitesini
+kullanıcıya sormak yerine doğruluk ve hızdan çıkarmasıdır:
+
+| Kalite | Cevap | Sonuç |
+| --- | --- | --- |
+| 0 | "Bilmiyorum" | Öğrenmeye geri döner, 10 dakika sonra yeniden sorulur |
+| 1 | Yanlış | Aynı |
+| 2 | Doğru ama beklenenin 3 katından yavaş (tereddüt ya da tahmin) | Aynı; doğru sayılır ama aralık sıfırlanır |
+| 3 | Doğru, yavaş (1,6 katından uzun) | Sonraki aralığın 0,6 katı |
+| 4 | Doğru | Sonraki aralık |
+| 5 | Doğru, hızlı (0,6 katından kısa) | Sonraki aralığın 1,4 katı |
+
+- **Aralıklar:** ilk doğru cevaplarda 10 dakika → 1 gün → 3 gün → 7 gün; sonrasında önceki aralık ×
+  kolaylık katsayısı (2,5 ile başlar, 1,3–3 arasında kalır; SM-2'deki gibi her cevapla değişir).
+- **Beklenen süre** kullanıcının kendi temposudur: son 25 doğru cevabın ortancası (5 cevap birikene kadar
+  4 saniye). Şıklar uzunsa okuma payı eklenir. Tempo cihazda kalır (`quizState.speed`), eşitlenmez.
+- **"Sonra sor"**, zaman aşımı ve kartın kapatılması kelimeye bir şey yazmaz; kelime 10 dakika sonra
+  yeniden gelir.
+- **Zorluk** (0–1): hata oranı, kaybedilen kolaylık ve yavaşlıktan hesaplanır.
+- **Durum:** `yeni` (hiç cevaplanmadı), `öğreniliyor`, `öğrenildi` (aralık 7 güne ulaştı), `zor` (en az 4
+  cevaptan sonra zorluk hâlâ ≥ 0,6 ise ya da kelime 3 kez yanlış cevaplandıysa).
+
+Kelimenin geçmişi bir özet olarak kelimeyle birlikte durur (kasa kaydının `quiz` alanı); cevapların
+dökümü tutulmaz, yani kayıt kullandıkça büyümez:
+
+`a` cevap sayısı, `k` doğru sayısı, `s` art arda doğru, `e` kolaylık katsayısı, `i` şimdiki aralık
+(dakika), `l` yanlış sayısı, `m` ortalama cevap süresi (ms), `d` zorluk, `x` en son sorulduğu an.
+Sonraki tekrar zamanı kaydın `dueAt`, kademesi `box` alanındadır.
+
+#### Soru seçimi ve şıklar
+
+- Hiç sorulmamış kelimeler hemen sorulabilir. Zamanı gelmiş kelimeler arasından ağırlıklı rastgele
+  seçilir (`quiz/selection.js`): ağırlık = (1 + 1,5 × gecikme) × (1 + 4 × zorluk). Gecikme, kelimenin
+  kendi aralığı cinsinden ölçülür ve en çok 2 sayılır.
+- Son üç soruda sorulan kelime seçilmez; kelime azsa bu gevşer ama aynı kelime hiçbir zaman art arda
+  sorulmaz.
+- Zamanı gelmiş kelime yoksa en zor kelime, eşitlikte en uzun süredir sorulmayan sorulur
+  (`quizAllowNotDue`, varsayılan açık; kapalıysa quiz çıkmaz).
+- Yanlış şıklar (`quiz/question.js`) kasadaki diğer çevirilerden seçilir: doğru cevap, kelimenin diğer
+  karşılıkları, aynı kelimenin başka dil çiftindeki kaydı ve doğru cevaba ya da birbirine fazla benzeyen
+  yazımlar elenir; aynı kelime türünden ve benzer uzunluktakiler öne alınır.
+
+Bir kelimenin durumunu arka plan betiğinin konsolundan görmek için:
+
+```js
+chrome.storage.local.get(null).then((all) => console.table(Object.entries(all).filter(([k]) => k.startsWith('vault:')).map(([, v]) => ({ kelime: v.text, sonraki: v.dueAt ? new Date(v.dueAt).toLocaleString() : '-', ...v.quiz }))))
+```
+
 ### Senkronizasyonun veri modeli
 
 Cihazlar arasında dolaşan şey tek bir belgedir (`sync/model.js`):
 
 ```json
-{ "v": 1, "e": { "en|tr|book": { "w": "book", "t": "kitap", "sl": "en", "tl": "tr", "c": "A good book.", "b": 2, "n": 1791700000000, "u": 1791682256926, "r": 3 },
+{ "v": 1, "e": { "en|tr|book": { "w": "book", "t": "kitap", "sl": "en", "tl": "tr", "c": "A good book.", "b": 2, "n": 1791700000000, "q": { "a": 5, "k": 4, "s": 3, "e": 2.4, "i": 4320, "l": 1, "m": 2100, "d": 0.22, "x": 1791440800000 }, "u": 1791682256926, "r": 3 },
                  "en|tr|door": { "d": 1791690000000, "r": 2 } } }
 ```
 
 `w` kelime, `t` çeviri, `sl`/`tl` dil çifti, `c` kısa bağlam cümlesi (en çok 160 karakter), `b` Leitner
-kutusu, `n` sonraki tekrar, `u` son değişiklik zamanı, `r` sürüm sayacı. Silinen kelimenin yerinde
-`{ d, r }` biçiminde bir silme kaydı kalır; 90 gün sonra bir sonraki eşitlemede temizlenir. Boş değerler
-yazılmaz. Belgeye **girmeyenler**: sayfa adresleri ve başlıkları, diğer karşılıklar, sözlük verisi,
-ayarlar, API anahtarları, oturum bilgileri.
+kutusu, `n` sonraki tekrar, `q` quiz istatistikleri (yukarıdaki özet; cevap dökümü yok), `u` son
+değişiklik zamanı, `r` sürüm sayacı. Silinen kelimenin yerinde `{ d, r }` biçiminde bir silme kaydı
+kalır; 90 gün sonra bir sonraki eşitlemede temizlenir. Boş değerler yazılmaz. Belgeye **girmeyenler**:
+sayfa adresleri ve başlıkları, diğer karşılıklar, sözlük verisi, ayarlar, API anahtarları, oturum
+bilgileri, quiz'in zamanlayıcı durumu ve cevap temposu.
 
 Birleştirme (`sync/merge.js`) her kelime için iki sürümden yenisini alır. "Yeni"nin sırası: büyük `r`,
 sonra geç zaman, sonra silme kaydı, en son içeriğin sabit sıralı JSON metni. Bu bir tam sıralama olduğu

@@ -338,6 +338,12 @@
   "quizWhyPageNotSupported": {
     "message": "açık olan sayfada eklentiler bir şey gösteremez (tarayıcı sayfası, yeni sekme ya da eklenti yüklenmeden önce açılmış sekme)"
   },
+  "quizDiagDue": {
+    "message": "Şu an tekrar zamanı gelmiş"
+  },
+  "quizWhyNothingDue": {
+    "message": "tekrar zamanı gelmiş kelime yok"
+  },
   "quizTest": {
     "message": "Şimdi test et"
   },

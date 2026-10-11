@@ -449,6 +449,14 @@
     "message": "extensions cannot show anything on the page that was open (a browser page, a new tab, or a tab opened before the extension was loaded)",
     "description": "Reason."
   },
+  "quizDiagDue": {
+    "message": "Due for review now",
+    "description": "Diagnostics row label: number of words that are due (new words included)."
+  },
+  "quizWhyNothingDue": {
+    "message": "no word is due for review yet",
+    "description": "Reason no quiz is shown."
+  },
   "quizTest": {
     "message": "Test now",
     "description": "Options page: button that shows a quiz immediately."
