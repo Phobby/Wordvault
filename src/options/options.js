@@ -378,8 +378,9 @@ document.getElementById('app').append(
     targetList.element,
   ),
   h('section', { class: 'card' }, switchRow(doubleClick, 'optDoubleClick', 'optDoubleClickHelp')),
-  // Only meaningful in the browsers where recordings replace the browser's voice.
-  speech.usesRecordings && h('section', { class: 'card' }, switchRow(ttsFallback, 'optTtsFallback', 'optTtsFallbackHelp')),
+  // Only meaningful in the browsers where recordings replace the browser's voice. (append()
+  // would write a `false` out as text, hence the empty string.)
+  speech.usesRecordings ? h('section', { class: 'card' }, switchRow(ttsFallback, 'optTtsFallback', 'optTtsFallbackHelp')) : '',
   quizSection,
   backupSection,
 );
