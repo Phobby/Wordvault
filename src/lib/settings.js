@@ -32,6 +32,8 @@ export const DEFAULT_SETTINGS = Object.freeze({
   quizMinCards: 10,
   /** When no word is due for review, ask one anyway (the hardest) instead of skipping the quiz. */
   quizAllowNotDue: true,
+  /** A quiz nobody answers goes away after this many seconds; nothing is held against the word. */
+  quizTimeoutSeconds: 30,
 });
 
 /** @returns {Promise<typeof DEFAULT_SETTINGS>} */

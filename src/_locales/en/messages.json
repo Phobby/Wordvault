@@ -317,6 +317,26 @@
     "message": "Not this one. The right answer is marked.",
     "description": "Quiz feedback after a wrong choice."
   },
+  "quizUnknown": {
+    "message": "I don't know",
+    "description": "Quiz card: button for giving up on the question. Counts as a wrong answer."
+  },
+  "quizUnknownHint": {
+    "message": "Counts as a wrong answer; the right one is shown",
+    "description": "Tooltip of the 'I don't know' button."
+  },
+  "quizUnknownFeedback": {
+    "message": "The right answer is marked.",
+    "description": "Quiz feedback after 'I don't know'."
+  },
+  "quizLater": {
+    "message": "Ask later",
+    "description": "Quiz card: button that postpones the question without counting it."
+  },
+  "quizLaterHint": {
+    "message": "Doesn't count; the word comes back in a few minutes",
+    "description": "Tooltip of the 'Ask later' button."
+  },
   "optQuizTitle": {
     "message": "Flash cards",
     "description": "Options page: heading of the quiz section."
@@ -392,6 +412,34 @@
   "quizDiagNever": {
     "message": "none yet",
     "description": "Diagnostics value."
+  },
+  "quizDiagLastAnswer": {
+    "message": "Last question",
+    "description": "Diagnostics row label: what became of the most recent quiz question."
+  },
+  "quizOutcomeRight": {
+    "message": "answered right",
+    "description": "What became of a quiz question."
+  },
+  "quizOutcomeWrong": {
+    "message": "answered wrong",
+    "description": "What became of a quiz question."
+  },
+  "quizOutcomeUnknown": {
+    "message": "“I don't know” (counts as wrong)",
+    "description": "What became of a quiz question."
+  },
+  "quizOutcomeLater": {
+    "message": "postponed with “Ask later” (does not count)",
+    "description": "What became of a quiz question."
+  },
+  "quizOutcomeTimeout": {
+    "message": "not answered in time, skipped (does not count)",
+    "description": "What became of a quiz question."
+  },
+  "quizOutcomeClosed": {
+    "message": "card closed (does not count)",
+    "description": "What became of a quiz question."
   },
   "quizWhyShown": {
     "message": "shown",

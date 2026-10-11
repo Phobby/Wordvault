@@ -185,3 +185,17 @@ test('an unexpected failure becomes the recorded reason instead of stopping the 
   assert.equal(alarmAt(), T0 + 20 * MINUTE);
   assert.equal((await getQuizState()).lastAttempt.reason, reason);
 });
+
+test('the card is told how long to wait for an answer', async () => {
+  await fill();
+  await runScheduledQuiz();
+  assert.equal(device.browser.sent.at(-1).message.timeoutSeconds, 30, 'thirty seconds unless set otherwise');
+  assert.equal((await buildTestQuestion()).timeoutSeconds, 30, '"Test now" shows the same card');
+
+  for (const [setting, expected] of [[45, 45], [12.4, 12], [1, 5], [100_000, 300], [0, 30], [-3, 30], ['abc', 30], [null, 30]]) {
+    await updateSettings({ quizTimeoutSeconds: setting });
+    await runScheduledQuiz();
+    assert.equal(device.browser.sent.at(-1).message.timeoutSeconds, expected, `setting ${JSON.stringify(setting)}`);
+    assert.equal((await buildTestQuestion()).timeoutSeconds, expected);
+  }
+});

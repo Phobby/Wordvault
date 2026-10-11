@@ -146,6 +146,18 @@ function reasonText(reason, diagnostics) {
   return t(key, [String(diagnostics.total), String(diagnostics.minCards), languages.name(diagnostics.targetLang), String(diagnostics.meanings), String(diagnostics.neededMeanings)]);
 }
 
+/** What became of a question (quiz-card.js), in words. */
+const QUIZ_OUTCOMES = { unknown: 'quizOutcomeUnknown', later: 'quizOutcomeLater', timeout: 'quizOutcomeTimeout', closed: 'quizOutcomeClosed' };
+
+/** "14:35 (2 minutes ago): book: answered right" */
+function lastAnswerText(lastAnswer) {
+  if (!lastAnswer) return t('quizDiagNever');
+  // The word is the last part of the entry's id (lib/vault.js: entryId) and may contain the separator.
+  const word = String(lastAnswer.id).split('|').slice(2).join('|');
+  const outcome = t(QUIZ_OUTCOMES[lastAnswer.outcome] || (lastAnswer.correct ? 'quizOutcomeRight' : 'quizOutcomeWrong'));
+  return `${timeText(lastAnswer.at)}: ${word}: ${outcome}`;
+}
+
 /** "14:35 (in 3 minutes)" */
 function timeText(time) {
   const locale = languages.uiLanguage();
@@ -179,6 +191,7 @@ async function renderQuiz() {
     ['quizDiagInterval', t('quizDiagIntervalValue', [String(d.intervalMinutes)])],
     ['quizDiagNext', next],
     ['quizDiagLast', d.lastAttempt ? `${timeText(d.lastAttempt.at)}: ${reasonText(d.lastAttempt.reason, d)}` : t('quizDiagNever')],
+    ['quizDiagLastAnswer', lastAnswerText(d.lastAnswer)],
   ];
   quizFacts.replaceChildren(...facts.flatMap(([labelKey, value]) => [h('dt', { text: t(labelKey) }), h('dd', { text: value })]));
 }
@@ -197,7 +210,7 @@ async function testQuiz() {
     quizTestResult.textContent = reasonText(built.reason, quizDiagnostics || (await getDiagnostics()));
     return;
   }
-  quizCard.show(built.question, { onAnswer: (answer) => globalThis.WV.send('wv:quiz:answer', answer).catch(() => {}) });
+  quizCard.show(built.question, { timeoutSeconds: built.timeoutSeconds, onResult: (result) => globalThis.WV.send('wv:quiz:answer', result).catch(() => {}) });
 }
 
 const quizSection = h(

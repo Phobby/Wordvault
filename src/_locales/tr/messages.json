@@ -239,6 +239,21 @@
   "quizWrong": {
     "message": "Yanlış. Doğru cevap işaretlendi."
   },
+  "quizUnknown": {
+    "message": "Bilmiyorum"
+  },
+  "quizUnknownHint": {
+    "message": "Yanlış sayılır; doğru cevap gösterilir"
+  },
+  "quizUnknownFeedback": {
+    "message": "Doğru cevap işaretlendi."
+  },
+  "quizLater": {
+    "message": "Sonra sor"
+  },
+  "quizLaterHint": {
+    "message": "Sayılmaz; kelime birkaç dakika sonra yeniden sorulur"
+  },
   "optQuizTitle": {
     "message": "Flash card"
   },
@@ -295,6 +310,27 @@
   },
   "quizDiagNever": {
     "message": "henüz yok"
+  },
+  "quizDiagLastAnswer": {
+    "message": "Son soru"
+  },
+  "quizOutcomeRight": {
+    "message": "doğru cevaplandı"
+  },
+  "quizOutcomeWrong": {
+    "message": "yanlış cevaplandı"
+  },
+  "quizOutcomeUnknown": {
+    "message": "“Bilmiyorum” (yanlış sayılır)"
+  },
+  "quizOutcomeLater": {
+    "message": "“Sonra sor” ile ertelendi (sayılmaz)"
+  },
+  "quizOutcomeTimeout": {
+    "message": "süresinde cevaplanmadı, atlandı (sayılmaz)"
+  },
+  "quizOutcomeClosed": {
+    "message": "kart kapatıldı (sayılmaz)"
   },
   "quizWhyShown": {
     "message": "gösterildi"

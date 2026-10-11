@@ -414,9 +414,31 @@
     .wv-quiz-choice:disabled { opacity: 0.55; cursor: default; }
     .wv-quiz-choice.wv-right { border-color: var(--wv-ok); color: var(--wv-ok); font-weight: 600; opacity: 1; }
     .wv-quiz-choice.wv-wrong { border-color: var(--wv-danger); color: var(--wv-danger); opacity: 1; }
-    .wv-quiz-feedback { min-height: 18px; margin-top: 8px; font-size: 12.5px; font-weight: 600; }
+
+    /* Below the choices: "I don't know" and "Ask later", replaced by the result once there is one. */
+    .wv-quiz-foot { display: flex; align-items: center; min-height: 26px; margin-top: 8px; }
+    .wv-quiz-actions { flex: 1 1 auto; display: flex; justify-content: space-between; gap: 8px; margin: 0 -6px; }
+    .wv-quiz-action {
+      margin: 0;
+      padding: 4px 6px;
+      border: 0;
+      border-radius: 6px;
+      background: transparent;
+      color: var(--wv-muted);
+      font: inherit;
+      font-size: 12.5px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .wv-quiz-action:hover { background: var(--wv-hover); color: var(--wv-fg); }
+    .wv-quiz-action:focus-visible { outline: 2px solid var(--wv-accent); outline-offset: 1px; }
+    .wv-quiz-feedback { font-size: 12.5px; font-weight: 600; }
     .wv-quiz-feedback.wv-right { color: var(--wv-ok); }
     .wv-quiz-feedback.wv-wrong { color: var(--wv-danger); }
+
+    /* The time left to answer, along the bottom edge (shrunk by quiz-card.js). */
+    .wv-quiz-timer { position: absolute; left: 0; right: 0; bottom: 0; height: 3px; }
+    .wv-quiz-timer-bar { height: 100%; background: var(--wv-accent); opacity: 0.45; transform-origin: left center; }
   `;
 
   WV.styles = { host, tokens, controls, popup, quiz };

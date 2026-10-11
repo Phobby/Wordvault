@@ -21,6 +21,8 @@ export const RETRY_MINUTES = 3;
 const MIN_ALARM_DELAY_MS = 30_000;
 /** How many asked words are remembered, to keep the next question from repeating them. */
 const REMEMBERED_QUESTIONS = 5;
+/** Limits of the "answer timeout" setting, in seconds. */
+export const TIMEOUT_SECONDS = Object.freeze({ MIN: 5, MAX: 300, DEFAULT: 30 });
 
 /** Outcomes that are about this moment only; anything else waits for the regular interval. */
 const TRANSIENT = new Set([
@@ -138,6 +140,16 @@ function nextQuestion(status, state, allowNotDue) {
 const remember = (state, id) => [...state.recent, id].slice(-REMEMBERED_QUESTIONS);
 
 /**
+ * How long an unanswered card stays on screen.
+ * ASSUMPTION: a timed quiz always has a timeout (there is no "wait forever"), so that a card
+ * nobody looks at cannot still be open when the next quiz is due.
+ */
+function cardTimeoutSeconds(settings) {
+  const seconds = Math.round(Number(settings.quizTimeoutSeconds));
+  return Number.isFinite(seconds) && seconds > 0 ? Math.min(TIMEOUT_SECONDS.MAX, Math.max(TIMEOUT_SECONDS.MIN, seconds)) : TIMEOUT_SECONDS.DEFAULT;
+}
+
+/**
  * A quiz is due: show it in the active tab if everything allows it, note what happened, and
  * plan the next one. Never throws; whatever goes wrong becomes the recorded reason.
  * @returns {Promise<string>} 'shown' or the reason it was not shown.
@@ -155,7 +167,8 @@ export async function runScheduledQuiz() {
       const target = built.ok ? await activeTab() : { reason: built.reason };
       if (target.tab) {
         // Only the page itself knows whether a video is playing or the user is typing.
-        const reply = await chrome.tabs.sendMessage(target.tab.id, { type: 'wv:quiz:show', payload: built.question }, { frameId: 0 }).catch(() => null);
+        const message = { type: 'wv:quiz:show', payload: built.question, timeoutSeconds: cardTimeoutSeconds(settings) };
+        const reply = await chrome.tabs.sendMessage(target.tab.id, message, { frameId: 0 }).catch(() => null);
         // No reply: a page extensions cannot run on (browser pages, the add-on store ...).
         reason = reply?.shown ? 'shown' : reply?.reason || 'page_not_supported';
         if (reply?.shown) asked = remember(state, built.question.id);
@@ -184,12 +197,15 @@ export async function runScheduledQuiz() {
 /**
  * A question for "Test now": the timer and every condition are skipped, and a word is asked
  * even if none is due. Only the vault itself can stand in the way (fewer than four meanings).
+ * The card behaves like a timed one, timeout included.
+ * @returns {Promise<{ ok: true, question: import('./question.js').Question, timeoutSeconds: number } | { ok: false, reason: string }>}
  */
 export async function buildTestQuestion() {
-  const [status, state] = await Promise.all([vaultStatus(), getQuizState()]);
+  const [settings, status, state] = await Promise.all([getSettings(), vaultStatus(), getQuizState()]);
   const built = nextQuestion(status, state, true);
-  if (built.ok) await saveQuizState({ recent: remember(state, built.question.id) });
-  return built;
+  if (!built.ok) return built;
+  await saveQuizState({ recent: remember(state, built.question.id) });
+  return { ...built, timeoutSeconds: cardTimeoutSeconds(settings) };
 }
 
 /**
@@ -201,7 +217,8 @@ export async function buildTestQuestion() {
  *   'answer' (the default): a choice was picked; 'unknown': "I don't know", which counts as
  *   wrong; the rest: no answer, the word simply comes back a little later.
  * @param {boolean} [answer.correct]
- * @param {number} [answer.ms]     Time from the choices appearing to the click.
+ * @param {number} [answer.ms]     Time from the choices appearing to the click ('answer' only:
+ *                                 how long it took to give up says nothing about the word).
  * @param {number} [answer.chars]  Total length of the choices (Question.chars).
  * @returns {Promise<{ quality: number | null, dueAt: number, status: string } | null>}
  *   null if the word is no longer in the vault.
@@ -221,7 +238,7 @@ export async function recordAnswer(answer) {
   if (UNANSWERED.has(outcome)) {
     result = postpone(entry.quiz, now);
   } else {
-    const ms = Number(answer.ms);
+    const ms = outcome === 'answer' ? Number(answer.ms) : NaN;
     quality = rateAnswer({ correct, ms, unknown: outcome === 'unknown' }, expectedMs(state.speed, answer.chars));
     result = applyAnswer(entry.quiz, { quality, correct, ms }, now, usualMs(state.speed));
     if (correct) speed = recordSpeed(state.speed, ms, answer.chars);

@@ -54,10 +54,15 @@ test('wrong, "I don\'t know", and the ways of not answering', async (t) => {
   assert.deepEqual([result.quality, result.dueAt], [1, T0 + TUNING.RELEARN_MINUTES * MINUTE]);
   assert.deepEqual([(await getEntry(ID)).quiz.l, (await getEntry(ID)).quiz.e], [1, 2.3]);
 
-  result = await recordAnswer({ id: 'en|tr|door', outcome: 'unknown' });
+  // "I don't know" is a wrong answer, whatever else the card sends along; the time it took to
+  // give up is not an answer time.
+  result = await recordAnswer({ id: 'en|tr|door', outcome: 'unknown', correct: true, ms: 900, chars: 20 });
   assert.equal(result.quality, 0);
-  assert.deepEqual([(await getEntry('en|tr|door')).quiz.a, (await getEntry('en|tr|door')).quiz.l], [1, 1]);
-  assert.equal((await getQuizState()).lastAnswer.correct, false);
+  const gaveUp = await getEntry('en|tr|door');
+  assert.deepEqual([gaveUp.quiz.a, gaveUp.quiz.k, gaveUp.quiz.l, gaveUp.quiz.m, gaveUp.quiz.e], [1, 0, 1, 0, 2.3]);
+  assert.equal(gaveUp.dueAt, T0 + TUNING.RELEARN_MINUTES * MINUTE);
+  assert.deepEqual((await getQuizState()).lastAnswer, { at: T0, id: 'en|tr|door', outcome: 'unknown', correct: false, quality: 0 });
+  assert.deepEqual((await getQuizState()).speed, [], 'and it says nothing about the pace');
 
   for (const [index, outcome] of ['later', 'timeout', 'closed'].entries()) {
     const id = `en|tr|${['tree', 'water', 'house'][index]}`;

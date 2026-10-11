@@ -53,7 +53,7 @@
     if (reason) {
       sendResponse({ shown: false, reason });
     } else {
-      WV.quizCard.show(message.payload, { onAnswer: (answer) => WV.send('wv:quiz:answer', answer).catch(() => {}) });
+      WV.quizCard.show(message.payload, { timeoutSeconds: message.timeoutSeconds, onResult: (result) => WV.send('wv:quiz:answer', result).catch(() => {}) });
       sendResponse({ shown: true });
     }
     return false;

@@ -42,6 +42,7 @@
         "shared/styles.js",
         "shared/language-list.js",
         "shared/speech.js",
+        "shared/stopwatch.js",
         "shared/quiz-card.js",
         "content/selection.js",
         "content/popup.js",

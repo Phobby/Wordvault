@@ -12,10 +12,10 @@ kaydet, sonra kısa quizlerle tekrar et. Her şey tarayıcında çalışır; Wor
 > Cihazlar arası senkronizasyon (`SPEC-SYNC.md`) yedi aşamada ekleniyor; şu an 1. aşama hazır:
 > veri modeli, birleştirme ve silme kayıtları. Henüz hiçbir yere veri gönderilmiyor.
 >
-> Flash card sistemi (`SPEC-QUIZ.md`) altı aşamada ekleniyor; şu an ilk iki aşama hazır: zamanlayıcı,
-> basit quiz kartı, "Neden quiz çıkmıyor?" tanı paneli, "Şimdi test et", öğrenme algoritması, soru
-> seçimi ve şık üretimi. Kartın tam arayüzü ("Bilmiyorum", "Sonra sor", zaman aşımı), ayarları ve
-> kelime durumlarının kasada gösterimi sonraki aşamalarda.
+> Flash card sistemi (`SPEC-QUIZ.md`) altı aşamada ekleniyor; şu an ilk üç aşama hazır: zamanlayıcı,
+> "Neden quiz çıkmıyor?" tanı paneli, "Şimdi test et", öğrenme algoritması, soru seçimi, şık üretimi
+> ve quiz kartı (süre ölçümü, "Bilmiyorum", "Sonra sor", zaman aşımı). Flash card ayarları, kelime
+> durumlarının kasada gösterimi ve "Şimdi çalış" modu sonraki aşamalarda.
 
 ## Derleme
 
@@ -67,6 +67,7 @@ src/
     styles.js           Renkler, düğmeler ve çeviri penceresinin CSS'i
     language-list.js    Dil adları ve aranabilir dil listesi
     speech.js           Telaffuz: tarayıcı sesi (speechSynthesis) ya da ses kaydı (Web Audio)
+    stopwatch.js        Cevap süresi: yalnızca sayfa kullanıcının önündeyken işleyen kronometre
     quiz-card.js        Quiz kartı (web sayfalarında ve ayarlardaki "Şimdi test et"te)
   content/              Yalnızca web sayfalarına eklenen betikler
     selection.js        Seçim, bağlam cümlesi ve dil yardımcıları
@@ -147,6 +148,30 @@ Arka plan betiği her an durdurulabildiği için zamanlayıcının hiçbir şeyi
   ayarlar sayfasında hemen gösterir.
 
 Quiz için kasada en az 10 kelime ve hedef dilde en az 4 farklı anlam gerekir.
+
+#### Quiz kartı
+
+Kart sayfanın sağ üstünde, kapalı bir Shadow DOM içinde çıkar (`shared/quiz-card.js`) ve bir soru şu
+beş yoldan biriyle biter; arka plan betiğine tek bir sonuç gider (`wv:quiz:answer`):
+
+| Sonuç | Ne zaman | Kelimeye etkisi |
+| --- | --- | --- |
+| `answer` | Bir şık seçildi | Doğru ya da yanlış olarak, süresiyle birlikte işlenir |
+| `unknown` | "Bilmiyorum" | Yanlış sayılır; doğru cevap gösterilir |
+| `later` | "Sonra sor" | Sayılmaz; kelime 10 dakika sonra yeniden sorulur |
+| `timeout` | Süresinde cevaplanmadı (varsayılan 30 sn, `quizTimeoutSeconds`) | Sayılmaz ("atlandı"); aynı |
+| `closed` | Kart kapatıldı | Sayılmaz; aynı |
+
+Cevaptan sonra sonuç 2 saniye (yanlışta ve "Bilmiyorum"da doğru şık işaretli olarak 3,5 saniye) ekranda
+kalır, sonra kart kendiliğinden kapanır.
+
+**Cevap süresi** şıklar ekrana çizildiği andan tıklamaya kadar ölçülür ve yalnızca sayfa kullanıcının
+önündeyken işler: sekme gizliyken ya da pencere odakta değilken geçen süre sayılmaz
+(`shared/stopwatch.js`; `visibilitychange`, `blur`, `focus`). Zaman aşımı ise gerçek zamanla işler:
+bakılmayan kart arka plandaki sekmede beklemez, süresi dolunca kapanır. Kalan süre kartın alt
+kenarındaki çubukta görünür.
+
+Ayarlar sayfasındaki tanı panelinde **Son soru** satırı en son sorunun nasıl bittiğini gösterir.
 
 #### Öğrenme algoritması
 
