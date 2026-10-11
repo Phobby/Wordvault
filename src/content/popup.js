@@ -4,7 +4,7 @@
 
 (function (WV) {
   if (!WV.supported || WV.popup) return;
-  const { h, t, icon, languages } = WV;
+  const { h, t, icon, languages, speech } = WV;
 
   /** Minimum distance between the card and the viewport edge. */
   const MARGIN = 8;
@@ -104,8 +104,7 @@
 
     // Keep the card inside the viewport whenever its size changes (result arrived, sheet opened).
     new ResizeObserver(position).observe(card);
-    // Voices load asynchronously in some browsers.
-    window.speechSynthesis?.addEventListener?.('voiceschanged', updateSpeakButton);
+    speech.onVoicesChanged(updateSpeakButton);
 
     return {
       surface,
@@ -245,35 +244,14 @@
 
   // --- Pronunciation ---------------------------------------------------------------------------
 
-  function findVoice(lang) {
-    const voices = window.speechSynthesis.getVoices();
-    const wanted = lang.toLowerCase();
-    const code = (voice) => voice.lang.replace('_', '-').toLowerCase();
-    const voice =
-      voices.find((candidate) => code(candidate) === wanted) ||
-      voices.find((candidate) => code(candidate).split('-')[0] === wanted.split('-')[0]);
-    return { listed: voices.length > 0, voice };
-  }
-
-  /** The button is only offered when the browser can actually speak the source language. */
+  /** The button is only offered when the browser has a voice for the source language. */
   function updateSpeakButton() {
     if (!ui || !session) return;
-    let available = false;
-    if (session.sourceLang && window.speechSynthesis) {
-      const { listed, voice } = findVoice(session.sourceLang);
-      available = !listed || Boolean(voice); // an empty list means "not loaded yet"
-    }
-    ui.speakButton.hidden = !available;
+    ui.speakButton.hidden = !speech.canSpeak(session.sourceLang);
   }
 
   function speak() {
-    if (!session?.sourceLang || !window.speechSynthesis) return;
-    const utterance = new SpeechSynthesisUtterance(session.text);
-    utterance.lang = session.sourceLang;
-    const { voice } = findVoice(session.sourceLang);
-    if (voice) utterance.voice = voice;
-    window.speechSynthesis.cancel();
-    window.speechSynthesis.speak(utterance);
+    if (session?.sourceLang) speech.speak(session.text, session.sourceLang);
   }
 
   // --- Body states -----------------------------------------------------------------------------

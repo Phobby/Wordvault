@@ -47,6 +47,7 @@ src/
     dom.js              Öğe üretici, mesajlaşma, Shadow DOM yüzeyi
     styles.js           Renkler, düğmeler ve çeviri penceresinin CSS'i
     language-list.js    Dil adları ve aranabilir dil listesi
+    speech.js           Telaffuz: ses seçimi ve okuma kuyruğu (speechSynthesis)
   content/              Yalnızca web sayfalarına eklenen betikler
     selection.js        Seçim, bağlam cümlesi ve dil yardımcıları
     popup.js            Çeviri penceresi

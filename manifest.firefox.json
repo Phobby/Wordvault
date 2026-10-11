@@ -36,6 +36,7 @@
         "shared/dom.js",
         "shared/styles.js",
         "shared/language-list.js",
+        "shared/speech.js",
         "content/selection.js",
         "content/popup.js",
         "content/triggers.js"
