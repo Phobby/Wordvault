@@ -28,6 +28,10 @@
     context_invalidated: 'errContextInvalidated',
   };
   const RETRYABLE = new Set(['network', 'timeout', 'provider_error', 'internal']);
+  /** Failures of the translation itself: the word can still be saved, just without one. */
+  const SAVEABLE_ERRORS = new Set(['network', 'timeout', 'rate_limit', 'unsupported_language', 'provider_error', 'no_result', 'internal']);
+  /** How long "Added to vault" stays on screen. */
+  const STATUS_MS = 2200;
 
   /** The per-site source language is keyed by host name, so it only exists for web pages. */
   const canPinSite = /^https?:$/.test(location.protocol);
@@ -38,6 +42,7 @@
   // Fetched again every time the popup opens, so there is no second copy to go stale.
   let prefs = null;
   let frame = 0; // pending requestAnimationFrame for repositioning
+  let statusTimer = 0;
 
   const clamp = (value, min, max) => Math.max(min, Math.min(value, max));
 
@@ -77,6 +82,7 @@
       ),
     );
     const body = h('div', { class: 'wv-body', 'aria-live': 'polite' });
+    const actions = h('div', { class: 'wv-actions' });
     const foot = h('div', { class: 'wv-foot' });
     const main = h(
       'div',
@@ -86,6 +92,7 @@
       pinRow,
       setup,
       body,
+      actions,
       foot,
     );
 
@@ -119,6 +126,7 @@
       setup,
       setupText,
       body,
+      actions,
       foot,
       sheet,
       sheetTitle,
@@ -220,7 +228,12 @@
       const saved = await WV.send('wv:setTargetLang', { code });
       prefs = { ...prefs, targetLang: saved, targetChosen: true };
     } catch (error) {
-      if (session === current) showError(error);
+      if (session === current) {
+        current.result = null;
+        current.error = { code: 'internal', ...error };
+        showError(error);
+        renderActions();
+      }
       return;
     }
     if (session !== current) return;
@@ -309,9 +322,82 @@
       h('div', { class: 'wv-error', role: 'alert', text: t(known || 'errUnknown') }),
       // For errors we have no message for, the provider's own wording is better than nothing.
       !known && error?.detail && h('div', { class: 'wv-error-detail', text: error.detail }),
-      RETRYABLE.has(code) && h('div', { class: 'wv-actions' }, h('button', { class: 'wv-btn', type: 'button', text: t('popupRetry'), onclick: lookup })),
     );
     ui.foot.textContent = '';
+  }
+
+  // --- Vault -----------------------------------------------------------------------------------
+
+  /**
+   * The row under the result: "Try again" after a failure and the vault button. The vault button
+   * is there whenever there is something to save, with or without a translation.
+   * @param {{ text: string, error?: boolean }} [status] Short confirmation shown next to it.
+   */
+  function renderActions(status) {
+    const { result, error, saved, saving } = session;
+    const children = [];
+    if (error && RETRYABLE.has(error.code)) {
+      children.push(h('button', { class: 'wv-btn', type: 'button', text: t('popupRetry'), onclick: () => lookup() }));
+    }
+    if (result || (error && SAVEABLE_ERRORS.has(error.code))) {
+      const translated = Boolean(result?.translation);
+      children.push(
+        h('button', {
+          class: saved ? 'wv-btn wv-btn-saved' : translated ? 'wv-btn wv-btn-primary' : 'wv-btn',
+          type: 'button',
+          disabled: saving,
+          title: saved ? t('vaultRemoveHint') : null,
+          'aria-pressed': String(saved),
+          text: saved ? t('vaultSaved') : t(translated ? 'vaultAdd' : 'vaultAddUntranslated'),
+          onclick: toggleSaved,
+        }),
+      );
+    }
+    if (status) {
+      children.push(h('span', { class: status.error ? 'wv-status wv-status-error' : 'wv-status', role: 'status', text: status.text }));
+    }
+    ui.actions.replaceChildren(...children);
+  }
+
+  /** Adds the word to the vault, or takes it out again if it is already there. */
+  async function toggleSaved() {
+    const current = session;
+    if (current.saving) return;
+    const known = current.result || current.error?.context || {};
+    const identity = {
+      text: known.text || current.text,
+      sourceLang: current.sourceLang,
+      targetLang: known.targetLang || prefs?.targetLang || '',
+    };
+    const wasSaved = current.saved;
+    current.saving = true;
+    renderActions();
+    let status;
+    try {
+      if (wasSaved) {
+        await WV.send('wv:vault:remove', identity);
+      } else {
+        await WV.send('wv:vault:add', {
+          ...identity,
+          translation: current.result?.translation || '',
+          alternatives: current.result?.alternatives || [],
+          sentence: current.sentence,
+          url: location.href,
+          title: document.title,
+        });
+      }
+      current.saved = !wasSaved;
+      status = { text: t(wasSaved ? 'vaultRemoved' : 'vaultAdded') };
+    } catch {
+      status = { text: t('vaultError'), error: true };
+    }
+    current.saving = false;
+    if (session !== current) return;
+    renderActions(status);
+    clearTimeout(statusTimer);
+    statusTimer = setTimeout(() => {
+      if (session === current) renderActions();
+    }, STATUS_MS);
   }
 
   /** Translates the session's text, with the source language the user fixed (if any). */
@@ -320,7 +406,10 @@
     const requestId = ++current.requestId;
     const isStale = () => session !== current || current.requestId !== requestId;
     current.result = null;
+    current.error = null;
+    clearTimeout(statusTimer);
     showLoading();
+    ui.actions.replaceChildren();
     renderLanguages();
     try {
       const data = await WV.send('wv:translate', {
@@ -333,14 +422,18 @@
       current.result = data;
       current.sourceLang = data.sourceLang;
       current.sourceMode = data.sourceMode;
+      current.saved = data.saved;
       if (data.sourceMode === 'site') current.sitePinned = true;
       if (prefs) prefs.targetLang = data.targetLang;
       showResult(data);
     } catch (error) {
       if (isStale()) return;
+      current.error = { code: 'internal', ...error };
       current.sourceLang = current.source || error?.context?.sourceLang || '';
+      current.saved = Boolean(error?.context?.saved);
       showError(error);
     }
+    renderActions();
     renderLanguages();
     updateSpeakButton();
     position();
@@ -453,6 +546,9 @@
       sourceMode: 'auto', // 'auto', 'manual' or 'site' (pinned for this host)
       sitePinned: false,
       result: null,
+      error: null, // set instead of `result` when the lookup failed
+      saved: false, // whether the word is in the vault
+      saving: false,
       sheet: null, // 'source' or 'target' while the language sheet is open
       below: null, // which side of the selection the card is on
       requestId: 0,
@@ -461,6 +557,7 @@
 
     ui.word.textContent = text;
     ui.speakButton.hidden = true;
+    ui.actions.replaceChildren();
     ui.sheet.hidden = true;
     ui.main.hidden = false;
     ui.surface.mount(range?.commonAncestorContainer);
@@ -474,6 +571,7 @@
     session = null;
     for (const [type, listener, options] of LISTENERS) window.removeEventListener(type, listener, options);
     cancelAnimationFrame(frame);
+    clearTimeout(statusTimer);
     frame = 0;
     ui.surface.unmount();
   }

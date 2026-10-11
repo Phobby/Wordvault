@@ -90,6 +90,35 @@
     "description": "Button: open the list to pick another target language."
   },
 
+  "vaultAdd": {
+    "message": "Add to vault",
+    "description": "Button in the translation popup: save the word."
+  },
+  "vaultAddUntranslated": {
+    "message": "Save without translation",
+    "description": "Button shown instead of \"Add to vault\" when no translation is available."
+  },
+  "vaultSaved": {
+    "message": "In vault ✓",
+    "description": "Button label when the word is already saved. Clicking it removes the word."
+  },
+  "vaultRemoveHint": {
+    "message": "Remove from vault",
+    "description": "Tooltip of the \"In vault\" button."
+  },
+  "vaultAdded": {
+    "message": "Added to vault",
+    "description": "Short confirmation after saving a word."
+  },
+  "vaultRemoved": {
+    "message": "Removed from vault",
+    "description": "Short confirmation after removing a word."
+  },
+  "vaultError": {
+    "message": "Could not save",
+    "description": "Shown when writing to the vault failed."
+  },
+
   "optionsTitle": {
     "message": "Wordvault settings",
     "description": "Title of the options page."

@@ -122,6 +122,10 @@
     .wv-btn-primary { border-color: transparent; background: var(--wv-accent); color: var(--wv-accent-fg); }
     .wv-btn-primary:hover { background: var(--wv-accent); filter: brightness(1.08); }
     .wv-btn-sm { padding: 3px 8px; font-size: 12px; }
+    .wv-btn-saved { border-color: currentColor; color: var(--wv-ok); }
+    .wv-status { font-size: 12px; font-weight: 600; color: var(--wv-ok); animation: wv-fade 0.2s ease-out; }
+    .wv-status-error { color: var(--wv-danger); }
+    @keyframes wv-fade { from { opacity: 0; } }
 
     .wv-link {
       margin: 0;

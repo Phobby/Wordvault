@@ -147,7 +147,7 @@ export async function translate(request, host) {
 
   if (chosen && sameLanguage(chosen, targetLang)) return outcome({ sourceLang: chosen, sameLanguage: true });
   if (!sourceLang && !provider.supportsAutoDetect) {
-    throw new WordvaultError('unsupported_language', '', { sourceLang: '', targetLang });
+    throw new WordvaultError('unsupported_language', '', { text, sourceLang: '', targetLang });
   }
 
   let result;
@@ -158,7 +158,7 @@ export async function translate(request, host) {
     // user, not a failure.
     if (error?.code === 'same_language') return outcome({ sourceLang: targetLang, sameLanguage: true });
     if (error instanceof WordvaultError) {
-      throw new WordvaultError(error.code, error.detail, { sourceLang: sourceLang || '', targetLang });
+      throw new WordvaultError(error.code, error.detail, { text, sourceLang: sourceLang || '', targetLang });
     }
     throw error;
   }

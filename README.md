@@ -72,6 +72,19 @@ bunu onaylamasını ya da değiştirmesini ister.
 Kaynak dil varsayılan olarak algılanır. Kullanıcı pencereden bir dil seçerse algılama hiç çalışmaz;
 "Bu sitede hep bu dili kullan" işaretlenirse seçim o site için saklanır (`siteSourceLangs`).
 
+### Kasa
+
+Kaydedilen her kelime `chrome.storage.local` içinde kendi anahtarıyla durur: `vault:<kaynak>|<hedef>|<kelime>`
+(bkz. `lib/vault.js`). Kayıtta çeviri, diğer karşılıklar, kelimenin geçtiği cümle, sayfanın adresi ve
+başlığı bulunur. Çeviri servisi yanıt vermese bile kelime çevirisiz kaydedilebilir. Kasadaki kayıtlar
+yalnızca kullanıcı çıkarınca silinir.
+
+Kasayı arka plan betiğinin konsolundan görmek için:
+
+```js
+chrome.storage.local.get(null).then((all) => console.table(Object.entries(all).filter(([k]) => k.startsWith('vault:')).map(([, v]) => v)))
+```
+
 ### Yeni çeviri sağlayıcısı eklemek
 
 `src/providers/` altına `TranslationProvider` arayüzünü (bkz. `providers/index.js`) uygulayan bir modül

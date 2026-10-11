@@ -68,6 +68,28 @@
     "message": "Değiştir"
   },
 
+  "vaultAdd": {
+    "message": "Kasaya ekle"
+  },
+  "vaultAddUntranslated": {
+    "message": "Çevirisiz kaydet"
+  },
+  "vaultSaved": {
+    "message": "Kasada ✓"
+  },
+  "vaultRemoveHint": {
+    "message": "Kasadan çıkar"
+  },
+  "vaultAdded": {
+    "message": "Kasaya eklendi"
+  },
+  "vaultRemoved": {
+    "message": "Kasadan çıkarıldı"
+  },
+  "vaultError": {
+    "message": "Kaydedilemedi"
+  },
+
   "optionsTitle": {
     "message": "Wordvault ayarları"
   },
