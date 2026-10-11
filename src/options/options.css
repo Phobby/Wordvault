@@ -80,3 +80,11 @@ body {
   gap: 2px;
 }
 .switch-text strong { font-weight: 650; }
+
+.buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 12px 0 8px;
+}
+.card.highlight { border-color: var(--wv-accent); box-shadow: 0 0 0 1px var(--wv-accent); }

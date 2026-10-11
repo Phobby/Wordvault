@@ -90,6 +90,130 @@
     "message": "Kaydedilemedi"
   },
 
+  "tbCount": {
+    "message": "$1 kelime"
+  },
+  "tbCountOne": {
+    "message": "1 kelime"
+  },
+  "tbTarget": {
+    "message": "Hedef: $1"
+  },
+  "tbSearch": {
+    "message": "Kasada ara…"
+  },
+  "tbAllLanguages": {
+    "message": "Tüm diller"
+  },
+  "tbEmptyTitle": {
+    "message": "Henüz kelime yok"
+  },
+  "tbEmptyHint": {
+    "message": "Bir sayfada kelimeye çift tıkla, sonra “Kasaya ekle”ye bas."
+  },
+  "tbNoMatch": {
+    "message": "Aramayla eşleşen kelime yok"
+  },
+  "tbDelete": {
+    "message": "Sil"
+  },
+  "tbDeleteConfirm": {
+    "message": "Silinsin mi?"
+  },
+  "tbSettings": {
+    "message": "Ayarlar"
+  },
+  "tbExport": {
+    "message": "Dışa aktar"
+  },
+  "tbImport": {
+    "message": "İçe aktar"
+  },
+  "dtNoTranslation": {
+    "message": "Çevirisiz kaydedildi"
+  },
+  "dtMeanings": {
+    "message": "Anlamlar"
+  },
+  "dtMeaningsSource": {
+    "message": "(Wiktionary, İngilizce)"
+  },
+  "dtLoadingDictionary": {
+    "message": "Sözlük bilgisi yükleniyor…"
+  },
+  "dtNoDictionary": {
+    "message": "Wiktionary’de bu kelime için kayıt yok."
+  },
+  "dtDictionaryError": {
+    "message": "Sözlük bilgisi alınamadı. Bir sonraki açılışta yeniden denenecek."
+  },
+  "dtExamples": {
+    "message": "Örnek cümleler"
+  },
+  "dtYourSentence": {
+    "message": "kaydettiğin sayfadan"
+  },
+  "dtSavedFrom": {
+    "message": "Kaydedildiği yer"
+  },
+  "dtSavedOn": {
+    "message": "$1 tarihinde kaydedildi"
+  },
+  "posNoun": {
+    "message": "isim"
+  },
+  "posProperNoun": {
+    "message": "özel isim"
+  },
+  "posVerb": {
+    "message": "fiil"
+  },
+  "posAdjective": {
+    "message": "sıfat"
+  },
+  "posAdverb": {
+    "message": "zarf"
+  },
+  "posPronoun": {
+    "message": "zamir"
+  },
+  "posPreposition": {
+    "message": "edat"
+  },
+  "posConjunction": {
+    "message": "bağlaç"
+  },
+  "posInterjection": {
+    "message": "ünlem"
+  },
+  "posDeterminer": {
+    "message": "belirteç"
+  },
+  "posArticle": {
+    "message": "tanımlık"
+  },
+  "posNumeral": {
+    "message": "sayı"
+  },
+  "posPhrase": {
+    "message": "deyim"
+  },
+  "bkTitle": {
+    "message": "Yedekleme"
+  },
+  "bkHelp": {
+    "message": "Kasanı JSON dosyası olarak indir ya da başka bir cihazda dışa aktardığın dosyadaki kelimeleri ekle. İçe aktarma, zaten var olan kelimelerin üzerine yazmaz."
+  },
+  "bkExported": {
+    "message": "$1 kelime dışa aktarıldı."
+  },
+  "bkImported": {
+    "message": "$1 kelime eklendi. $2 kelime zaten kasadaydı, $3 kayıt okunamadı."
+  },
+  "bkBadFile": {
+    "message": "Bu dosya bir Wordvault yedeği değil."
+  },
+
   "optionsTitle": {
     "message": "Wordvault ayarları"
   },

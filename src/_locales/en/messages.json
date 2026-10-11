@@ -119,6 +119,171 @@
     "description": "Shown when writing to the vault failed."
   },
 
+  "tbCount": {
+    "message": "$1 words",
+    "description": "Toolbar popup: number of saved words. $1 is a number other than 1."
+  },
+  "tbCountOne": {
+    "message": "1 word",
+    "description": "Toolbar popup: shown when exactly one word is saved."
+  },
+  "tbTarget": {
+    "message": "Target: $1",
+    "description": "Toolbar popup: shows the target language and opens the list to change it. $1 is a language name."
+  },
+  "tbSearch": {
+    "message": "Search your vault…",
+    "description": "Toolbar popup: placeholder of the search box."
+  },
+  "tbAllLanguages": {
+    "message": "All languages",
+    "description": "Toolbar popup: first entry of the language filter."
+  },
+  "tbEmptyTitle": {
+    "message": "No words yet",
+    "description": "Toolbar popup: shown when the vault is empty."
+  },
+  "tbEmptyHint": {
+    "message": "Double-click a word on any page, then press “Add to vault”.",
+    "description": "Toolbar popup: hint under \"No words yet\"."
+  },
+  "tbNoMatch": {
+    "message": "No words match your search",
+    "description": "Toolbar popup: the search or filter left nothing to show."
+  },
+  "tbDelete": {
+    "message": "Delete",
+    "description": "Toolbar popup: tooltip of the trash button of a word."
+  },
+  "tbDeleteConfirm": {
+    "message": "Delete?",
+    "description": "Toolbar popup: the trash button after its first click; a second click deletes the word."
+  },
+  "tbSettings": {
+    "message": "Settings",
+    "description": "Toolbar popup: tooltip of the button that opens the options page."
+  },
+  "tbExport": {
+    "message": "Export",
+    "description": "Button: download the vault as a JSON file."
+  },
+  "tbImport": {
+    "message": "Import",
+    "description": "Button: add the words from a JSON backup file."
+  },
+  "dtNoTranslation": {
+    "message": "Saved without a translation",
+    "description": "Shown in place of the translation for a word saved without one."
+  },
+  "dtMeanings": {
+    "message": "Meanings",
+    "description": "Word details: heading above word types and definitions."
+  },
+  "dtMeaningsSource": {
+    "message": "(Wiktionary, in English)",
+    "description": "Word details: small note after the \"Meanings\" heading."
+  },
+  "dtLoadingDictionary": {
+    "message": "Loading dictionary data…",
+    "description": "Word details: shown while Wiktionary is being queried."
+  },
+  "dtNoDictionary": {
+    "message": "Wiktionary has no entry for this word.",
+    "description": "Word details: Wiktionary returned nothing."
+  },
+  "dtDictionaryError": {
+    "message": "Could not load dictionary data. It will be tried again next time.",
+    "description": "Word details: the Wiktionary request failed."
+  },
+  "dtExamples": {
+    "message": "Example sentences",
+    "description": "Word details: heading above the example sentences."
+  },
+  "dtYourSentence": {
+    "message": "from the page you saved it on",
+    "description": "Word details: marks the example sentence that comes from the page the word was saved on."
+  },
+  "dtSavedFrom": {
+    "message": "Saved from",
+    "description": "Word details: heading above the sentence and page the word was saved from."
+  },
+  "dtSavedOn": {
+    "message": "Saved on $1",
+    "description": "Word details: $1 is a date."
+  },
+  "posNoun": {
+    "message": "noun",
+    "description": "Word type."
+  },
+  "posProperNoun": {
+    "message": "proper noun",
+    "description": "Word type."
+  },
+  "posVerb": {
+    "message": "verb",
+    "description": "Word type."
+  },
+  "posAdjective": {
+    "message": "adjective",
+    "description": "Word type."
+  },
+  "posAdverb": {
+    "message": "adverb",
+    "description": "Word type."
+  },
+  "posPronoun": {
+    "message": "pronoun",
+    "description": "Word type."
+  },
+  "posPreposition": {
+    "message": "preposition",
+    "description": "Word type."
+  },
+  "posConjunction": {
+    "message": "conjunction",
+    "description": "Word type."
+  },
+  "posInterjection": {
+    "message": "interjection",
+    "description": "Word type."
+  },
+  "posDeterminer": {
+    "message": "determiner",
+    "description": "Word type."
+  },
+  "posArticle": {
+    "message": "article",
+    "description": "Word type."
+  },
+  "posNumeral": {
+    "message": "numeral",
+    "description": "Word type."
+  },
+  "posPhrase": {
+    "message": "phrase",
+    "description": "Word type."
+  },
+  "bkTitle": {
+    "message": "Backup",
+    "description": "Options page: heading of the export/import section."
+  },
+  "bkHelp": {
+    "message": "Download your vault as a JSON file, or add the words from a file exported on another device. Importing never overwrites words you already have.",
+    "description": "Options page: explanation of export and import."
+  },
+  "bkExported": {
+    "message": "Exported $1 words.",
+    "description": "Shown after exporting. $1 is a number."
+  },
+  "bkImported": {
+    "message": "Added $1 words. $2 were already in your vault, $3 could not be read.",
+    "description": "Shown after importing. $1, $2 and $3 are numbers."
+  },
+  "bkBadFile": {
+    "message": "This file is not a Wordvault backup.",
+    "description": "Shown when the chosen file cannot be imported."
+  },
+
   "optionsTitle": {
     "message": "Wordvault settings",
     "description": "Title of the options page."

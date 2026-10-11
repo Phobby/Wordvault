@@ -1,6 +1,7 @@
 // Options page. It edits the same stored settings every other part of the extension reads
 // (lib/settings.js); nothing is kept here.
 
+import { downloadBackup, restoreBackup } from '../lib/backup.js';
 import { getSettings, updateSettings } from '../lib/settings.js';
 import { getPreferences, setTargetLanguage } from '../lib/translator.js';
 
@@ -52,6 +53,51 @@ async function renderSwitches() {
   doubleClick.checked = (await getSettings()).doubleClick;
 }
 
+// --- Backup --------------------------------------------------------------------------------------
+
+/** Larger than any real vault; keeps a wrong file from being read into memory. */
+const MAX_BACKUP_BYTES = 50 * 1024 * 1024;
+
+const backupStatus = h('p', { class: 'help', role: 'status' });
+const filePicker = h('input', {
+  type: 'file',
+  accept: 'application/json,.json',
+  hidden: true,
+  onchange: async () => {
+    const [file] = filePicker.files;
+    filePicker.value = ''; // so picking the same file again fires "change"
+    if (!file) return;
+    try {
+      if (file.size > MAX_BACKUP_BYTES) throw new Error('too large');
+      const { added, skipped, invalid } = await restoreBackup(await file.text());
+      backupStatus.textContent = t('bkImported', [String(added), String(skipped), String(invalid)]);
+    } catch {
+      backupStatus.textContent = t('bkBadFile');
+    }
+  },
+});
+const backupSection = h(
+  'section',
+  { class: 'card', id: 'backup' },
+  h('h2', { text: t('bkTitle') }),
+  h('p', { class: 'help', text: t('bkHelp') }),
+  h(
+    'div',
+    { class: 'buttons' },
+    h('button', {
+      class: 'wv-btn',
+      type: 'button',
+      text: t('tbExport'),
+      onclick: async () => {
+        backupStatus.textContent = t('bkExported', [String(await downloadBackup())]);
+      },
+    }),
+    h('button', { class: 'wv-btn', type: 'button', text: t('tbImport'), onclick: () => filePicker.click() }),
+    filePicker,
+  ),
+  backupStatus,
+);
+
 // --- Page ----------------------------------------------------------------------------------------
 
 document.getElementById('app').append(
@@ -80,7 +126,14 @@ document.getElementById('app').append(
       h('span', { class: 'switch-text' }, h('strong', { text: t('optDoubleClick') }), h('span', { class: 'help', text: t('optDoubleClickHelp') })),
     ),
   ),
+  backupSection,
 );
+
+// The toolbar popup links here for importing.
+if (location.hash === '#backup') {
+  backupSection.classList.add('highlight');
+  backupSection.scrollIntoView({ block: 'center' });
+}
 
 function render() {
   renderTarget();

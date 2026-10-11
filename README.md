@@ -3,9 +3,11 @@
 Firefox ve Chrome için dil öğrenme eklentisi. Web sayfalarında bilmediğin kelimeyi çevir, kasana
 kaydet, sonra kısa quizlerle tekrar et. Her şey tarayıcında çalışır; Wordvault'un bir sunucusu yoktur.
 
-> Geliştirme aşamalı ilerliyor. Şu an hazır olan: **çift tıklama ile çeviri penceresi** (Aşama 1).
-> Sırada: sağ tık menüsü, Wiktionary bilgileri ve önbellek (2), kasa (3), quiz (4), altyazılar (5),
-> ayarlar sayfası ve yayın hazırlığı (6).
+> Geliştirme aşamalı ilerliyor. Şu an hazır olanlar: çift tıklama ile çeviri penceresi (kaynak ve hedef
+> dil seçimi, telaffuz, "Kasaya ekle"), araç çubuğundaki kasa (liste, arama, detay, dışa/içe aktarma)
+> ve hedef dil ile çift tıklama ayarlarını içeren ayarlar sayfası.
+> Sırada: sağ tık menüsü, çeviri penceresinde kelime türü etiketi, önbellek ve 7 günlük temizlik,
+> quiz, altyazılar, ayarlar sayfasının kalanı (sağlayıcı ve API anahtarı) ve gizlilik politikası.
 
 ## Derleme
 
@@ -52,8 +54,14 @@ src/
     selection.js        Seçim, bağlam cümlesi ve dil yardımcıları
     popup.js            Çeviri penceresi
     triggers.js         Pencereyi açan tetikleyiciler (çift tıklama)
-  options/              Ayarlar sayfası
+  popup/                Araç çubuğu simgesinin açtığı kasa: liste, arama, detay, dışa aktarma
+  options/              Ayarlar sayfası: hedef dil, çift tıklama, yedekleme (dışa/içe aktarma)
   lib/                  Arka plan ve eklenti sayfalarının paylaştığı ES modülleri
+    translator.js       Hedef/kaynak dil kararı ve sağlayıcı çağrısı
+    settings.js         Ayarlar ve site bazlı kaynak dil
+    vault.js            Kasa deposu
+    dictionary.js       Wiktionary: kelime türü, tanım, örnek cümle
+    backup.js           JSON dışa/içe aktarma
   providers/            Çeviri sağlayıcıları (ortak arayüz: providers/index.js)
   _locales/             Arayüz metinleri (en, tr)
   icons/
@@ -79,6 +87,14 @@ Kaydedilen her kelime `chrome.storage.local` içinde kendi anahtarıyla durur: `
 başlığı bulunur. Çeviri servisi yanıt vermese bile kelime çevirisiz kaydedilebilir. Kasadaki kayıtlar
 yalnızca kullanıcı çıkarınca silinir.
 
+Kelime kaydedilince arka plan betiği Wiktionary'den kelime türlerini, tanımları ve örnek cümleleri
+alıp kayda ekler (`lib/dictionary.js`); o an alınamazsa kelime kasada açıldığında yeniden dener.
+Wiktionary'nin tanım servisi yalnızca İngilizce Wiktionary'de bulunduğu için tanımlar İngilizcedir.
+
+Dışa aktarma kasayı tek bir JSON dosyası olarak indirir. İçe aktarma ayarlar sayfasından yapılır
+(araç çubuğu penceresi dosya seçici açılınca kapandığı için oradaki düğme bu sayfayı açar) ve var olan
+kelimelerin üzerine yazmaz.
+
 Kasayı arka plan betiğinin konsolundan görmek için:
 
 ```js
@@ -95,15 +111,19 @@ iki manifestteki `host_permissions` listesine de ekle.
 
 | İzin | Neden gerekli |
 | --- | --- |
-| `storage` | Ayarları (ileride kasayı ve çeviri önbelleğini) `chrome.storage.local` içinde, yalnızca bu tarayıcıda saklamak için. |
+| `storage` | Ayarları ve kasayı (ileride çeviri önbelleğini) `chrome.storage.local` içinde, yalnızca bu tarayıcıda saklamak için. |
 | `unlimitedStorage` | Kasa büyüdükçe `storage.local`'ın 10 MB sınırına takılmamak için. Kasadaki kelimeler asla otomatik silinmez. |
 | İçerik betiği: `<all_urls>` | Çift tıklama herhangi bir sayfada çalışmalı. Betik, kullanıcı bir kelimeye çift tıklayana kadar sayfadan hiçbir şey okumaz. |
 | Sunucu izni: `https://api.mymemory.translated.net/*` | Varsayılan çeviri servisi. İstekler arka plan betiğinden gider. |
+| Sunucu izni: `https://en.wiktionary.org/*` | Kasaya eklenen kelimenin türünü, tanımlarını ve örnek cümlelerini almak için. |
 
-Firefox manifestindeki `data_collection_permissions` beyanı `websiteContent` içerir: çevrilmesini
-istediğin (seçtiğin) metin, seçili çeviri servisine gönderilir. Bunun dışında hiçbir veri tarayıcıdan
-çıkmaz; analitik ya da izleme yoktur. Dil algılama tarayıcının kendi yerel algılayıcısıyla yapılır,
-seçimin etrafındaki cümle hiçbir yere gönderilmez.
+Sekme açmak (`chrome.tabs.create`) ve ayarlar sayfasını açmak izin gerektirmez; `tabs` izni istenmez.
+
+Firefox manifestindeki `data_collection_permissions` beyanı `websiteContent` içerir. Tarayıcıdan çıkan
+veriler şunlardır: çevrilmesini istediğin (seçtiğin) metin seçili çeviri servisine, kasaya eklediğin
+kelime Wiktionary'ye gönderilir. Bunun dışında hiçbir veri tarayıcıdan çıkmaz; analitik ya da izleme
+yoktur. Dil algılama tarayıcının kendi yerel algılayıcısıyla, telaffuz cihazdaki seslerle yapılır;
+seçimin etrafındaki cümle ve sayfa adresi yalnızca kasada, bu tarayıcıda saklanır.
 
 ## Arayüz dili
 

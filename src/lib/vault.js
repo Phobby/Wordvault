@@ -3,6 +3,7 @@
 // Each entry is its own item in chrome.storage.local ("vault:<id>"), so saving or removing a word
 // never rewrites the others. Entries are only ever removed by the user.
 
+import { normalizeDictionary } from './dictionary.js';
 import { WordvaultError } from './errors.js';
 
 const PREFIX = 'vault:';
@@ -21,6 +22,8 @@ const LIMITS = { text: 500, translation: 1000, alternative: 200, alternatives: 8
  * @property {string} url           Address of the page it was saved from ('' if unknown).
  * @property {string} title         Title of that page.
  * @property {number} createdAt     Milliseconds since the epoch.
+ * @property {import('./dictionary.js').DictionaryData | null} dictionary
+ *   Word types, definitions and examples from Wiktionary; null until they have been fetched.
  */
 
 const clip = (value, max) => (typeof value === 'string' ? value.replace(/\s+/g, ' ').trim().slice(0, max) : '');
@@ -66,6 +69,7 @@ export function normalizeEntry(raw) {
     url: safeUrl(raw.url),
     title: clip(raw.title, LIMITS.title),
     createdAt: Number.isFinite(createdAt) && createdAt > 0 ? createdAt : Date.now(),
+    dictionary: normalizeDictionary(raw.dictionary),
   };
 }
 
@@ -86,7 +90,10 @@ export async function hasEntry(id) {
 export async function addEntry(raw) {
   const entry = normalizeEntry(raw);
   const existing = await getEntry(entry.id);
-  if (existing) entry.createdAt = existing.createdAt;
+  if (existing) {
+    entry.createdAt = existing.createdAt;
+    entry.dictionary ||= existing.dictionary || null;
+  }
   await chrome.storage.local.set({ [keyOf(entry.id)]: entry });
   // Read it back: the UI only says "saved" for something that is really in storage.
   const stored = await getEntry(entry.id);
@@ -96,6 +103,47 @@ export async function addEntry(raw) {
 
 export async function removeEntry(id) {
   await chrome.storage.local.remove(keyOf(id));
+}
+
+/**
+ * Changes fields of an entry that still exists (it may have been removed in the meantime).
+ * @returns {Promise<VaultEntry | null>}
+ */
+export async function updateEntry(id, patch) {
+  const existing = await getEntry(id);
+  if (!existing) return null;
+  const entry = { ...existing, ...patch, id: existing.id };
+  await chrome.storage.local.set({ [keyOf(id)]: entry });
+  return entry;
+}
+
+/**
+ * Adds many entries at once (import). Entries that are already in the vault are left alone.
+ * @param {unknown[]} rawEntries Untrusted input.
+ * @returns {Promise<{ added: number, skipped: number, invalid: number }>}
+ */
+export async function importEntries(rawEntries) {
+  const known = new Set((await listEntries()).map((entry) => entry.id));
+  const items = {};
+  const counts = { added: 0, skipped: 0, invalid: 0 };
+  for (const raw of rawEntries) {
+    let entry;
+    try {
+      entry = normalizeEntry(raw);
+    } catch {
+      counts.invalid += 1;
+      continue;
+    }
+    if (known.has(entry.id)) {
+      counts.skipped += 1;
+      continue;
+    }
+    known.add(entry.id);
+    items[keyOf(entry.id)] = entry;
+    counts.added += 1;
+  }
+  if (counts.added > 0) await chrome.storage.local.set(items);
+  return counts;
 }
 
 /** @returns {Promise<VaultEntry[]>} All entries, newest first. */
