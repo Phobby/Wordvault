@@ -68,6 +68,19 @@
     "message": "Değiştir"
   },
 
+  "speakNoRecording": {
+    "message": "Bu kelimenin ses kaydı yok"
+  },
+  "speakCredit": {
+    "message": "Ses: Wikimedia Commons"
+  },
+  "optTtsFallback": {
+    "message": "Kaydı olmayan kelimelerde tarayıcının sesini kullan"
+  },
+  "optTtsFallbackHelp": {
+    "message": "Bu tarayıcıda yerleşik ses her kelimenin sonunda yüksek bir çıtlama üretiyor; Wordvault bu yüzden Wikimedia Commons’taki ses kayıtlarını çalıyor. Kaydı olmayan kelimelerde yerleşik sesi (çıtlamasıyla birlikte) duymak istersen bunu aç."
+  },
+
   "vaultAdd": {
     "message": "Kasaya ekle"
   },

@@ -25,7 +25,11 @@
     "open_in_tab": true
   },
   "permissions": ["storage", "unlimitedStorage"],
-  "host_permissions": ["https://api.mymemory.translated.net/*", "https://en.wiktionary.org/*"],
+  "host_permissions": [
+    "https://api.mymemory.translated.net/*",
+    "https://en.wiktionary.org/*",
+    "https://upload.wikimedia.org/*"
+  ],
   "background": {
     "service_worker": "background/background.js",
     "type": "module"

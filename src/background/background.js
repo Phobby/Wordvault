@@ -7,6 +7,7 @@
 
 import { lookupWord } from '../lib/dictionary.js';
 import { WordvaultError, serializeError } from '../lib/errors.js';
+import { fetchRecording } from '../lib/pronunciation.js';
 import { getPreferences, setSiteSourceLanguage, setTargetLanguage, translate } from '../lib/translator.js';
 import { addEntry, entryId, getEntry, hasEntry, removeEntry, updateEntry } from '../lib/vault.js';
 
@@ -62,6 +63,7 @@ const handlers = {
   'wv:prefs': (payload, sender) => getPreferences(hostOf(sender)),
   'wv:setTargetLang': (payload) => setTargetLanguage(payload?.code),
   'wv:setSiteSource': (payload, sender) => setSiteSourceLanguage(hostOf(sender), payload?.lang),
+  'wv:pronunciation': (payload) => fetchRecording(payload?.text, payload?.lang),
   'wv:vault:add': save,
   'wv:vault:enrich': (payload) => enrich(payload?.id),
   'wv:vault:remove': (payload) => removeEntry(entryId(payload || {})),

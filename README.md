@@ -49,7 +49,7 @@ src/
     dom.js              Öğe üretici, mesajlaşma, Shadow DOM yüzeyi
     styles.js           Renkler, düğmeler ve çeviri penceresinin CSS'i
     language-list.js    Dil adları ve aranabilir dil listesi
-    speech.js           Telaffuz: ses seçimi ve okuma kuyruğu (speechSynthesis)
+    speech.js           Telaffuz: tarayıcı sesi (speechSynthesis) ya da ses kaydı (Web Audio)
   content/              Yalnızca web sayfalarına eklenen betikler
     selection.js        Seçim, bağlam cümlesi ve dil yardımcıları
     popup.js            Çeviri penceresi
@@ -61,6 +61,7 @@ src/
     settings.js         Ayarlar ve site bazlı kaynak dil
     vault.js            Kasa deposu
     dictionary.js       Wiktionary: kelime türü, tanım, örnek cümle
+    pronunciation.js    Wikimedia Commons'taki telaffuz kayıtlarını bulur ve indirir
     backup.js           JSON dışa/içe aktarma
   providers/            Çeviri sağlayıcıları (ortak arayüz: providers/index.js)
   _locales/             Arayüz metinleri (en, tr)
@@ -101,6 +102,20 @@ Kasayı arka plan betiğinin konsolundan görmek için:
 chrome.storage.local.get(null).then((all) => console.table(Object.entries(all).filter(([k]) => k.startsWith('vault:')).map(([, v]) => v)))
 ```
 
+### Telaffuz
+
+Kelimeler normalde tarayıcının kendi sesiyle (`speechSynthesis`, yalnızca cihazdaki sesler) okunur.
+
+**Firefox tabanlı tarayıcılarda (Firefox, Zen …) macOS'te** bu yol kullanılmaz: Gecko orada her okumanın
+sonunda, son duyulan sesten yaklaşık 200 ms sonra tam ölçekli bir çıtlama üretir. Gecko 157 / macOS 27
+üzerinde sistemin ses çıkışı kaydedilerek ölçüldü: eklenti olmadan düz bir sayfada da, her seste, her ses
+seviyesinde (0 dahil), her hız ve perdede oluyor; Chromium'da ve macOS'in `say` komutunda olmuyor. Web
+Speech API'de bunu değiştiren bir ayar yok. Bu tarayıcılarda kelime, Wiktionary sayfasındaki ses kaydından
+(Wikimedia Commons) okunur ve Web Audio ile, 50 ms'lik sönümle çalınır. Kaydı olmayan kelimede düğme
+"Bu kelimenin ses kaydı yok" der; ayarlar sayfasındaki anahtarla bu durumda tarayıcının sesi (çıtlamasıyla
+birlikte) kullanılabilir. Çalınan kaydın Commons sayfasına (yazar ve lisans orada) pencerenin altından
+bağlantı verilir.
+
 ### Yeni çeviri sağlayıcısı eklemek
 
 `src/providers/` altına `TranslationProvider` arayüzünü (bkz. `providers/index.js`) uygulayan bir modül
@@ -115,15 +130,18 @@ iki manifestteki `host_permissions` listesine de ekle.
 | `unlimitedStorage` | Kasa büyüdükçe `storage.local`'ın 10 MB sınırına takılmamak için. Kasadaki kelimeler asla otomatik silinmez. |
 | İçerik betiği: `<all_urls>` | Çift tıklama herhangi bir sayfada çalışmalı. Betik, kullanıcı bir kelimeye çift tıklayana kadar sayfadan hiçbir şey okumaz. |
 | Sunucu izni: `https://api.mymemory.translated.net/*` | Varsayılan çeviri servisi. İstekler arka plan betiğinden gider. |
-| Sunucu izni: `https://en.wiktionary.org/*` | Kasaya eklenen kelimenin türünü, tanımlarını ve örnek cümlelerini almak için. |
+| Sunucu izni: `https://en.wiktionary.org/*` | Kasaya eklenen kelimenin türünü, tanımlarını ve örnek cümlelerini almak; Firefox/macOS'te kelimenin ses kaydını bulmak için. |
+| Sunucu izni: `https://upload.wikimedia.org/*` | Firefox/macOS'te telaffuz için ses kaydını (Wikimedia Commons) indirmek için. |
 
 Sekme açmak (`chrome.tabs.create`) ve ayarlar sayfasını açmak izin gerektirmez; `tabs` izni istenmez.
 
 Firefox manifestindeki `data_collection_permissions` beyanı `websiteContent` içerir. Tarayıcıdan çıkan
 veriler şunlardır: çevrilmesini istediğin (seçtiğin) metin seçili çeviri servisine, kasaya eklediğin
-kelime Wiktionary'ye gönderilir. Bunun dışında hiçbir veri tarayıcıdan çıkmaz; analitik ya da izleme
-yoktur. Dil algılama tarayıcının kendi yerel algılayıcısıyla, telaffuz cihazdaki seslerle yapılır;
-seçimin etrafındaki cümle ve sayfa adresi yalnızca kasada, bu tarayıcıda saklanır.
+kelime Wiktionary'ye gönderilir; Firefox tabanlı tarayıcılarda macOS'te telaffuz düğmesine bastığın
+kelime de ses kaydı için Wiktionary'ye sorulur. Bunun dışında hiçbir veri tarayıcıdan çıkmaz; analitik
+ya da izleme yoktur. Dil algılama tarayıcının kendi yerel algılayıcısıyla yapılır; diğer tarayıcılarda
+telaffuz cihazdaki seslerle yapılır. Seçimin etrafındaki cümle ve sayfa adresi yalnızca kasada, bu
+tarayıcıda saklanır.
 
 ## Arayüz dili
 

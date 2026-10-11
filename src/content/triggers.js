@@ -21,6 +21,7 @@
 
   function applySettings(stored) {
     settings.doubleClick = stored?.doubleClick !== false;
+    WV.speech.options.ttsFallback = stored?.ttsFallback === true;
   }
 
   chrome.storage.local.get('settings').then(

@@ -1,10 +1,16 @@
 'use strict';
 
-// Pronunciation with the browser's built-in speech synthesis (window.speechSynthesis). No audio
-// is downloaded and only on-device voices are used, so the word never leaves the browser.
+// Pronunciation. Two sources:
+//   - the browser's built-in speech synthesis (window.speechSynthesis) with an on-device voice:
+//     nothing is downloaded and the word never leaves the browser;
+//   - where that cannot be used (see "usesRecordings" below), a recording of the word from
+//     Wikimedia Commons, played through Web Audio.
 
 (function (WV) {
   if (WV.speech) return;
+
+  /** Set from the stored settings by whoever loads this file (content/triggers.js). */
+  const options = { ttsFallback: false };
 
   /**
    * Below full volume on purpose. System voices are loud at 1.0, and whatever the platform does
@@ -194,5 +200,152 @@
     engine()?.addEventListener?.('voiceschanged', callback);
   }
 
-  WV.speech = { canSpeak, pickVoice, speak, onVoicesChanged };
+  // --- Recordings ------------------------------------------------------------------------------
+  //
+  // Gecko (Firefox, Zen ...) on macOS ends every utterance with a click at full scale, about
+  // 200 ms after the last audible sample. Measured on Gecko 157 / macOS 27 by recording the
+  // system's audio output: it happens on a plain page without any extension, with every voice,
+  // at every volume (even 0), pitch and rate, once per utterance. Chromium, a native program
+  // using the same system synthesiser, and `say` do not do it. Nothing in the Web Speech API
+  // changes it and the Web cannot touch that audio stream, so in those browsers a word is
+  // pronounced from a recording instead (lib/pronunciation.js), played through Web Audio, where
+  // the sound ends with a fade we control.
+  // ASSUMPTION: every Gecko on macOS is treated as affected; only the combination above could
+  // be measured. Revisit when Gecko's macOS speech backend changes.
+  const usesRecordings = /\bGecko\/\d/.test(navigator.userAgent) && /Mac/.test(navigator.platform || navigator.userAgent);
+
+  const FADE_IN_S = 0.015;
+  const FADE_OUT_S = 0.05;
+  /** Recordings come at very different levels; each is scaled so its peak lands here. */
+  const TARGET_PEAK = 0.6;
+  const MAX_GAIN = 4;
+  /** The audio device is released this long after the last sound has faded out. */
+  const IDLE_MS = 400;
+  const MAX_CACHED = 30;
+
+  let audioContext = null;
+  let idleTimer = 0;
+  let playing = null; // { key, source, gain }
+  const recordings = new Map(); // "lang|text" -> Promise<{ buffer, credit } | null>
+
+  function context() {
+    audioContext ||= new AudioContext();
+    clearTimeout(idleTimer);
+    if (audioContext.state === 'suspended') audioContext.resume().catch(() => {});
+    return audioContext;
+  }
+
+  function decode(base64) {
+    const binary = atob(base64);
+    // Allocated through the page's constructor: Firefox does not let a page API read a buffer
+    // that lives in the content script's own compartment.
+    const bytes = new window.Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+    return context().decodeAudioData(bytes.buffer);
+  }
+
+  function loadRecording(text, lang) {
+    const key = `${lang}|${text}`;
+    if (!recordings.has(key)) {
+      if (recordings.size >= MAX_CACHED) recordings.delete(recordings.keys().next().value);
+      const loading = WV.send('wv:pronunciation', { text, lang })
+        .then(async (result) => (result ? { key, buffer: await decode(result.audio), credit: { title: result.title, page: result.page } } : null))
+        .catch(() => null);
+      recordings.set(key, loading);
+      // "Nothing found" is not remembered: it may only have been a network hiccup.
+      loading.then((recording) => {
+        if (!recording && recordings.get(key) === loading) recordings.delete(key);
+      });
+    }
+    return recordings.get(key);
+  }
+
+  function peakOf(buffer) {
+    let peak = 0;
+    for (let channel = 0; channel < buffer.numberOfChannels; channel++) {
+      const samples = buffer.getChannelData(channel);
+      for (let i = 0; i < samples.length; i++) {
+        const value = Math.abs(samples[i]);
+        if (value > peak) peak = value;
+      }
+    }
+    return peak;
+  }
+
+  /** Fades out whatever is playing instead of cutting it. */
+  function stopPlaying() {
+    if (!playing) return;
+    const { source, gain } = playing;
+    const now = audioContext.currentTime;
+    gain.gain.cancelScheduledValues(now);
+    gain.gain.setValueAtTime(gain.gain.value, now);
+    gain.gain.linearRampToValueAtTime(0, now + 0.03);
+    source.stop(now + 0.04);
+    playing = null;
+  }
+
+  function play({ key, buffer }) {
+    const ctx = context();
+    if (playing?.key === key) return; // same word, still playing
+    stopPlaying();
+    const source = ctx.createBufferSource();
+    const gain = ctx.createGain();
+    source.buffer = buffer;
+    source.connect(gain);
+    gain.connect(ctx.destination);
+
+    const level = Math.min(MAX_GAIN, TARGET_PEAK / (peakOf(buffer) || 1)) * VOLUME;
+    const start = ctx.currentTime + 0.03;
+    const end = start + buffer.duration;
+    const fadeIn = Math.min(FADE_IN_S, buffer.duration / 4);
+    const fadeOut = Math.min(FADE_OUT_S, buffer.duration / 2);
+    // The gain is zero before the first and after the last sample, so neither a recording that
+    // starts or stops abruptly nor the end of playback itself can produce a click.
+    gain.gain.setValueAtTime(0, start);
+    gain.gain.linearRampToValueAtTime(level, start + fadeIn);
+    gain.gain.setValueAtTime(level, end - fadeOut);
+    gain.gain.linearRampToValueAtTime(0, end);
+    source.start(start);
+
+    const entry = { key, source, gain };
+    playing = entry;
+    source.onended = () => {
+      source.disconnect();
+      gain.disconnect();
+      if (playing !== entry) return;
+      playing = null;
+      idleTimer = setTimeout(() => audioContext.suspend().catch(() => {}), IDLE_MS);
+    };
+  }
+
+  /** Whether a pronunciation button makes sense for this language. */
+  function available(lang) {
+    if (!lang) return false;
+    return usesRecordings ? true : canSpeak(lang);
+  }
+
+  /**
+   * Pronounces `text` with whatever works in this browser.
+   * @returns {Promise<{ via: 'voice' | 'recording' | null, credit?: { title: string, page: string } }>}
+   *   `via` is null when there was nothing to play; `credit` names the recording that was used.
+   */
+  async function pronounce(text, lang) {
+    if (!usesRecordings) {
+      speak(text, lang);
+      return { via: 'voice' };
+    }
+    context(); // created while the click that asked for it is still being handled
+    const recording = await loadRecording(text, lang);
+    if (recording) {
+      play(recording);
+      return { via: 'recording', credit: recording.credit };
+    }
+    if (options.ttsFallback && canSpeak(lang)) {
+      speak(text, lang);
+      return { via: 'voice' };
+    }
+    return { via: null };
+  }
+
+  WV.speech = { options, usesRecordings, available, pronounce, canSpeak, pickVoice, speak, onVoicesChanged };
 })(globalThis.WV);

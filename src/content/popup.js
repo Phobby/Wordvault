@@ -257,14 +257,26 @@
 
   // --- Pronunciation ---------------------------------------------------------------------------
 
-  /** The button is only offered when the browser has a voice for the source language. */
+  /** The button is only offered when the word can be pronounced in its language. */
   function updateSpeakButton() {
     if (!ui || !session) return;
-    ui.speakButton.hidden = !speech.canSpeak(session.sourceLang);
+    ui.speakButton.hidden = !speech.available(session.sourceLang);
   }
 
-  function speak() {
-    if (session?.sourceLang) speech.speak(session.text, session.sourceLang);
+  async function speak() {
+    const current = session;
+    if (!current?.sourceLang || current.speaking) return;
+    current.speaking = true;
+    ui.speakButton.classList.add('wv-busy');
+    const outcome = await speech.pronounce(current.text, current.sourceLang).catch(() => ({ via: null }));
+    current.speaking = false;
+    if (session !== current) return;
+    ui.speakButton.classList.remove('wv-busy');
+    if (!outcome.via) flashStatus({ text: t('speakNoRecording'), muted: true });
+    if (outcome.credit) {
+      current.credit = outcome.credit;
+      renderFoot();
+    }
   }
 
   // --- Body states -----------------------------------------------------------------------------
@@ -278,9 +290,21 @@
     return h('button', { class: 'wv-link', type: 'button', text: t(labelKey), onclick });
   }
 
+  /** Attribution: the translation service, and the recording if one was played. */
+  function renderFoot() {
+    const { result, credit } = session;
+    ui.foot.replaceChildren(
+      ...[
+        result?.translation && h('span', { text: t('popupTranslatedBy', [result.provider.name]) }),
+        credit &&
+          h('a', { href: credit.page, target: '_blank', rel: 'noopener noreferrer', title: credit.title, text: t('speakCredit') }),
+      ].filter(Boolean),
+    );
+  }
+
   function showLoading() {
     setBody(h('div', { class: 'wv-loading' }, h('span', { class: 'wv-spinner' }), t('popupTranslating')));
-    ui.foot.textContent = '';
+    renderFoot();
   }
 
   function showResult(data) {
@@ -312,7 +336,7 @@
           linkButton('linkChangeTarget', () => openSheet('target')),
         ),
     );
-    ui.foot.textContent = data.translation ? t('popupTranslatedBy', [data.provider.name]) : '';
+    renderFoot();
   }
 
   function showError(error) {
@@ -323,7 +347,7 @@
       // For errors we have no message for, the provider's own wording is better than nothing.
       !known && error?.detail && h('div', { class: 'wv-error-detail', text: error.detail }),
     );
-    ui.foot.textContent = '';
+    renderFoot();
   }
 
   // --- Vault -----------------------------------------------------------------------------------
@@ -331,7 +355,7 @@
   /**
    * The row under the result: "Try again" after a failure and the vault button. The vault button
    * is there whenever there is something to save, with or without a translation.
-   * @param {{ text: string, error?: boolean }} [status] Short confirmation shown next to it.
+   * @param {{ text: string, error?: boolean, muted?: boolean }} [status] Short message shown next to it.
    */
   function renderActions(status) {
     const { result, error, saved, saving } = session;
@@ -354,9 +378,20 @@
       );
     }
     if (status) {
-      children.push(h('span', { class: status.error ? 'wv-status wv-status-error' : 'wv-status', role: 'status', text: status.text }));
+      const kind = status.error ? ' wv-status-error' : status.muted ? ' wv-status-muted' : '';
+      children.push(h('span', { class: `wv-status${kind}`, role: 'status', text: status.text }));
     }
     ui.actions.replaceChildren(...children);
+  }
+
+  /** Shows a short message in the actions row and takes it away again. */
+  function flashStatus(status) {
+    const current = session;
+    renderActions(status);
+    clearTimeout(statusTimer);
+    statusTimer = setTimeout(() => {
+      if (session === current) renderActions();
+    }, STATUS_MS);
   }
 
   /** Adds the word to the vault, or takes it out again if it is already there. */
@@ -392,12 +427,7 @@
       status = { text: t('vaultError'), error: true };
     }
     current.saving = false;
-    if (session !== current) return;
-    renderActions(status);
-    clearTimeout(statusTimer);
-    statusTimer = setTimeout(() => {
-      if (session === current) renderActions();
-    }, STATUS_MS);
+    if (session === current) flashStatus(status);
   }
 
   /** Translates the session's text, with the source language the user fixed (if any). */
@@ -407,6 +437,7 @@
     const isStale = () => session !== current || current.requestId !== requestId;
     current.result = null;
     current.error = null;
+    current.credit = null;
     clearTimeout(statusTimer);
     showLoading();
     ui.actions.replaceChildren();
@@ -549,6 +580,8 @@
       error: null, // set instead of `result` when the lookup failed
       saved: false, // whether the word is in the vault
       saving: false,
+      speaking: false, // a pronunciation is being fetched
+      credit: null, // recording that was played, for attribution
       sheet: null, // 'source' or 'target' while the language sheet is open
       below: null, // which side of the selection the card is on
       requestId: 0,
@@ -557,6 +590,7 @@
 
     ui.word.textContent = text;
     ui.speakButton.hidden = true;
+    ui.speakButton.classList.remove('wv-busy');
     ui.actions.replaceChildren();
     ui.sheet.hidden = true;
     ui.main.hidden = false;

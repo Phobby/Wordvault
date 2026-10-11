@@ -18,6 +18,12 @@ export const DEFAULT_SETTINGS = Object.freeze({
   providerConfig: {},
   /** Open the translation popup when a word is double-clicked. */
   doubleClick: true,
+  /**
+   * Only where words are pronounced from recordings (see shared/speech.js): use the browser's
+   * own voice for words that have no recording, even though that voice is why recordings are
+   * used there in the first place.
+   */
+  ttsFallback: false,
 });
 
 /** @returns {Promise<typeof DEFAULT_SETTINGS>} */

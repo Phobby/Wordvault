@@ -125,6 +125,9 @@
     .wv-btn-saved { border-color: currentColor; color: var(--wv-ok); }
     .wv-status { font-size: 12px; font-weight: 600; color: var(--wv-ok); animation: wv-fade 0.2s ease-out; }
     .wv-status-error { color: var(--wv-danger); }
+    .wv-status-muted { font-weight: 400; color: var(--wv-muted); }
+    .wv-busy { animation: wv-pulse 0.9s ease-in-out infinite; }
+    @keyframes wv-pulse { 50% { opacity: 0.35; } }
     @keyframes wv-fade { from { opacity: 0; } }
 
     .wv-link {
@@ -356,7 +359,8 @@
     .wv-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 10px; }
     .wv-actions:empty { display: none; }
 
-    .wv-foot { margin-top: 10px; font-size: 11px; color: var(--wv-muted); }
+    .wv-foot { display: flex; flex-wrap: wrap; gap: 2px 10px; margin-top: 10px; font-size: 11px; color: var(--wv-muted); }
+    .wv-foot a { color: inherit; }
     .wv-foot:empty { display: none; }
   `;
 

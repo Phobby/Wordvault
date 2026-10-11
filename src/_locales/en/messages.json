@@ -90,6 +90,23 @@
     "description": "Button: open the list to pick another target language."
   },
 
+  "speakNoRecording": {
+    "message": "No recording of this word",
+    "description": "Shown briefly when the pronounce button finds nothing to play."
+  },
+  "speakCredit": {
+    "message": "Audio: Wikimedia Commons",
+    "description": "Link under the translation to the recording that was played (author and licence are on the linked page)."
+  },
+  "optTtsFallback": {
+    "message": "Use the browser voice when a word has no recording",
+    "description": "Options page: switch, only shown in Firefox-based browsers on macOS."
+  },
+  "optTtsFallbackHelp": {
+    "message": "In this browser the built-in voice ends every word with a loud click, so Wordvault plays recordings from Wikimedia Commons instead. Turn this on to hear the built-in voice, click included, for words that have no recording.",
+    "description": "Options page: explanation of the switch above."
+  },
+
   "vaultAdd": {
     "message": "Add to vault",
     "description": "Button in the translation popup: save the word."

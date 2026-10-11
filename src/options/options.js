@@ -5,7 +5,7 @@ import { downloadBackup, restoreBackup } from '../lib/backup.js';
 import { getSettings, updateSettings } from '../lib/settings.js';
 import { getPreferences, setTargetLanguage } from '../lib/translator.js';
 
-const { h, t, languages } = globalThis.WV;
+const { h, t, languages, speech } = globalThis.WV;
 
 globalThis.WV.adoptStyles(globalThis.WV.styles.tokens + globalThis.WV.styles.controls);
 document.documentElement.lang = languages.uiLanguage();
@@ -49,8 +49,27 @@ const doubleClick = h('input', {
   },
 });
 
+const ttsFallback = h('input', {
+  type: 'checkbox',
+  onchange: async () => {
+    await updateSettings({ ttsFallback: ttsFallback.checked });
+    flashSaved();
+  },
+});
+
 async function renderSwitches() {
-  doubleClick.checked = (await getSettings()).doubleClick;
+  const settings = await getSettings();
+  doubleClick.checked = settings.doubleClick;
+  ttsFallback.checked = settings.ttsFallback;
+}
+
+function switchRow(input, titleKey, helpKey) {
+  return h(
+    'label',
+    { class: 'switch' },
+    input,
+    h('span', { class: 'switch-text' }, h('strong', { text: t(titleKey) }), h('span', { class: 'help', text: t(helpKey) })),
+  );
 }
 
 // --- Backup --------------------------------------------------------------------------------------
@@ -116,16 +135,9 @@ document.getElementById('app').append(
     currentTarget,
     targetList.element,
   ),
-  h(
-    'section',
-    { class: 'card' },
-    h(
-      'label',
-      { class: 'switch' },
-      doubleClick,
-      h('span', { class: 'switch-text' }, h('strong', { text: t('optDoubleClick') }), h('span', { class: 'help', text: t('optDoubleClickHelp') })),
-    ),
-  ),
+  h('section', { class: 'card' }, switchRow(doubleClick, 'optDoubleClick', 'optDoubleClickHelp')),
+  // Only meaningful in the browsers where recordings replace the browser's voice.
+  speech.usesRecordings && h('section', { class: 'card' }, switchRow(ttsFallback, 'optTtsFallback', 'optTtsFallbackHelp')),
   backupSection,
 );
 
