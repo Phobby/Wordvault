@@ -4,8 +4,9 @@
 import { downloadBackup, restoreBackup } from '../lib/backup.js';
 import { getSettings, updateSettings } from '../lib/settings.js';
 import { getPreferences, setTargetLanguage } from '../lib/translator.js';
+import { getDiagnostics } from '../quiz/scheduler.js';
 
-const { h, t, languages, speech } = globalThis.WV;
+const { h, t, languages, speech, quizCard } = globalThis.WV;
 
 globalThis.WV.adoptStyles(globalThis.WV.styles.tokens + globalThis.WV.styles.controls);
 document.documentElement.lang = languages.uiLanguage();
@@ -117,6 +118,99 @@ const backupSection = h(
   backupStatus,
 );
 
+// --- Flash cards: "Why is there no quiz?" --------------------------------------------------------
+
+/** Reason codes (quiz/scheduler.js, content/quiz.js) and the messages that explain them. */
+const QUIZ_REASONS = {
+  shown: 'quizWhyShown',
+  disabled: 'quizWhyDisabled',
+  below_min_cards: 'quizWhyBelowMinCards',
+  not_enough_choices: 'quizWhyNotEnoughChoices',
+  no_cards: 'quizWhyNotEnoughChoices',
+  no_active_tab: 'quizWhyNoActiveTab',
+  window_not_focused: 'quizWhyWindowNotFocused',
+  tab_hidden: 'quizWhyTabHidden',
+  media_playing: 'quizWhyMediaPlaying',
+  video_playing: 'quizWhyVideoPlaying',
+  fullscreen: 'quizWhyFullscreen',
+  typing: 'quizWhyTyping',
+  popup_open: 'quizWhyPopupOpen',
+  already_showing: 'quizWhyAlreadyShowing',
+  page_not_supported: 'quizWhyPageNotSupported',
+};
+
+function reasonText(reason, diagnostics) {
+  const key = QUIZ_REASONS[reason];
+  if (!key) return reason; // an unexpected error: show it as it is
+  return t(key, [String(diagnostics.total), String(diagnostics.minCards), languages.name(diagnostics.targetLang), String(diagnostics.meanings), String(diagnostics.neededMeanings)]);
+}
+
+/** "14:35 (in 3 minutes)" */
+function timeText(time) {
+  const locale = languages.uiLanguage();
+  const date = new Date(time);
+  const sameDay = date.toDateString() === new Date().toDateString();
+  const clock = date.toLocaleString(locale, sameDay ? { hour: '2-digit', minute: '2-digit' } : { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+  const minutes = Math.round((time - Date.now()) / 60_000);
+  const relative = new Intl.RelativeTimeFormat(locale, { numeric: 'auto' }).format(Math.abs(minutes) >= 90 ? Math.round(minutes / 60) : minutes, Math.abs(minutes) >= 90 ? 'hour' : 'minute');
+  return `${clock} (${relative})`;
+}
+
+const quizVerdict = h('p', { class: 'verdict', role: 'status' });
+const quizFacts = h('dl', { class: 'facts' });
+const quizTestResult = h('p', { class: 'help', role: 'status' });
+let quizDiagnostics = null;
+
+async function renderQuiz() {
+  const d = await getDiagnostics();
+  quizDiagnostics = d;
+  quizVerdict.textContent = d.standingReason ? t('quizVerdictNo', [reasonText(d.standingReason, d)]) : t('quizVerdictYes', [d.nextAt ? timeText(d.nextAt) : t('quizDiagNotScheduled')]);
+  quizVerdict.className = d.standingReason ? 'verdict no' : 'verdict yes';
+
+  let next = d.nextAt ? timeText(d.nextAt) : t('quizDiagNotScheduled');
+  // The plan says a quiz is due but nothing is set to wake the extension up for it.
+  if (d.enabled && !d.alarmAt) next += ` — ${t('quizDiagNoAlarm')}`;
+  const facts = [
+    ['quizDiagEnabled', t(d.enabled ? 'quizOn' : 'quizOff')],
+    ['quizDiagCards', t('quizDiagCardsValue', [String(d.total), String(d.minCards)])],
+    ['quizDiagAskable', t('quizDiagAskableValue', [String(d.askable), languages.name(d.targetLang), String(d.meanings), String(d.neededMeanings)])],
+    ['quizDiagInterval', t('quizDiagIntervalValue', [String(d.intervalMinutes)])],
+    ['quizDiagNext', next],
+    ['quizDiagLast', d.lastAttempt ? `${timeText(d.lastAttempt.at)}: ${reasonText(d.lastAttempt.reason, d)}` : t('quizDiagNever')],
+  ];
+  quizFacts.replaceChildren(...facts.flatMap(([labelKey, value]) => [h('dt', { text: t(labelKey) }), h('dd', { text: value })]));
+}
+
+async function testQuiz() {
+  quizTestResult.textContent = '';
+  let built;
+  try {
+    // Through the background script on purpose: if that is not running, this is where it shows.
+    built = await globalThis.WV.send('wv:quiz:test');
+  } catch {
+    quizTestResult.textContent = t('quizTestFailed');
+    return;
+  }
+  if (!built.ok) {
+    quizTestResult.textContent = reasonText(built.reason, quizDiagnostics || (await getDiagnostics()));
+    return;
+  }
+  quizCard.show(built.question, { onAnswer: (answer) => globalThis.WV.send('wv:quiz:answer', answer).catch(() => {}) });
+}
+
+const quizSection = h(
+  'section',
+  { class: 'card', id: 'quiz' },
+  h('h2', { text: t('optQuizTitle') }),
+  h('p', { class: 'help', text: t('optQuizHelp') }),
+  h('h3', { text: t('quizDiagTitle') }),
+  quizVerdict,
+  quizFacts,
+  h('div', { class: 'buttons' }, h('button', { class: 'wv-btn', type: 'button', text: t('quizTest'), onclick: testQuiz })),
+  h('p', { class: 'help', text: t('quizTestHelp') }),
+  quizTestResult,
+);
+
 // --- Page ----------------------------------------------------------------------------------------
 
 document.getElementById('app').append(
@@ -138,6 +232,7 @@ document.getElementById('app').append(
   h('section', { class: 'card' }, switchRow(doubleClick, 'optDoubleClick', 'optDoubleClickHelp')),
   // Only meaningful in the browsers where recordings replace the browser's voice.
   speech.usesRecordings && h('section', { class: 'card' }, switchRow(ttsFallback, 'optTtsFallback', 'optTtsFallbackHelp')),
+  quizSection,
   backupSection,
 );
 
@@ -153,7 +248,15 @@ function render() {
 }
 
 render();
-// Settings can also change from the translation popup while this page is open.
+renderQuiz();
+// Settings can also change from the translation popup while this page is open; words are
+// added and quizzes come due in the background.
 chrome.storage.onChanged.addListener((changes, area) => {
-  if (area === 'local' && changes.settings) render();
+  if (area !== 'local') return;
+  if (changes.settings) render();
+  // What "Test now" last said may no longer be true once the vault has changed.
+  if (Object.keys(changes).some((key) => key.startsWith('vault:'))) quizTestResult.textContent = '';
+  renderQuiz();
 });
+// The panel shows times relative to now.
+setInterval(renderQuiz, 20_000);

@@ -227,6 +227,127 @@
     "message": "Bu dosya bir Wordvault yedeği değil."
   },
 
+  "quizTitle": {
+    "message": "Quiz"
+  },
+  "quizPrompt": {
+    "message": "$1 karşılığı hangisi?"
+  },
+  "quizCorrect": {
+    "message": "Doğru!"
+  },
+  "quizWrong": {
+    "message": "Yanlış. Doğru cevap işaretlendi."
+  },
+  "optQuizTitle": {
+    "message": "Flash card"
+  },
+  "optQuizHelp": {
+    "message": "Wordvault ara sıra, bulunduğun sayfanın sağ üst köşesinde kayıtlı bir kelimeyi sorar."
+  },
+  "quizDiagTitle": {
+    "message": "Neden quiz çıkmıyor?"
+  },
+  "quizVerdictYes": {
+    "message": "Engel yok. Sıradaki quiz: $1"
+  },
+  "quizVerdictNo": {
+    "message": "Şu an quiz çıkmaz: $1"
+  },
+  "quizDiagEnabled": {
+    "message": "Quiz"
+  },
+  "quizOn": {
+    "message": "açık"
+  },
+  "quizOff": {
+    "message": "kapalı"
+  },
+  "quizDiagCards": {
+    "message": "Kasadaki kelime"
+  },
+  "quizDiagCardsValue": {
+    "message": "$1 (en az $2 gerekli)"
+  },
+  "quizDiagAskable": {
+    "message": "Sorulabilir"
+  },
+  "quizDiagAskableValue": {
+    "message": "$2 çevirisi olan $1 kelime; $3 farklı anlam (en az $4 gerekli)"
+  },
+  "quizDiagInterval": {
+    "message": "Sıklık"
+  },
+  "quizDiagIntervalValue": {
+    "message": "en fazla $1 dakikada bir"
+  },
+  "quizDiagNext": {
+    "message": "Sıradaki quiz"
+  },
+  "quizDiagNotScheduled": {
+    "message": "planlı değil"
+  },
+  "quizDiagNoAlarm": {
+    "message": "zamanlayıcı kurulu değil; eklentiyi yeniden yükle"
+  },
+  "quizDiagLast": {
+    "message": "Son deneme"
+  },
+  "quizDiagNever": {
+    "message": "henüz yok"
+  },
+  "quizWhyShown": {
+    "message": "gösterildi"
+  },
+  "quizWhyDisabled": {
+    "message": "quiz kapalı"
+  },
+  "quizWhyBelowMinCards": {
+    "message": "kasada $1 kelime var, quiz $2 kelimede başlar"
+  },
+  "quizWhyNotEnoughChoices": {
+    "message": "$3 dilinde yalnızca $4 farklı anlam var; şıklar için dört gerekli"
+  },
+  "quizWhyNoActiveTab": {
+    "message": "aktif sekme yoktu"
+  },
+  "quizWhyWindowNotFocused": {
+    "message": "tarayıcı penceresi önde değildi"
+  },
+  "quizWhyTabHidden": {
+    "message": "sekme görünür değildi"
+  },
+  "quizWhyMediaPlaying": {
+    "message": "sekmede ses çalıyordu"
+  },
+  "quizWhyVideoPlaying": {
+    "message": "video oynuyordu"
+  },
+  "quizWhyFullscreen": {
+    "message": "sayfa tam ekrandaydı"
+  },
+  "quizWhyTyping": {
+    "message": "yazı yazılıyordu"
+  },
+  "quizWhyPopupOpen": {
+    "message": "çeviri penceresi açıktı"
+  },
+  "quizWhyAlreadyShowing": {
+    "message": "ekranda zaten bir quiz vardı"
+  },
+  "quizWhyPageNotSupported": {
+    "message": "açık olan sayfada eklentiler bir şey gösteremez (tarayıcı sayfası, yeni sekme ya da eklenti yüklenmeden önce açılmış sekme)"
+  },
+  "quizTest": {
+    "message": "Şimdi test et"
+  },
+  "quizTestHelp": {
+    "message": "Zamanlayıcıyı ve yukarıdaki koşulları atlayıp quiz’i hemen burada gösterir."
+  },
+  "quizTestFailed": {
+    "message": "Arka plan betiği yanıt vermedi. Eklentiyi yeniden yükle."
+  },
+
   "optionsTitle": {
     "message": "Wordvault ayarları"
   },

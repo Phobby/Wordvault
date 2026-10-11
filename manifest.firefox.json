@@ -24,7 +24,7 @@
     "page": "options/options.html",
     "open_in_tab": true
   },
-  "permissions": ["storage", "unlimitedStorage"],
+  "permissions": ["storage", "unlimitedStorage", "alarms"],
   "host_permissions": [
     "https://api.mymemory.translated.net/*",
     "https://en.wiktionary.org/*",
@@ -42,8 +42,10 @@
         "shared/styles.js",
         "shared/language-list.js",
         "shared/speech.js",
+        "shared/quiz-card.js",
         "content/selection.js",
         "content/popup.js",
+        "content/quiz.js",
         "content/triggers.js"
       ],
       "run_at": "document_idle",

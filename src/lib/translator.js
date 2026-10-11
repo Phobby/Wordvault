@@ -64,6 +64,12 @@ async function guessSource({ sample, pageLang }, languages) {
   return null;
 }
 
+/** The language translations, and quiz answers, are in. */
+export async function resolveTargetLanguage() {
+  const { settings, languages } = await activeProvider();
+  return resolveTarget(settings, languages);
+}
+
 /**
  * What a UI needs to show the language controls.
  * @param {string} [host] Host name of the page, for the per-site source language.

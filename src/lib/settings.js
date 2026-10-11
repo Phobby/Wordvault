@@ -24,6 +24,12 @@ export const DEFAULT_SETTINGS = Object.freeze({
    * used there in the first place.
    */
   ttsFallback: false,
+  /** Flash cards: ask about a saved word from time to time. */
+  quizEnabled: true,
+  /** A quiz is shown at most this often. */
+  quizIntervalMinutes: 20,
+  /** The quiz starts once the vault holds this many words. */
+  quizMinCards: 10,
 });
 
 /** @returns {Promise<typeof DEFAULT_SETTINGS>} */

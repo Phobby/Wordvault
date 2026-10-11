@@ -301,6 +301,167 @@
     "description": "Shown when the chosen file cannot be imported."
   },
 
+  "quizTitle": {
+    "message": "Quiz",
+    "description": "Title of the small quiz card shown on pages."
+  },
+  "quizPrompt": {
+    "message": "What does it mean in $1?",
+    "description": "Line under the quizzed word. $1 is a language name."
+  },
+  "quizCorrect": {
+    "message": "Correct!",
+    "description": "Quiz feedback."
+  },
+  "quizWrong": {
+    "message": "Not this one. The right answer is marked.",
+    "description": "Quiz feedback after a wrong choice."
+  },
+  "optQuizTitle": {
+    "message": "Flash cards",
+    "description": "Options page: heading of the quiz section."
+  },
+  "optQuizHelp": {
+    "message": "From time to time Wordvault asks you about a saved word, in the top right corner of the page you are on.",
+    "description": "Options page: what the quiz is."
+  },
+  "quizDiagTitle": {
+    "message": "Why is there no quiz?",
+    "description": "Options page: heading of the diagnostics panel."
+  },
+  "quizVerdictYes": {
+    "message": "Nothing stands in the way. Next quiz: $1",
+    "description": "Diagnostics summary. $1 is a time."
+  },
+  "quizVerdictNo": {
+    "message": "No quiz for now: $1",
+    "description": "Diagnostics summary. $1 is the reason."
+  },
+  "quizDiagEnabled": {
+    "message": "Quiz",
+    "description": "Diagnostics row label."
+  },
+  "quizOn": {
+    "message": "on",
+    "description": "Diagnostics value."
+  },
+  "quizOff": {
+    "message": "off",
+    "description": "Diagnostics value."
+  },
+  "quizDiagCards": {
+    "message": "Words in the vault",
+    "description": "Diagnostics row label."
+  },
+  "quizDiagCardsValue": {
+    "message": "$1 (at least $2 needed)",
+    "description": "Diagnostics value. $1 words saved, $2 minimum."
+  },
+  "quizDiagAskable": {
+    "message": "Can be asked",
+    "description": "Diagnostics row label."
+  },
+  "quizDiagAskableValue": {
+    "message": "$1 words with a translation into $2; $3 different meanings (at least $4 needed)",
+    "description": "Diagnostics value. $1 count, $2 language name, $3 distinct translations, $4 minimum."
+  },
+  "quizDiagInterval": {
+    "message": "How often",
+    "description": "Diagnostics row label."
+  },
+  "quizDiagIntervalValue": {
+    "message": "at most every $1 minutes",
+    "description": "Diagnostics value. $1 minutes."
+  },
+  "quizDiagNext": {
+    "message": "Next quiz",
+    "description": "Diagnostics row label."
+  },
+  "quizDiagNotScheduled": {
+    "message": "not scheduled",
+    "description": "Diagnostics value."
+  },
+  "quizDiagNoAlarm": {
+    "message": "the timer is not set; reload the extension",
+    "description": "Diagnostics warning appended to the next-quiz time."
+  },
+  "quizDiagLast": {
+    "message": "Last attempt",
+    "description": "Diagnostics row label."
+  },
+  "quizDiagNever": {
+    "message": "none yet",
+    "description": "Diagnostics value."
+  },
+  "quizWhyShown": {
+    "message": "shown",
+    "description": "Outcome of a quiz attempt."
+  },
+  "quizWhyDisabled": {
+    "message": "the quiz is switched off",
+    "description": "Reason no quiz is shown."
+  },
+  "quizWhyBelowMinCards": {
+    "message": "the vault holds $1 words, the quiz starts at $2",
+    "description": "Reason. $1 saved words, $2 minimum."
+  },
+  "quizWhyNotEnoughChoices": {
+    "message": "only $4 different meanings in $3; four are needed for the choices",
+    "description": "Reason. $3 language name, $4 distinct translations."
+  },
+  "quizWhyNoActiveTab": {
+    "message": "there was no active tab",
+    "description": "Reason."
+  },
+  "quizWhyWindowNotFocused": {
+    "message": "the browser window was not in front",
+    "description": "Reason."
+  },
+  "quizWhyTabHidden": {
+    "message": "the tab was not visible",
+    "description": "Reason."
+  },
+  "quizWhyMediaPlaying": {
+    "message": "the tab was playing sound",
+    "description": "Reason."
+  },
+  "quizWhyVideoPlaying": {
+    "message": "a video was playing",
+    "description": "Reason."
+  },
+  "quizWhyFullscreen": {
+    "message": "the page was in full screen",
+    "description": "Reason."
+  },
+  "quizWhyTyping": {
+    "message": "you were typing",
+    "description": "Reason."
+  },
+  "quizWhyPopupOpen": {
+    "message": "the translation popup was open",
+    "description": "Reason."
+  },
+  "quizWhyAlreadyShowing": {
+    "message": "a quiz was already on screen",
+    "description": "Reason."
+  },
+  "quizWhyPageNotSupported": {
+    "message": "extensions cannot show anything on the page that was open (a browser page, a new tab, or a tab opened before the extension was loaded)",
+    "description": "Reason."
+  },
+  "quizTest": {
+    "message": "Test now",
+    "description": "Options page: button that shows a quiz immediately."
+  },
+  "quizTestHelp": {
+    "message": "Shows a quiz right here, skipping the timer and every condition above.",
+    "description": "Options page: explanation of the test button."
+  },
+  "quizTestFailed": {
+    "message": "The background script did not answer. Reload the extension.",
+    "description": "Options page: shown when the test button gets no reply."
+  },
+
   "optionsTitle": {
     "message": "Wordvault settings",
     "description": "Title of the options page."

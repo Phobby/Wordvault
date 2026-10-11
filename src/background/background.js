@@ -10,6 +10,7 @@ import { WordvaultError, serializeError } from '../lib/errors.js';
 import { fetchRecording } from '../lib/pronunciation.js';
 import { getPreferences, setSiteSourceLanguage, setTargetLanguage, translate } from '../lib/translator.js';
 import { addEntry, entryId, getEntry, hasEntry, removeEntry, updateEntry } from '../lib/vault.js';
+import { ALARM_NAME, buildTestQuestion, ensureScheduled, recordAnswer, runScheduledQuiz } from '../quiz/scheduler.js';
 
 /** Host name of the web page a message came from ('' for extension pages). */
 function hostOf(sender) {
@@ -67,6 +68,8 @@ const handlers = {
   'wv:vault:add': save,
   'wv:vault:enrich': (payload) => enrich(payload?.id),
   'wv:vault:remove': (payload) => removeEntry(entryId(payload || {})),
+  'wv:quiz:test': () => buildTestQuestion(),
+  'wv:quiz:answer': (payload) => recordAnswer(payload),
 };
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
@@ -80,3 +83,19 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     );
   return true; // keep the channel open for the asynchronous response
 });
+
+// --- Quiz timer --------------------------------------------------------------------------------
+// The alarm survives the background script being stopped, but not always a browser restart, so
+// it is checked whenever this script starts, whatever the reason it was started for.
+
+const scheduleQuiz = () => ensureScheduled().catch(() => {});
+
+chrome.alarms.onAlarm.addListener((alarm) => {
+  if (alarm.name === ALARM_NAME) runScheduledQuiz().catch(() => {});
+});
+chrome.runtime.onInstalled.addListener(scheduleQuiz);
+chrome.runtime.onStartup.addListener(scheduleQuiz);
+chrome.storage.onChanged.addListener((changes, area) => {
+  if (area === 'local' && changes.settings) scheduleQuiz();
+});
+scheduleQuiz();

@@ -88,3 +88,27 @@ body {
   margin: 12px 0 8px;
 }
 .card.highlight { border-color: var(--wv-accent); box-shadow: 0 0 0 1px var(--wv-accent); }
+
+.card h3 {
+  margin: 16px 0 8px;
+  font-size: 13px;
+  font-weight: 650;
+}
+.verdict {
+  margin: 0 0 12px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+}
+.verdict.yes { background: var(--wv-tint); }
+.verdict.no { background: color-mix(in srgb, var(--wv-danger) 12%, transparent); color: var(--wv-danger); }
+.facts {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 6px 16px;
+  margin: 0;
+  font-size: 13px;
+}
+.facts dt { color: var(--wv-muted); }
+.facts dd { margin: 0; overflow-wrap: anywhere; }

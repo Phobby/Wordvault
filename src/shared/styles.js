@@ -364,5 +364,60 @@
     .wv-foot:empty { display: none; }
   `;
 
-  WV.styles = { host, tokens, controls, popup };
+  /** The quiz card in the top right corner. */
+  const quiz = `
+    .wv-quiz {
+      /* The host sits in the top layer at the viewport origin, so "fixed" is the viewport. */
+      position: fixed;
+      top: 16px;
+      right: 16px;
+      width: min(300px, calc(100vw - 32px));
+      max-height: calc(100vh - 32px);
+      overflow: hidden auto;
+      padding: 8px 14px 12px;
+      border: 1px solid var(--wv-border);
+      border-radius: 12px;
+      background: var(--wv-bg);
+      box-shadow: var(--wv-shadow);
+      animation: wv-quiz-in 0.18s ease-out;
+    }
+    @keyframes wv-quiz-in { from { opacity: 0; transform: translateY(-6px); } }
+    @media (prefers-reduced-motion: reduce) { .wv-quiz { animation: none; } }
+
+    .wv-quiz-head { display: flex; align-items: center; margin-right: -8px; }
+    .wv-quiz-title {
+      flex: 1 1 auto;
+      font-size: 11px;
+      font-weight: 650;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: var(--wv-muted);
+    }
+    .wv-quiz-word { font-size: 18px; font-weight: 650; line-height: 1.3; overflow-wrap: anywhere; }
+    .wv-quiz-prompt { margin: 2px 0 10px; font-size: 12px; color: var(--wv-muted); }
+    .wv-quiz-choices { display: grid; gap: 6px; }
+    .wv-quiz-choice {
+      margin: 0;
+      padding: 7px 10px;
+      border: 1px solid var(--wv-border);
+      border-radius: 8px;
+      background: transparent;
+      color: var(--wv-fg);
+      font: inherit;
+      font-size: 13.5px;
+      text-align: start;
+      overflow-wrap: anywhere;
+      cursor: pointer;
+    }
+    .wv-quiz-choice:hover:not(:disabled) { background: var(--wv-hover); }
+    .wv-quiz-choice:focus-visible { outline: 2px solid var(--wv-accent); outline-offset: 1px; }
+    .wv-quiz-choice:disabled { opacity: 0.55; cursor: default; }
+    .wv-quiz-choice.wv-right { border-color: var(--wv-ok); color: var(--wv-ok); font-weight: 600; opacity: 1; }
+    .wv-quiz-choice.wv-wrong { border-color: var(--wv-danger); color: var(--wv-danger); opacity: 1; }
+    .wv-quiz-feedback { min-height: 18px; margin-top: 8px; font-size: 12.5px; font-weight: 600; }
+    .wv-quiz-feedback.wv-right { color: var(--wv-ok); }
+    .wv-quiz-feedback.wv-wrong { color: var(--wv-danger); }
+  `;
+
+  WV.styles = { host, tokens, controls, popup, quiz };
 })(globalThis.WV);

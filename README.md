@@ -11,6 +11,10 @@ kaydet, sonra kısa quizlerle tekrar et. Her şey tarayıcında çalışır; Wor
 >
 > Cihazlar arası senkronizasyon (`SPEC-SYNC.md`) yedi aşamada ekleniyor; şu an 1. aşama hazır:
 > veri modeli, birleştirme ve silme kayıtları. Henüz hiçbir yere veri gönderilmiyor.
+>
+> Flash card sistemi (`SPEC-QUIZ.md`) altı aşamada ekleniyor; şu an 1. aşama hazır: zamanlayıcı,
+> basit quiz kartı, "Neden quiz çıkmıyor?" tanı paneli ve "Şimdi test et". Öğrenme algoritması,
+> akıllı şık seçimi, kartın tam arayüzü ve ayarları sonraki aşamalarda.
 
 ## Derleme
 
@@ -47,7 +51,8 @@ eklentiyle bağlantısını kaybeder.
 ## Proje yapısı
 
 ```
-SPEC.md, SPEC-SYNC.md   İstenen davranışın tanımı (eklenti ve senkronizasyon)
+SPEC.md, SPEC-SYNC.md,  İstenen davranışın tanımı (eklenti, senkronizasyon, flash card)
+SPEC-QUIZ.md
 manifest.firefox.json   Firefox manifesti (background.scripts, gecko ayarları)
 manifest.chrome.json    Chrome manifesti (background.service_worker)
 build.js                dist/ klasörlerini üretir
@@ -61,9 +66,11 @@ src/
     styles.js           Renkler, düğmeler ve çeviri penceresinin CSS'i
     language-list.js    Dil adları ve aranabilir dil listesi
     speech.js           Telaffuz: tarayıcı sesi (speechSynthesis) ya da ses kaydı (Web Audio)
+    quiz-card.js        Quiz kartı (web sayfalarında ve ayarlardaki "Şimdi test et"te)
   content/              Yalnızca web sayfalarına eklenen betikler
     selection.js        Seçim, bağlam cümlesi ve dil yardımcıları
     popup.js            Çeviri penceresi
+    quiz.js             Quiz'i sayfada gösterir; "şu an uygun mu" kontrolleri
     triggers.js         Pencereyi açan tetikleyiciler (çift tıklama)
   popup/                Araç çubuğu simgesinin açtığı kasa: liste, arama, detay, dışa aktarma
   options/              Ayarlar sayfası: hedef dil, çift tıklama, yedekleme (dışa/içe aktarma)
@@ -75,6 +82,9 @@ src/
     pronunciation.js    Wikimedia Commons'taki telaffuz kayıtlarını bulur ve indirir
     backup.js           JSON dışa/içe aktarma
   providers/            Çeviri sağlayıcıları (ortak arayüz: providers/index.js)
+  quiz/                 Flash card
+    scheduler.js        Zamanlayıcı (chrome.alarms), quiz'in gösterilmesi, tanı bilgisi
+    question.js         Soru ve şık üretimi
   sync/                 Senkronizasyon
     model.js            Eşitlenen belgenin biçimi; kasa kaydı <-> eşitleme kaydı dönüşümü
     merge.js            İki belgeyi birleştirme, silme kayıtlarının temizliği
@@ -116,6 +126,24 @@ Kasayı arka plan betiğinin konsolundan görmek için:
 ```js
 chrome.storage.local.get(null).then((all) => console.table(Object.entries(all).filter(([k]) => k.startsWith('vault:')).map(([, v]) => v)))
 ```
+
+### Flash card (quiz)
+
+Arka plan betiği her an durdurulabildiği için zamanlayıcının hiçbir şeyi bellekte durmaz:
+
+- Sıradaki quiz'in zamanı `chrome.storage.local` içinde `quizState.sonrakiQuizZamani` olarak saklanır.
+- Uyandırma `chrome.alarms` ile yapılır. Arka plan betiği her başladığında (kurulum, tarayıcı açılışı,
+  herhangi bir uyanış) alarmın yerinde olup olmadığına bakar ve yoksa saklanan zamana göre yeniden
+  kurar. Zamanı geçmiş bir quiz bir sonraki uygun anda, bir kez gösterilir.
+- Zamanı gelince quiz yalnızca öndeki pencerenin aktif sekmesine, o sekmenin ana çerçevesine gönderilir.
+  Sayfa "şu an uygun değil" derse (video oynuyor, tam ekran, yazı yazılıyor, çeviri penceresi açık)
+  quiz atlanmaz, birkaç dakika sonra yeniden denenir.
+- Her denemenin sonucu (`gösterildi` ya da gösterilmeme nedeni) `quizState.lastAttempt` içine yazılır.
+  Ayarlar sayfasındaki **Neden quiz çıkmıyor?** paneli bunu, kasadaki kelime ve anlam sayılarını ve
+  sıradaki quiz'in zamanını gösterir. **Şimdi test et** zamanlayıcıyı ve koşulları atlayıp quiz'i
+  ayarlar sayfasında hemen gösterir.
+
+Quiz için kasada en az 10 kelime ve hedef dilde en az 4 farklı anlam gerekir.
 
 ### Senkronizasyonun veri modeli
 
@@ -171,6 +199,7 @@ iki manifestteki `host_permissions` listesine de ekle.
 | İzin | Neden gerekli |
 | --- | --- |
 | `storage` | Ayarları ve kasayı (ileride çeviri önbelleğini) `chrome.storage.local` içinde, yalnızca bu tarayıcıda saklamak için. |
+| `alarms` | Quiz'in zamanlayıcısı için. Arka plan betiği uyurken zamanı gelince onu uyandırır. |
 | `unlimitedStorage` | Kasa büyüdükçe `storage.local`'ın 10 MB sınırına takılmamak için. Kasadaki kelimeler asla otomatik silinmez. |
 | İçerik betiği: `<all_urls>` | Çift tıklama herhangi bir sayfada çalışmalı. Betik, kullanıcı bir kelimeye çift tıklayana kadar sayfadan hiçbir şey okumaz. |
 | Sunucu izni: `https://api.mymemory.translated.net/*` | Varsayılan çeviri servisi. İstekler arka plan betiğinden gider. |
