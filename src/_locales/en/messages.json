@@ -1,0 +1,80 @@
+{
+  "extName": {
+    "message": "Wordvault",
+    "description": "Name of the extension."
+  },
+  "extDescription": {
+    "message": "Translate words on web pages and in video subtitles, save them to your vault and review them with quick quizzes.",
+    "description": "Description of the extension (max. 132 characters)."
+  },
+
+  "popupClose": {
+    "message": "Close",
+    "description": "Label of the button that closes the translation popup."
+  },
+  "popupSpeak": {
+    "message": "Pronounce",
+    "description": "Label of the button that reads the selected word aloud."
+  },
+  "popupSourceLang": {
+    "message": "Source language",
+    "description": "Accessible label of the source-language dropdown in the translation popup."
+  },
+  "popupTranslating": {
+    "message": "Translating…",
+    "description": "Shown in the translation popup while waiting for the translation."
+  },
+  "popupAlternatives": {
+    "message": "Also:",
+    "description": "Prefix of the list of alternative translations, e.g. 'Also: reservation, volume'."
+  },
+  "popupTranslatedBy": {
+    "message": "Translated by $1",
+    "description": "Attribution line in the translation popup. $1 is the name of the translation service."
+  },
+  "popupRetry": {
+    "message": "Try again",
+    "description": "Button shown under an error message in the translation popup."
+  },
+  "langAuto": {
+    "message": "Detect language",
+    "description": "Dropdown option that lets the extension detect the source language."
+  },
+
+  "errNetwork": {
+    "message": "Could not reach the translation service. Check your internet connection.",
+    "description": "Error: the request failed before any response arrived."
+  },
+  "errTimeout": {
+    "message": "The translation service took too long to respond.",
+    "description": "Error: the request timed out."
+  },
+  "errRateLimit": {
+    "message": "The translation service's free limit has been reached. Try again later.",
+    "description": "Error: the provider refused the request because of a usage quota."
+  },
+  "errUnsupportedLanguage": {
+    "message": "The translation service does not support this language pair. Try picking the source language above.",
+    "description": "Error: the provider rejected the source or target language."
+  },
+  "errSameLanguage": {
+    "message": "This text already seems to be in your target language. If that is wrong, pick the source language above.",
+    "description": "Error: the detected source language equals the target language."
+  },
+  "errTooLong": {
+    "message": "The selected text is too long to translate.",
+    "description": "Error: the selection exceeds the length limit."
+  },
+  "errNoResult": {
+    "message": "No translation found.",
+    "description": "Error: the provider returned an empty result."
+  },
+  "errContextInvalidated": {
+    "message": "Wordvault was updated. Reload this page to keep using it.",
+    "description": "Error: the extension was reloaded or updated while this page stayed open."
+  },
+  "errUnknown": {
+    "message": "Something went wrong while translating.",
+    "description": "Error: fallback for anything unexpected."
+  }
+}

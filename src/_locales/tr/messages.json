@@ -1,0 +1,61 @@
+{
+  "extName": {
+    "message": "Wordvault"
+  },
+  "extDescription": {
+    "message": "Web sayfalarındaki ve video altyazılarındaki kelimeleri çevir, kasana kaydet ve kısa quizlerle tekrar et."
+  },
+
+  "popupClose": {
+    "message": "Kapat"
+  },
+  "popupSpeak": {
+    "message": "Telaffuz et"
+  },
+  "popupSourceLang": {
+    "message": "Kaynak dil"
+  },
+  "popupTranslating": {
+    "message": "Çevriliyor…"
+  },
+  "popupAlternatives": {
+    "message": "Ayrıca:"
+  },
+  "popupTranslatedBy": {
+    "message": "$1 ile çevrildi"
+  },
+  "popupRetry": {
+    "message": "Tekrar dene"
+  },
+  "langAuto": {
+    "message": "Dili algıla"
+  },
+
+  "errNetwork": {
+    "message": "Çeviri servisine ulaşılamadı. İnternet bağlantınızı kontrol edin."
+  },
+  "errTimeout": {
+    "message": "Çeviri servisi zamanında yanıt vermedi."
+  },
+  "errRateLimit": {
+    "message": "Çeviri servisinin ücretsiz kullanım sınırına ulaşıldı. Daha sonra tekrar deneyin."
+  },
+  "errUnsupportedLanguage": {
+    "message": "Çeviri servisi bu dil çiftini desteklemiyor. Kaynak dili yukarıdan seçmeyi deneyin."
+  },
+  "errSameLanguage": {
+    "message": "Bu metin zaten hedef dilinizde görünüyor. Yanlışsa kaynak dili yukarıdan seçin."
+  },
+  "errTooLong": {
+    "message": "Seçilen metin çevrilemeyecek kadar uzun."
+  },
+  "errNoResult": {
+    "message": "Çeviri bulunamadı."
+  },
+  "errContextInvalidated": {
+    "message": "Wordvault güncellendi. Kullanmaya devam etmek için sayfayı yenileyin."
+  },
+  "errUnknown": {
+    "message": "Çeviri sırasında bir sorun oluştu."
+  }
+}

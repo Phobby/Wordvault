@@ -1,0 +1,13 @@
+{
+  "name": "wordvault",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Browser extension for learning vocabulary while you browse: translate, save, review.",
+  "scripts": {
+    "build": "node build.js",
+    "watch": "node build.js --watch",
+    "icons": "node tools/make-icons.js",
+    "lint": "node build.js && npx --yes web-ext lint --source-dir dist/firefox",
+    "start:firefox": "node build.js && npx --yes web-ext run --source-dir dist/firefox"
+  }
+}

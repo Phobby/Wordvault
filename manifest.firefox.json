@@ -1,0 +1,51 @@
+{
+  "manifest_version": 3,
+  "name": "__MSG_extName__",
+  "short_name": "Wordvault",
+  "description": "__MSG_extDescription__",
+  "version": "0.1.0",
+  "default_locale": "en",
+  "icons": {
+    "16": "icons/icon-16.png",
+    "32": "icons/icon-32.png",
+    "48": "icons/icon-48.png",
+    "96": "icons/icon-96.png",
+    "128": "icons/icon-128.png"
+  },
+  "action": {
+    "default_title": "Wordvault",
+    "default_icon": {
+      "16": "icons/icon-16.png",
+      "32": "icons/icon-32.png"
+    }
+  },
+  "permissions": ["storage", "unlimitedStorage"],
+  "host_permissions": ["https://api.mymemory.translated.net/*"],
+  "background": {
+    "scripts": ["background/background.js"],
+    "type": "module"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": [
+        "content/dom.js",
+        "content/styles.js",
+        "content/selection.js",
+        "content/popup.js",
+        "content/triggers.js"
+      ],
+      "run_at": "document_idle",
+      "all_frames": true
+    }
+  ],
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "wordvault@phobby",
+      "strict_min_version": "142.0",
+      "data_collection_permissions": {
+        "required": ["websiteContent"]
+      }
+    }
+  }
+}
