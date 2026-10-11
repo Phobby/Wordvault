@@ -1,10 +1,16 @@
-// User settings live under one key in chrome.storage.local. Content scripts read the same key
-// directly (they are classic scripts and cannot import this module), so keep the shape flat.
+// User preferences. Everything that needs one (translation popup, toolbar popup, options page,
+// quiz) reads it through this module, so there is exactly one stored value per preference.
+// Content scripts are classic scripts and cannot import this file; they ask the background
+// script, except for the double-click switch, which they read from the same storage key.
 
-const STORAGE_KEY = 'settings';
+const SETTINGS_KEY = 'settings';
+const SITE_SOURCES_KEY = 'siteSourceLangs';
 
 export const DEFAULT_SETTINGS = Object.freeze({
-  /** Target language code; '' means "follow the browser's UI language". */
+  /**
+   * Language translations are made into. '' means the user has not chosen yet: until they do,
+   * the browser's UI language is used and the UI asks them to confirm or change it.
+   */
   targetLang: '',
   /** Id of the active translation provider (see providers/index.js). */
   provider: 'mymemory',
@@ -16,13 +22,38 @@ export const DEFAULT_SETTINGS = Object.freeze({
 
 /** @returns {Promise<typeof DEFAULT_SETTINGS>} */
 export async function getSettings() {
-  const stored = (await chrome.storage.local.get(STORAGE_KEY))[STORAGE_KEY];
+  const stored = (await chrome.storage.local.get(SETTINGS_KEY))[SETTINGS_KEY];
   return { ...DEFAULT_SETTINGS, ...(stored && typeof stored === 'object' ? stored : {}) };
 }
 
 /** @param {Partial<typeof DEFAULT_SETTINGS>} patch */
 export async function updateSettings(patch) {
   const next = { ...(await getSettings()), ...patch };
-  await chrome.storage.local.set({ [STORAGE_KEY]: next });
+  await chrome.storage.local.set({ [SETTINGS_KEY]: next });
   return next;
+}
+
+// --- "Always use this source language on this site" ----------------------------------------------
+
+const validHost = (host) => typeof host === 'string' && host.length > 0 && host.length <= 255;
+
+async function siteSources() {
+  const stored = (await chrome.storage.local.get(SITE_SOURCES_KEY))[SITE_SOURCES_KEY];
+  return stored && typeof stored === 'object' ? stored : {};
+}
+
+/** @returns {Promise<string>} Language code pinned for the host, or ''. */
+export async function getSiteSource(host) {
+  if (!validHost(host)) return '';
+  const lang = (await siteSources())[host];
+  return typeof lang === 'string' ? lang : '';
+}
+
+/** @param {string} host @param {string | null} lang Falsy removes the pin. */
+export async function setSiteSource(host, lang) {
+  if (!validHost(host)) return;
+  const all = await siteSources();
+  if (lang) all[host] = lang;
+  else delete all[host];
+  await chrome.storage.local.set({ [SITE_SOURCES_KEY]: all });
 }

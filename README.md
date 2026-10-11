@@ -42,12 +42,16 @@ build.js                dist/ klasörlerini üretir
 tools/make-icons.js     src/icons altındaki PNG'leri üretir (yalnızca tasarım değişince)
 src/
   background/           Arka plan betiği: mesaj yönlendirme, tüm ağ istekleri
-  content/              Sayfaya eklenen betikler (klasik betik, ortak WV ad alanı)
+  shared/               Hem sayfaya eklenen betiklerin hem eklenti sayfalarının kullandığı arayüz
+                        parçaları (klasik betik, ortak WV ad alanı)
     dom.js              Öğe üretici, mesajlaşma, Shadow DOM yüzeyi
-    styles.js           Shadow DOM içinde kullanılan CSS
+    styles.js           Renkler, düğmeler ve çeviri penceresinin CSS'i
+    language-list.js    Dil adları ve aranabilir dil listesi
+  content/              Yalnızca web sayfalarına eklenen betikler
     selection.js        Seçim, bağlam cümlesi ve dil yardımcıları
     popup.js            Çeviri penceresi
     triggers.js         Pencereyi açan tetikleyiciler (çift tıklama)
+  options/              Ayarlar sayfası
   lib/                  Arka plan ve eklenti sayfalarının paylaştığı ES modülleri
   providers/            Çeviri sağlayıcıları (ortak arayüz: providers/index.js)
   _locales/             Arayüz metinleri (en, tr)
@@ -56,6 +60,16 @@ src/
 
 Sayfaya eklenen bütün arayüz kapalı bir Shadow DOM içinde yaşar: sayfanın CSS'i eklentiye, eklentinin
 CSS'i sayfaya ulaşamaz. Sayfanın kendi içeriği değiştirilmez.
+
+### Hedef ve kaynak dil
+
+Hedef dil tek bir yerde durur: `chrome.storage.local` içindeki `settings.targetLang`. Çeviri penceresi,
+ayarlar sayfası ve eklentinin geri kalanı bu değeri `lib/translator.js` üzerinden okur ve yazar; başka
+kopyası yoktur. Kullanıcı bir dil seçene kadar tarayıcının arayüz dili kullanılır ve çeviri penceresi
+bunu onaylamasını ya da değiştirmesini ister.
+
+Kaynak dil varsayılan olarak algılanır. Kullanıcı pencereden bir dil seçerse algılama hiç çalışmaz;
+"Bu sitede hep bu dili kullan" işaretlenirse seçim o site için saklanır (`siteSourceLangs`).
 
 ### Yeni çeviri sağlayıcısı eklemek
 

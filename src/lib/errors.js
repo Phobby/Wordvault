@@ -9,17 +9,20 @@ export class WordvaultError extends Error {
   /**
    * @param {string} code
    * @param {string} [detail] Raw, non-localized detail (for example the provider's own message).
+   * @param {Record<string, unknown>} [context] What was already known when the error happened
+   *   (languages, vault state), so the UI can still offer to save the word.
    */
-  constructor(code, detail) {
+  constructor(code, detail, context) {
     super(detail || code);
     this.name = 'WordvaultError';
     this.code = code;
     this.detail = detail || '';
+    this.context = context || null;
   }
 }
 
 /** Plain object form that survives chrome.runtime messaging. */
 export function serializeError(error) {
-  if (error instanceof WordvaultError) return { code: error.code, detail: error.detail };
-  return { code: 'internal', detail: String(error?.message || error) };
+  if (error instanceof WordvaultError) return { code: error.code, detail: error.detail, context: error.context };
+  return { code: 'internal', detail: String(error?.message || error), context: null };
 }

@@ -19,6 +19,10 @@
       "32": "icons/icon-32.png"
     }
   },
+  "options_ui": {
+    "page": "options/options.html",
+    "open_in_tab": true
+  },
   "permissions": ["storage", "unlimitedStorage"],
   "host_permissions": ["https://api.mymemory.translated.net/*"],
   "background": {
@@ -29,8 +33,9 @@
     {
       "matches": ["<all_urls>"],
       "js": [
-        "content/dom.js",
-        "content/styles.js",
+        "shared/dom.js",
+        "shared/styles.js",
+        "shared/language-list.js",
         "content/selection.js",
         "content/popup.js",
         "content/triggers.js"

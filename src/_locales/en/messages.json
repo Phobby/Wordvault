@@ -12,13 +12,21 @@
     "message": "Close",
     "description": "Label of the button that closes the translation popup."
   },
+  "popupBack": {
+    "message": "Back",
+    "description": "Label of the button that leaves the language list and returns to the translation."
+  },
   "popupSpeak": {
     "message": "Pronounce",
     "description": "Label of the button that reads the selected word aloud."
   },
   "popupSourceLang": {
     "message": "Source language",
-    "description": "Accessible label of the source-language dropdown in the translation popup."
+    "description": "Tooltip of the source-language control and title of the list that opens from it."
+  },
+  "popupTargetLang": {
+    "message": "Target language",
+    "description": "Tooltip of the target-language control and title of the list that opens from it."
   },
   "popupTranslating": {
     "message": "Translating…",
@@ -36,9 +44,83 @@
     "message": "Try again",
     "description": "Button shown under an error message in the translation popup."
   },
+
   "langAuto": {
-    "message": "Detect language",
-    "description": "Dropdown option that lets the extension detect the source language."
+    "message": "Detect automatically",
+    "description": "Source-language choice that lets the extension detect the language."
+  },
+  "langAutoDetected": {
+    "message": "$1 (detected)",
+    "description": "Source-language label when the language was detected automatically. $1 is a language name."
+  },
+  "langSearch": {
+    "message": "Search languages…",
+    "description": "Placeholder of the search box above a list of languages."
+  },
+  "langNoMatch": {
+    "message": "No matching language",
+    "description": "Shown when the language search finds nothing."
+  },
+  "sitePin": {
+    "message": "Always use this language on this site",
+    "description": "Checkbox under the source language: remember the chosen source language for the current website."
+  },
+  "noteSameLanguage": {
+    "message": "This text already seems to be in your target language ($1).",
+    "description": "Small informational note under a translation. $1 is a language name. Followed by links to change the source or target language."
+  },
+  "linkChangeSource": {
+    "message": "Change source language",
+    "description": "Link that opens the source-language list."
+  },
+  "linkChangeTarget": {
+    "message": "Change target language",
+    "description": "Link that opens the target-language list."
+  },
+  "firstRunText": {
+    "message": "Translations are made into $1. Is that the language you want?",
+    "description": "Asked once, until the user has chosen a target language. $1 is a language name."
+  },
+  "firstRunConfirm": {
+    "message": "Yes, keep it",
+    "description": "Button: keep the suggested target language."
+  },
+  "firstRunChange": {
+    "message": "Change",
+    "description": "Button: open the list to pick another target language."
+  },
+
+  "optionsTitle": {
+    "message": "Wordvault settings",
+    "description": "Title of the options page."
+  },
+  "optTargetLang": {
+    "message": "Target language",
+    "description": "Options page: heading of the target-language setting."
+  },
+  "optTargetLangHelp": {
+    "message": "Translations are made into this language. You can also change it from the translation popup.",
+    "description": "Options page: explanation under the target-language heading."
+  },
+  "optTargetLangCurrent": {
+    "message": "Current: $1",
+    "description": "Options page: shows the selected target language. $1 is a language name."
+  },
+  "optTargetLangUnset": {
+    "message": "Not chosen yet. Using your browser's language: $1",
+    "description": "Options page: shown until the user picks a target language. $1 is a language name."
+  },
+  "optDoubleClick": {
+    "message": "Translate on double-click",
+    "description": "Options page: label of the switch for the double-click trigger."
+  },
+  "optDoubleClickHelp": {
+    "message": "Double-clicking a word on a page opens the translation popup.",
+    "description": "Options page: explanation of the double-click switch."
+  },
+  "optSaved": {
+    "message": "Saved",
+    "description": "Options page: confirmation shown briefly after a setting is stored."
   },
 
   "errNetwork": {
@@ -54,12 +136,8 @@
     "description": "Error: the provider refused the request because of a usage quota."
   },
   "errUnsupportedLanguage": {
-    "message": "The translation service does not support this language pair. Try picking the source language above.",
+    "message": "The translation service does not support this language pair. Try picking the languages above.",
     "description": "Error: the provider rejected the source or target language."
-  },
-  "errSameLanguage": {
-    "message": "This text already seems to be in your target language. If that is wrong, pick the source language above.",
-    "description": "Error: the detected source language equals the target language."
   },
   "errTooLong": {
     "message": "The selected text is too long to translate.",

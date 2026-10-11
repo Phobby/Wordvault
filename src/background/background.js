@@ -6,12 +6,24 @@
 // requests would be subject to the CORS and CSP rules of whatever page they run in.
 
 import { serializeError } from '../lib/errors.js';
-import { getLanguageInfo, translate } from '../lib/translator.js';
+import { getPreferences, setSiteSourceLanguage, setTargetLanguage, translate } from '../lib/translator.js';
+
+/** Host name of the web page a message came from ('' for extension pages). */
+function hostOf(sender) {
+  try {
+    const url = new URL(sender.url || '');
+    return url.protocol === 'http:' || url.protocol === 'https:' ? url.hostname : '';
+  } catch {
+    return '';
+  }
+}
 
 /** Message handlers, keyed by message type. Each returns (a promise of) the response data. */
 const handlers = {
-  'wv:translate': (payload) => translate(payload),
-  'wv:languages': () => getLanguageInfo(),
+  'wv:translate': (payload, sender) => translate(payload, hostOf(sender)),
+  'wv:prefs': (payload, sender) => getPreferences(hostOf(sender)),
+  'wv:setTargetLang': (payload) => setTargetLanguage(payload?.code),
+  'wv:setSiteSource': (payload, sender) => setSiteSourceLanguage(hostOf(sender), payload?.lang),
 };
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {

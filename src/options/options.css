@@ -1,0 +1,82 @@
+/* Layout of the options page. Colours, buttons and the language list come from
+   shared/styles.js, which options.js adopts into this document. */
+
+:root { color-scheme: light dark; }
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: var(--wv-bg, Canvas);
+}
+
+.page {
+  max-width: 560px;
+  margin: 0 auto;
+  padding: 32px 20px 64px;
+}
+
+.page-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+.page-head h1 {
+  flex: 1 1 auto;
+  margin: 0;
+  font-size: 22px;
+  font-weight: 650;
+}
+
+.saved {
+  color: var(--wv-ok);
+  font-size: 13px;
+  font-weight: 600;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+.saved.visible { opacity: 1; }
+
+.card {
+  margin-bottom: 16px;
+  padding: 16px 18px;
+  border: 1px solid var(--wv-border);
+  border-radius: 12px;
+}
+.card h2 {
+  margin: 0 0 4px;
+  font-size: 16px;
+  font-weight: 650;
+}
+.help {
+  margin: 0;
+  color: var(--wv-muted);
+  font-size: 13px;
+}
+.current {
+  margin: 12px 0 10px;
+  font-weight: 600;
+}
+
+/* Adopted stylesheets come after this file in the cascade, hence the extra class. */
+.page .wv-ll-list { max-height: 300px; }
+
+.switch {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  cursor: pointer;
+}
+.switch input {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  margin: 2px 0 0;
+  accent-color: var(--wv-accent);
+}
+.switch-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.switch-text strong { font-weight: 650; }

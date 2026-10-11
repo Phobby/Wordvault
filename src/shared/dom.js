@@ -1,8 +1,9 @@
 'use strict';
 
-// Content scripts are classic scripts, so the files listed in the manifest cannot import each
-// other. They share this namespace object instead. It lives on the global of the extension's
-// isolated world, so the page cannot see or touch it.
+// UI helpers shared by the content scripts and the extension's own pages (toolbar popup,
+// options). Content scripts are classic scripts, so these files cannot import each other; they
+// share this namespace object instead. In a web page it lives on the global of the extension's
+// isolated world, where the page cannot see or touch it.
 globalThis.WV = globalThis.WV || {};
 
 (function (WV) {
@@ -73,6 +74,13 @@ globalThis.WV = globalThis.WV || {};
     return response.data;
   };
 
+  /** Applies CSS to the current document without a <style> element. For extension pages. */
+  WV.adoptStyles = function adoptStyles(css) {
+    const sheet = new CSSStyleSheet();
+    sheet.replaceSync(css);
+    document.adoptedStyleSheets = [...document.adoptedStyleSheets, sheet];
+  };
+
   /** Everything outside an open modal <dialog> is inert, so UI for text inside one has to live in it. */
   function parentFor(node) {
     let element = node && (node.nodeType === Node.ELEMENT_NODE ? node : node.parentElement);
@@ -100,9 +108,15 @@ globalThis.WV = globalThis.WV || {};
     const host = document.createElement('wordvault-ui');
     const shadow = host.attachShadow({ mode: 'closed' });
     const style = document.createElement('style');
-    style.textContent = WV.styles.base + css;
+    style.textContent = WV.styles.host + WV.styles.tokens + WV.styles.controls + css;
     const root = WV.h('div', { class: 'wv-root' });
     shadow.append(style, root);
+
+    // Keys pressed inside the surface (typing in a search box, for instance) are ours. Without
+    // this they would bubble into the page and trigger its keyboard shortcuts.
+    for (const type of ['keydown', 'keypress', 'keyup']) {
+      root.addEventListener(type, (event) => event.stopPropagation());
+    }
 
     // The top layer (Popover API) puts the surface above every z-index, above fullscreen video
     // and outside the reach of `transform`/`filter` on page ancestors, which would otherwise

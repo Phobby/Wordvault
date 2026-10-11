@@ -9,11 +9,17 @@
   "popupClose": {
     "message": "Kapat"
   },
+  "popupBack": {
+    "message": "Geri"
+  },
   "popupSpeak": {
     "message": "Telaffuz et"
   },
   "popupSourceLang": {
     "message": "Kaynak dil"
+  },
+  "popupTargetLang": {
+    "message": "Hedef dil"
   },
   "popupTranslating": {
     "message": "Çevriliyor…"
@@ -27,8 +33,64 @@
   "popupRetry": {
     "message": "Tekrar dene"
   },
+
   "langAuto": {
-    "message": "Dili algıla"
+    "message": "Otomatik algıla"
+  },
+  "langAutoDetected": {
+    "message": "$1 (algılandı)"
+  },
+  "langSearch": {
+    "message": "Dil ara…"
+  },
+  "langNoMatch": {
+    "message": "Eşleşen dil yok"
+  },
+  "sitePin": {
+    "message": "Bu sitede hep bu dili kullan"
+  },
+  "noteSameLanguage": {
+    "message": "Bu metin zaten hedef dilinde ($1) görünüyor."
+  },
+  "linkChangeSource": {
+    "message": "Kaynak dili değiştir"
+  },
+  "linkChangeTarget": {
+    "message": "Hedef dili değiştir"
+  },
+  "firstRunText": {
+    "message": "Çeviriler şu dile yapılıyor: $1. İstediğin dil bu mu?"
+  },
+  "firstRunConfirm": {
+    "message": "Evet, kalsın"
+  },
+  "firstRunChange": {
+    "message": "Değiştir"
+  },
+
+  "optionsTitle": {
+    "message": "Wordvault ayarları"
+  },
+  "optTargetLang": {
+    "message": "Hedef dil"
+  },
+  "optTargetLangHelp": {
+    "message": "Çeviriler bu dile yapılır. Çeviri penceresinden de değiştirebilirsin."
+  },
+  "optTargetLangCurrent": {
+    "message": "Seçili: $1"
+  },
+  "optTargetLangUnset": {
+    "message": "Henüz seçilmedi. Tarayıcı dilin kullanılıyor: $1"
+  },
+  "optDoubleClick": {
+    "message": "Çift tıklayınca çevir"
+  },
+  "optDoubleClickHelp": {
+    "message": "Sayfadaki bir kelimeye çift tıklayınca çeviri penceresi açılır."
+  },
+  "optSaved": {
+    "message": "Kaydedildi"
   },
 
   "errNetwork": {
@@ -41,10 +103,7 @@
     "message": "Çeviri servisinin ücretsiz kullanım sınırına ulaşıldı. Daha sonra tekrar deneyin."
   },
   "errUnsupportedLanguage": {
-    "message": "Çeviri servisi bu dil çiftini desteklemiyor. Kaynak dili yukarıdan seçmeyi deneyin."
-  },
-  "errSameLanguage": {
-    "message": "Bu metin zaten hedef dilinizde görünüyor. Yanlışsa kaynak dili yukarıdan seçin."
+    "message": "Çeviri servisi bu dil çiftini desteklemiyor. Dilleri yukarıdan seçmeyi deneyin."
   },
   "errTooLong": {
     "message": "Seçilen metin çevrilemeyecek kadar uzun."

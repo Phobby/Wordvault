@@ -30,7 +30,7 @@
   chrome.storage.onChanged.addListener((changes, area) => {
     if (area !== 'local' || !changes.settings) return;
     applySettings(changes.settings.newValue);
-    WV.popup.resetLanguages();
+    WV.popup.settingsChanged();
   });
 
   /**
