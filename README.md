@@ -9,8 +9,9 @@ kaydet, sonra kısa quizlerle tekrar et. Her şey tarayıcında çalışır; Wor
 > Sırada: sağ tık menüsü, çeviri penceresinde kelime türü etiketi, önbellek ve 7 günlük temizlik,
 > quiz, altyazılar, ayarlar sayfasının kalanı (sağlayıcı ve API anahtarı) ve gizlilik politikası.
 >
-> Cihazlar arası senkronizasyon (`SPEC-SYNC.md`) yedi aşamada ekleniyor; şu an 1. aşama hazır:
-> veri modeli, birleştirme ve silme kayıtları. Henüz hiçbir yere veri gönderilmiyor.
+> Cihazlar arası senkronizasyon (`SPEC-SYNC.md`) yedi aşamada ekleniyor; şu an ilk iki aşama hazır:
+> veri modeli, birleştirme, silme kayıtları, sağlayıcı arayüzü ve eşitleme motoru. Motor henüz
+> hiçbir sağlayıcıya ve arayüze bağlı değil; hiçbir yere veri gönderilmiyor.
 >
 > Flash card sistemi (`SPEC-QUIZ.md`, `SPEC-QUIZ-POPUP.md`) aşamalı ekleniyor; şu an hazır olanlar:
 > zamanlayıcı, "Neden quiz çıkmıyor?" tanı paneli, "Şimdi test et", öğrenme algoritması, soru seçimi,
@@ -100,6 +101,10 @@ src/
     selection.js        Sıradaki kelimenin seçimi (SELECTION)
     question.js         Soru ve şık üretimi
   sync/                 Senkronizasyon
+    engine.js           Eşitleme motoru: oku, birleştir, yaz, yerele uygula; kilit, yeniden deneme, alarmlar
+    codec.js            Belgenin saklanan biçimi (gzip'lenmiş JSON)
+    state.js            Senkron ayarı ve durumu (yalnızca storage.local)
+    providers/          Sağlayıcılar (ortak arayüz: providers/index.js)
     model.js            Eşitlenen belgenin biçimi; kasa kaydı <-> eşitleme kaydı dönüşümü
     merge.js            İki belgeyi birleştirme, silme kayıtlarının temizliği
     local.js            Bu cihazın kasasını belge olarak okuma ve belgeyi kasaya uygulama

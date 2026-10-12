@@ -35,11 +35,13 @@ export async function readLocalDocument() {
 }
 
 /**
- * Brings the vault in line with a document that already contains everything this device has
- * (the result of merging the local document with a remote one).
+ * Brings the vault in line with a document that contains everything this device had when the
+ * document was put together (the result of merging the local document with a remote one).
  *
  * Words are only removed here when the document carries a tombstone for them. A word that the
  * document simply does not mention is left alone, so that no mistake elsewhere can empty a vault.
+ * And what this device holds in a newer version than the document stays as it is: the vault may
+ * have been edited while the document was on its way to the cloud and back.
  *
  * @returns {Promise<{ added: number, updated: number, removed: number }>} What changed locally.
  */
@@ -50,24 +52,21 @@ export async function applyDocument(document) {
   const changes = { added: 0, updated: 0, removed: 0 };
 
   for (const [id, value] of Object.entries(document.e)) {
-    const local = entries[id];
+    const entry = entries[id];
+    const tombstone = tombstones[id];
+    const held = entry ? toRecord(withDefaults(entry)) : tombstone ? toTombstone(tombstone) : null;
+    if (held && compareVersions(value, held) <= 0) continue;
     if (isTombstone(value)) {
-      if (local) {
+      if (entry) {
         removals.push(entryKey(id));
         changes.removed += 1;
       }
-      const known = tombstones[id];
-      if (!known || known.deletedAt !== value.d || known.rev !== value.r) writes[tombstoneKey(id)] = { id, deletedAt: value.d, rev: value.r };
-      continue;
+      writes[tombstoneKey(id)] = { id, deletedAt: value.d, rev: value.r };
+    } else {
+      writes[entryKey(id)] = fromRecord(id, value, entry || null);
+      changes[entry ? 'updated' : 'added'] += 1;
+      if (tombstone) removals.push(tombstoneKey(id));
     }
-    if (!local) {
-      writes[entryKey(id)] = fromRecord(id, value, null);
-      changes.added += 1;
-    } else if (compareVersions(value, toRecord(withDefaults(local))) !== 0) {
-      writes[entryKey(id)] = fromRecord(id, value, local);
-      changes.updated += 1;
-    }
-    if (tombstones[id]) removals.push(tombstoneKey(id));
   }
   // Tombstones the document no longer carries have expired.
   for (const id of Object.keys(tombstones)) {
