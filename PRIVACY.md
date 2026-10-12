@@ -28,6 +28,10 @@ Bir kelimeye çift tıkladığında ya da çeviri istediğinde **seçtiğin meti
 sağlayıcısına gönderilir (varsayılan: MyMemory, `api.mymemory.translated.net`). Sayfanın geri kalanı,
 adresi ya da kimliğin gönderilmez. Sağlayıcının kendi gizlilik politikası geçerlidir.
 
+YouTube'da altyazıdaki bir kelimenin üzerinde imleci tuttuğunda da aynı şey olur: **yalnızca o kelime**
+ve dil çifti gönderilir. Altyazı satırı dili algılamak için tarayıcının içinde kullanılır, kelimeyi
+kasaya eklersen onunla birlikte saklanır; altyazı akışı kaydedilmez ya da indirilmez.
+
 ### Sözlük ve telaffuz (kelimeyi kasaya eklediğinde ya da dinlediğinde)
 
 Kasaya eklediğin kelime, türünü ve örnek cümlelerini almak için Wiktionary'ye

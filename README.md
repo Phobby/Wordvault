@@ -63,7 +63,8 @@ eklentiyle bağlantısını kaybeder.
 SPEC.md, SPEC-SYNC.md,  İstenen davranışın tanımı (eklenti, senkronizasyon ve arayüzü, flash card,
 SPEC-SYNC-UI.md,        quiz'in zamanlayıcısı ve görünümü)
 SPEC-QUIZ.md,
-SPEC-QUIZ-POPUP.md
+SPEC-QUIZ-POPUP.md,
+SPEC-CAPTIONS.md        Video altyazılarında kelimenin üzerine gelince çeviri
 manifest.firefox.json   Firefox manifesti (background.scripts, gecko ayarları)
 manifest.chrome.json    Chrome manifesti (background.service_worker)
 build.js                dist/ klasörlerini üretir
@@ -87,9 +88,21 @@ src/
                         aynı kodu kullanır
   content/              Web sayfalarına eklenen betikler
     selection.js        Seçim, bağlam cümlesi ve dil yardımcıları
-    popup.js            Çeviri penceresi
     quiz.js             Quiz'i sayfada gösterir; "şu an uygun mu" kontrolleri (ayarlar sayfası da yükler)
     triggers.js         Pencereyi açan tetikleyiciler (çift tıklama)
+  ui/popup/popup.js     Çeviri penceresi (baloncuk): seçilen metin için de, bir kelime kaynağının
+                        bulduğu kelime için de (openForHit) aynı pencere
+  core/hover/           "İmlecin altındaki kelime" hattı; özellikten bağımsız (yalnızca YouTube'da yüklenir)
+    word-source.js      WordSource sözleşmesi: ekrandaki bir noktadan kelimeyi (metin, satır, dikdörtgen)
+                        veren ve metnin gittiğini bildiren kaynak
+    words.js            Kelime sınırları (Intl.Segmenter), ses betimlemeleri, parçalı satırlar
+    text-point.js       DOM'daki metinde noktadan kelimeye: caretPositionFromPoint + Range
+    highlight.js        Kelimeyi CSS Custom Highlight API ile vurgular (sayfaya öğe eklemez)
+    tracker.js          Üzerine gelme ne zaman sayılır (150 ms bekleme)
+    hover.js            Kaynağı imlece ve çeviri penceresine bağlar
+  features/captions/    Altyazı özelliği: yalnızca sitenin bağdaştırıcısını seçer
+    selectors.js        Sitelerin oynatıcılarında kullanılan bütün seçiciler (tek yer)
+    adapters/youtube.js YouTube altyazıları, bir kelime kaynağı olarak
   popup/                Araç çubuğu simgesinin açtığı kasa: liste, arama, detay, dışa aktarma
   options/              Ayarlar sayfası: hedef dil, çift tıklama, Flash card ayarları ve tanı paneli,
                         yedekleme (dışa/içe aktarma) ve senkronizasyon (options/sync.js)
@@ -136,6 +149,30 @@ src/
 
 Sayfaya eklenen bütün arayüz kapalı bir Shadow DOM içinde yaşar: sayfanın CSS'i eklentiye, eklentinin
 CSS'i sayfaya ulaşamaz. Sayfanın kendi içeriği değiştirilmez.
+
+### Video altyazıları (YouTube)
+
+YouTube'da altyazıdaki bir kelimenin üzerinde imleci yaklaşık 150 ms tutunca çeviri penceresi açılır;
+video oynarken de durmuşken de. Kelime, imlecin konumundan bulunur (`caretPositionFromPoint`, olmazsa
+harflerin ölçülmesi) ve sınırları `Intl.Segmenter` ile belirlenir; altyazının DOM'una dokunulmaz,
+vurgu CSS Custom Highlight API ile yapılır. Kaynak dil **altyazı satırının tamamından** yerelde
+algılanır (sayfanın dili altyazının dili değildir). "Kasaya ekle" kelimeyi altyazı satırıyla birlikte
+saklar. Altyazı yeniden çizilse ya da kaybolsa da açık pencere yerinde kalır ve altyazının hiçbir
+satırını örtmez. `♪` ve `[Music]` gibi ses betimlemeleri kelime sayılmaz.
+
+Yapı iki katmanlıdır: `core/hover/` ve `ui/popup/` altyazıyı bilmez, yalnızca `WordSource`
+sözleşmesini (bkz. `core/hover/word-source.js`) bilir; `features/captions/` bu sözleşmeyi YouTube'un
+DOM'u için uygular. İleride başka bir kaynak (ör. resimden tanınan metin) aynı hattı kendi
+`wordAt` uygulamasıyla kullanabilir.
+
+Seçiciler `features/captions/selectors.js` içindedir ve 12 Ekim 2026'da gerçek gömülü oynatıcıda
+doğrulanmıştır. Testler: `tests/hover-words.test.js` (kelime sınırları, noktadan kelime, bekleme
+kuralı, sözleşme) ve YouTube'un altyazı DOM'unu taklit eden çevrimdışı sayfa
+`tests/fixtures/youtube-captions.html`.
+
+Henüz yok (SPEC-CAPTIONS.md'nin sonraki aşamaları): otomatik duraklatma, tetikleme modları, akan
+otomatik altyazılarda kararlı vuruş, "Satırı çevir", ayarlar ve tanı paneli, kısayollar, satır geçmişi,
+YouTube dışındaki siteler.
 
 ### Hedef ve kaynak dil
 
@@ -509,6 +546,7 @@ iki manifestteki `host_permissions` listesine de ekle.
 | İsteğe bağlı adres izni: `https://*/*`, `http://localhost/*`, `http://127.0.0.1/*` | Kurulumda verilmez. Bir bulut hesabı ya da kendi sunucun bağlanırken tarayıcı yalnızca o adres için sorar (Google Drive: `www.googleapis.com`, `oauth2.googleapis.com`; OneDrive: `graph.microsoft.com`, `login.microsoftonline.com`; Dropbox: `api.dropboxapi.com`, `content.dropboxapi.com`). Desen geniştir çünkü kullanıcının gireceği sunucu adresi önceden bilinemez; verilen izin yalnızca istenen adrestir. |
 | `notifications` (isteğe bağlı) | Kurulumda istenmez. Yalnızca ayarlardan **İzin ver**'e basılırsa tarayıcı sorar; quiz başka hiçbir yolla gösterilemediğinde bildirimle haber vermek için. Ayarlardan geri alınabilir. |
 | `unlimitedStorage` | Kasa büyüdükçe `storage.local`'ın 10 MB sınırına takılmamak için. Kasadaki kelimeler asla otomatik silinmez. |
+| İçerik betiği: `*://*.youtube.com/*`, `*://*.youtube-nocookie.com/*` (bütün çerçevelerde) | Altyazıda üzerine gelinen kelimeyi bulmak için. Yalnızca YouTube'da (gömülü oynatıcılar dahil) yüklenir; yeni bir izin değildir, `<all_urls>` betiğinin kapsamı içindedir ama altyazı kodu başka sitelere hiç eklenmez. Altyazı metni kaydedilmez ya da indirilmez. |
 | İçerik betiği: `<all_urls>` | Çift tıklama herhangi bir sayfada çalışmalı. Betik, kullanıcı bir kelimeye çift tıklayana kadar sayfadan hiçbir şey okumaz. |
 | Sunucu izni: `https://api.mymemory.translated.net/*` | Varsayılan çeviri servisi. İstekler arka plan betiğinden gider. |
 | Sunucu izni: `https://en.wiktionary.org/*` | Kasaya eklenen kelimenin türünü, tanımlarını ve örnek cümlelerini almak; Firefox/macOS'te kelimenin ses kaydını bulmak için. |
@@ -523,7 +561,7 @@ eklentinin kimliğini sabitler (OAuth yönlendirme adresi kimlikten türer; bkz.
 Firefox manifestindeki `data_collection_permissions` beyanı `websiteContent` içerir. Eşitleme açılırsa
 kasadaki kelimeler (web sayfalarından alınmış metin) kullanıcının seçtiği hesaba ya da sunucuya gider;
 bu da aynı veri türüdür ve geliştiriciye ulaşmaz. Ayrıntı: `PRIVACY.md`. Tarayıcıdan çıkan veriler
-şunlardır: çevrilmesini istediğin (seçtiğin) metin seçili çeviri servisine, kasaya eklediğin
+şunlardır: çevrilmesini istediğin (seçtiğin ya da YouTube altyazısında üzerinde durduğun) metin seçili çeviri servisine, kasaya eklediğin
 kelime Wiktionary'ye gönderilir; Firefox tabanlı tarayıcılarda macOS'te telaffuz düğmesine bastığın
 kelime de ses kaydı için Wiktionary'ye sorulur; eşitlemeyi açtıysan kasan seçtiğin yere gider. Bunun
 dışında hiçbir veri tarayıcıdan çıkmaz; analitik ya da izleme yoktur. Dil algılama tarayıcının kendi yerel algılayıcısıyla yapılır; diğer tarayıcılarda

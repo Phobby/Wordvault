@@ -48,9 +48,25 @@
         "shared/stopwatch.js",
         "shared/quiz-card.js",
         "content/selection.js",
-        "content/popup.js",
+        "ui/popup/popup.js",
         "content/quiz.js",
         "content/triggers.js"
+      ],
+      "run_at": "document_idle",
+      "all_frames": true
+    },
+    {
+      "matches": ["*://*.youtube.com/*", "*://*.youtube-nocookie.com/*"],
+      "js": [
+        "core/hover/words.js",
+        "core/hover/word-source.js",
+        "core/hover/text-point.js",
+        "core/hover/highlight.js",
+        "core/hover/tracker.js",
+        "core/hover/hover.js",
+        "features/captions/selectors.js",
+        "features/captions/adapters/youtube.js",
+        "features/captions/captions.js"
       ],
       "run_at": "document_idle",
       "all_frames": true

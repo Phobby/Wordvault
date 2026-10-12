@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="tr">
+  <head>
+    <meta charset="utf-8" />
+    <title>Sahte YouTube oynatıcısı (Wordvault altyazı testi)</title>
+    <!--
+      YouTube oynatıcısının altyazı katmanının çevrimdışı kopyası: aynı sınıf adları, aynı iç içe
+      yapı ve altyazıyı etkileyen aynı stiller (2026-10-12'de gömülü oynatıcıdan okundu):
+
+        .ytp-caption-window-container   pointer-events: none
+          .caption-window               pointer-events: auto; user-select: none; draggable
+            .captions-text
+              .caption-visual-line
+                .ytp-caption-segment    display: inline-block; white-space: pre-wrap
+
+      Sayfanın dili bilerek altyazının dilinden farklı (tr / en): gerçek YouTube'da da arayüz dili
+      altyazının dili değildir.
+
+      window.fake:
+        show(rows)   Altyazıyı çizer. rows: satırlar; her satır parçalarının (segment) listesi.
+        redraw()     Aynı metni yeni öğelerle yeniden çizer (oynatıcının her güncellemede yaptığı gibi).
+        clear()      Altyazıyı kaldırır.
+        roll()       Otomatik altyazı gibi akıtır: kelimeler tek tek eklenir, satır dolunca yukarı kayar.
+    -->
+    <style>
+      body { margin: 0; background: #181818; color: #ddd; font: 14px/1.4 sans-serif; }
+      #movie_player { position: relative; width: 854px; height: 480px; margin: 20px; background: #000; overflow: hidden; }
+      #movie_player:fullscreen { width: 100%; height: 100%; margin: 0; }
+      video { width: 100%; height: 100%; display: block; }
+      .ytp-caption-window-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
+      .caption-window { position: absolute; z-index: 41; pointer-events: auto; user-select: none; -webkit-user-select: none; cursor: grab; text-align: center; left: 50%; transform: translateX(-50%); bottom: 12%; }
+      .captions-text { display: block; overflow-wrap: normal; }
+      .caption-visual-line { display: block; }
+      .ytp-caption-segment { display: inline-block; white-space: pre-wrap; background: rgba(8, 8, 8, 0.75); font-size: 24px; color: #fff; font-family: Roboto, Arial, Helvetica, sans-serif; }
+      p { margin: 0 20px; }
+    </style>
+  </head>
+  <body>
+    <div id="movie_player" class="html5-video-player ytp-large-width-mode paused-mode">
+      <video class="video-stream html5-main-video"></video>
+      <div class="ytp-caption-window-container" id="ytp-caption-window-container"></div>
+    </div>
+    <p id="note">Bu sayfa bir video değildir; Wordvault'un altyazı testleri içindir.</p>
+    <script>
+      (() => {
+        const container = document.querySelector('.ytp-caption-window-container');
+        let current = [];
+        let count = 0;
+        let rolling = 0;
+        const el = (tag, className) => Object.assign(document.createElement(tag), { className });
+
+        function show(rows, { dir = 'ltr' } = {}) {
+          current = rows;
+          const captionWindow = el('div', 'caption-window ytp-caption-window-bottom');
+          captionWindow.id = `caption-window-_${count++}`;
+          captionWindow.dir = dir;
+          captionWindow.tabIndex = 0;
+          captionWindow.draggable = true;
+          const text = el('span', 'captions-text');
+          for (const row of rows) {
+            const line = el('span', 'caption-visual-line');
+            for (const piece of row) {
+              const segment = el('span', 'ytp-caption-segment');
+              segment.textContent = piece;
+              line.append(segment);
+            }
+            text.append(line);
+          }
+          captionWindow.append(text);
+          container.replaceChildren(captionWindow);
+        }
+
+        const WORDS = 'so today we are going to look at how these little machines actually work and why that matters'.split(' ');
+        function roll(stepMs = 400) {
+          clearInterval(rolling);
+          let index = 0;
+          let rows = [[]];
+          rolling = setInterval(() => {
+            if (index >= WORDS.length) return clearInterval(rolling);
+            const row = rows[rows.length - 1];
+            if (row.join('').length > 28) rows = [row, []]; // the full row moves up, a new one starts
+            rows[rows.length - 1].push((rows[rows.length - 1].length ? ' ' : '') + WORDS[index++]);
+            show(rows.map((r) => [...r]));
+          }, stepMs);
+        }
+
+        window.fake = {
+          show,
+          redraw: () => show(current),
+          clear: () => container.replaceChildren(),
+          roll,
+          stop: () => clearInterval(rolling),
+        };
+        show([['All right, so here we are, in front of the'], ['elephants']]);
+      })();
+    </script>
+  </body>
+</html>

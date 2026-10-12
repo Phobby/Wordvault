@@ -1,6 +1,7 @@
 'use strict';
 
-// The translation popup: a small card anchored to the selected text.
+// The translation popup: a small card anchored to a piece of text: what the user selected, or
+// the word a word source (core/hover/word-source.js) found under the pointer.
 
 (function (WV) {
   if (!WV.supported || WV.popup) return;
@@ -475,9 +476,13 @@
   /** Where the selection currently is, in viewport coordinates; null if it no longer exists. */
   function anchorRect() {
     if (session.pinned) return session.pinned;
-    if (!session.range.startContainer.isConnected) return null;
-    const rect = session.range.getBoundingClientRect();
-    return rect.width > 0 || rect.height > 0 ? rect : null; // empty: the text was hidden
+    if (session.range.startContainer.isConnected) {
+      const rect = session.range.getBoundingClientRect();
+      if (rect.width > 0 || rect.height > 0) return rect;
+    }
+    // The text is gone or hidden. Text that is expected to change under the popup (a caption)
+    // came with the place it was at, and the popup stays there.
+    return session.lastRect;
   }
 
   function position() {
@@ -491,14 +496,19 @@
       return;
     }
     const { offsetWidth: width, offsetHeight: height } = ui.card;
-    const fitsBelow = height <= viewportHeight - rect.bottom - GAP - MARGIN;
-    const fitsAbove = height <= rect.top - GAP - MARGIN;
+    // Sideways the card lines up with the word; up and down it keeps clear of the whole block
+    // the word is part of (the other rows of a caption), when the request named one.
+    const block = session.avoid || rect;
+    const edgeTop = Math.min(rect.top, block.top);
+    const edgeBottom = Math.max(rect.bottom, block.bottom);
+    const fitsBelow = height <= viewportHeight - edgeBottom - GAP - MARGIN;
+    const fitsAbove = height <= edgeTop - GAP - MARGIN;
     // Stay on the side chosen when the popup opened; only switch when the card has outgrown
     // that side and fits on the other, so it does not jump around as its content changes.
-    if (session.below === null) session.below = fitsBelow || viewportHeight - rect.bottom >= rect.top;
+    if (session.below === null) session.below = session.avoid ? !fitsAbove && fitsBelow : fitsBelow || viewportHeight - edgeBottom >= edgeTop;
     else if (session.below && !fitsBelow && fitsAbove) session.below = false;
     else if (!session.below && !fitsAbove && fitsBelow) session.below = true;
-    const top = session.below ? rect.bottom + GAP : rect.top - GAP - height;
+    const top = session.below ? edgeBottom + GAP : edgeTop - GAP - height;
     ui.card.style.left = `${Math.round(clamp(rect.left, MARGIN, viewportWidth - width - MARGIN))}px`;
     ui.card.style.top = `${Math.round(clamp(top, MARGIN, viewportHeight - height - MARGIN))}px`;
   }
@@ -556,19 +566,26 @@
    * @param {string} [request.sentence] Sentence the text appears in.
    * @param {string} [request.sample]   Wider surrounding text, for language detection.
    * @param {string} [request.pageLang] `lang` attribute closest to the text.
+   * @param {DOMRect} [request.rect]    Where the text is right now, for text that may be redrawn
+   *                                    or removed while the popup is open: the popup then stays
+   *                                    at this place instead of closing.
+   * @param {DOMRect} [request.avoid]   The block the text is part of, which the popup should
+   *                                    not cover; it then goes above it when there is room.
    */
-  function open({ text, range, point, sentence = '', sample = '', pageLang = '' }) {
+  function open({ text, range, point, sentence = '', sample = '', pageLang = '', rect: lastRect = null, avoid = null }) {
     ui ||= build();
     if (!session) {
       for (const [type, listener, options] of LISTENERS) window.addEventListener(type, listener, options);
     }
     // Selections inside shadow trees and replaced elements can report an empty rectangle.
     const rect = range?.getBoundingClientRect();
-    const pinned = rect && (rect.width > 0 || rect.height > 0) ? null : new DOMRect(point.x, point.y, 0, 0);
+    const pinned = rect && (rect.width > 0 || rect.height > 0) ? null : lastRect || new DOMRect(point.x, point.y, 0, 0);
     session = {
       text,
       range,
       pinned,
+      lastRect,
+      avoid,
       sentence,
       sample,
       pageLang,
@@ -610,8 +627,29 @@
     ui.surface.unmount();
   }
 
+  /**
+   * Opens the popup for a word found by a word source. This is all the popup needs to know
+   * about hovering: the hit carries the word, its line and where it is.
+   * @param {Object} hit  A WordHit (core/hover/word-source.js).
+   */
+  function openForHit(hit) {
+    const { rect, area } = hit;
+    open({
+      text: hit.text,
+      range: hit.range,
+      rect: new DOMRect(rect.left, rect.top, rect.width, rect.height),
+      avoid: area ? new DOMRect(area.left, area.top, area.width, area.height) : null,
+      point: { x: rect.left, y: rect.bottom },
+      // The line is the word's context in the vault and what its language is told from.
+      sentence: hit.line,
+      sample: hit.line,
+      pageLang: hit.lang,
+    });
+  }
+
   WV.popup = {
     open,
+    openForHit,
     close,
     isOpen: () => Boolean(session),
     containsEvent: (event) => Boolean(ui) && ui.surface.containsEvent(event),
