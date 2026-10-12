@@ -11,7 +11,7 @@ import { fetchRecording } from '../lib/pronunciation.js';
 import { getPreferences, setSiteSourceLanguage, setTargetLanguage, translate } from '../lib/translator.js';
 import { ENTRY_PREFIX, TOMBSTONE_PREFIX, addEntry, entryId, getEntry, hasEntry, removeEntry, updateEntry } from '../lib/vault.js';
 import { NOTIFICATION_ID } from '../quiz/display.js';
-import { ensureSyncScheduled, onSyncAlarm, syncInBackground, vaultChanged } from '../sync/engine.js';
+import { ensureSyncScheduled, onSyncAlarm, syncInBackground, turnOffEncryption, unlockEncryption, vaultChanged } from '../sync/engine.js';
 import { ALARM_NAME, answerQuestion, claimSession, ensureScheduled, muteToday, openFromNotification, quizPageGone, runScheduledQuiz, testQuiz, unmute } from '../quiz/scheduler.js';
 
 /** Host name of the web page a message came from ('' for extension pages). */
@@ -60,6 +60,18 @@ async function save(payload) {
   return entry;
 }
 
+/**
+ * Lets a request through only if it comes from one of the extension's own pages (the options
+ * page). What changes where the vault goes, or takes a password, is not for content scripts to
+ * ask: they run inside web pages.
+ */
+function fromOwnPage(handler) {
+  return (payload, sender) => {
+    if (!String(sender.url || '').startsWith(chrome.runtime.getURL(''))) throw new WordvaultError('internal', 'not allowed from here');
+    return handler(payload, sender);
+  };
+}
+
 /** Message handlers, keyed by message type. Each returns (a promise of) the response data. */
 const handlers = {
   'wv:translate': lookup,
@@ -80,7 +92,11 @@ const handlers = {
   // The options page asks for this after a quiz setting was changed; see the timer below.
   'wv:quiz:reschedule': () => ensureScheduled(),
   // "Sync now" on the options page, and the first synchronisation after connecting.
-  'wv:sync:now': () => syncInBackground('manual'),
+  'wv:sync:now': fromOwnPage(() => syncInBackground('manual')),
+  // Optional encryption of the stored file: the password comes from the options page and is
+  // turned into a key here; it is not kept.
+  'wv:sync:unlock': fromOwnPage((payload) => unlockEncryption({ password: payload?.password, remember: payload?.remember })),
+  'wv:sync:encryption-off': fromOwnPage(() => turnOffEncryption()),
 };
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {

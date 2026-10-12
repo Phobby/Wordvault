@@ -186,7 +186,10 @@ body {
   white-space: nowrap;
 }
 .sync-badge.on { background: color-mix(in srgb, var(--wv-ok) 16%, transparent); color: var(--wv-ok); }
+.sync-panel { display: grid; gap: 8px; }
+.sync-panel > .sync-notice { margin: 0; }
 .sync-box { display: grid; gap: 10px; padding: 12px 14px; border: 1px solid var(--wv-border); border-radius: 10px; }
+.sync-box .sync-notice { margin: 0; }
 .sync-box .buttons { margin: 2px 0 0; }
 .sync-cards { display: grid; gap: 8px; }
 .sync-card { display: grid; gap: 6px; padding: 12px 14px; border: 1px solid var(--wv-border); border-radius: 10px; }

@@ -523,7 +523,7 @@ chrome.storage.onChanged.addListener((changes, area) => {
   if (area !== 'local') return;
   if (changes.settings) render();
   // What synchronisation is set to do, or how it is going, changed (the engine writes its status).
-  if (changes.syncConfig || changes.syncStatus) syncControls.render();
+  if (changes.syncConfig || changes.syncStatus) syncControls.refresh();
   renderQuiz();
   // The timer writes its plan first and sets the alarm right after; look again once it has.
   clearTimeout(settleTimer);

@@ -9,11 +9,15 @@
 // Nothing is requested from anywhere before the user has read what goes where and confirmed.
 
 import { clientIdFor } from '../sync/config.js';
+import { clearSecret } from '../sync/crypto.js';
 import { USAGE_WARNING } from '../sync/providers/browser.js';
 import { getSyncProvider, listSyncProviders } from '../sync/providers/index.js';
 import { getSyncConfig, getSyncStatus, resetSyncStatus, setSyncConfig, updateConnection } from '../sync/state.js';
 
 const { h, t, languages } = globalThis.WV;
+
+/** A password shorter than this is not accepted for encryption. */
+const MIN_PASSWORD_CHARS = 8;
 
 /** The four choices, in the order they are offered. */
 const MODES = [
@@ -97,7 +101,7 @@ const whereOf = (providerId, connection) => {
 
 /**
  * @param {{ onSaved: () => void }} hooks  onSaved: something was stored (the page's "Saved" mark).
- * @returns {{ element: HTMLElement, render: () => Promise<void> }}
+ * @returns {{ element: HTMLElement, render: () => Promise<void>, refresh: () => Promise<void> }}
  */
 export function createSyncControls({ onSaved }) {
   /** The choice the panel below the list is showing; null follows what is in force. */
@@ -110,6 +114,8 @@ export function createSyncControls({ onSaved }) {
   /** What is typed into the own-server form, kept across re-renders. */
   const typed = {};
   let serverType = '';
+  /** Whether the form for turning encryption on is open. */
+  let encrypting = false;
 
   const modes = h('div', { class: 'sync-modes', role: 'radiogroup', 'aria-label': t('syncTitle') });
   const panel = h('div', { class: 'sync-panel' });
@@ -174,6 +180,8 @@ export function createSyncControls({ onSaved }) {
         throw error;
       }
       // A connection that was there before is dropped; what it stored remotely is left alone.
+      // An encryption key belonged to that connection's file and goes with it.
+      await clearSecret();
       await setSyncConfig({ mode: provider.kind, providerId, connection, connectedAt: Date.now(), account: null });
       await resetSyncStatus();
       step = null;
@@ -203,8 +211,10 @@ export function createSyncControls({ onSaved }) {
       }
       await setSyncConfig({ mode: 'off' });
       await resetSyncStatus();
+      await clearSecret();
       step = null;
       chosen = null;
+      encrypting = false;
       onSaved();
       say(t(deleteRemote ? 'syncDisconnectedDeleted' : 'syncDisconnected'));
     });
@@ -280,6 +290,110 @@ export function createSyncControls({ onSaved }) {
     ];
   }
 
+  // --- Encryption --------------------------------------------------------------------------------
+
+  /** Sends the password to the background script, which turns it into a key and synchronises. */
+  const unlock = (password, remember) =>
+    attempt(async () => {
+      const status = await globalThis.WV.send('wv:sync:unlock', { password, remember });
+      encrypting = false;
+      onSaved();
+      if (status?.state === 'error' || status?.state === 'waiting') say(errorText(status.error, (await getSyncConfig()).mode), true);
+    });
+
+  const passwordField = (labelKey, name, autocomplete) => {
+    const input = h('input', { type: 'password', name, autocomplete, spellcheck: 'false' });
+    return { input, row: h('label', { class: 'sync-field' }, h('span', { text: t(labelKey) }), input) };
+  };
+  const rememberRow = () => {
+    const input = h('input', { type: 'checkbox', name: 'remember' });
+    return { input, row: h('label', { class: 'switch' }, input, h('span', { class: 'switch-text' }, h('strong', { text: t('syncEncRemember') }), h('span', { class: 'help', text: t('syncEncRememberHelp') }))) };
+  };
+
+  /**
+   * Optional encryption of the stored file, for every way of synchronising. Three states: the
+   * stored file is encrypted and this device has no key for it (ask for the password); it is on;
+   * it is off (offer to turn it on).
+   */
+  function encryptionBox(config, status) {
+    const locked = status.error?.code === 'sync_password';
+    if (locked) {
+      const password = passwordField('syncEncPassword', 'password', 'current-password');
+      const remember = rememberRow();
+      return h(
+        'form',
+        { class: 'sync-box', 'data-panel': 'unlock', novalidate: true, onsubmit: (event) => { event.preventDefault(); unlock(password.input.value, remember.input.checked); } },
+        h('strong', { text: t('syncEncTitle') }),
+        h('p', { class: 'help', text: t('syncEncNeeded') }),
+        password.row,
+        remember.row,
+        h('div', { class: 'buttons' }, h('button', { class: 'wv-btn wv-btn-primary', type: 'submit', 'data-action': 'unlock', disabled: busy, text: t('syncEncUnlock') })),
+      );
+    }
+    if (config.encryption?.enabled) {
+      return h(
+        'div',
+        { class: 'sync-box', 'data-panel': 'encryption', 'data-encrypted': 'yes' },
+        h('strong', { text: t('syncEncTitle') }),
+        h('p', { class: 'help', text: t('syncEncOn') }),
+        h('p', { class: 'help', text: t('syncEncOffNote') }),
+        h(
+          'div',
+          { class: 'buttons' },
+          button(
+            'syncEncDisable',
+            () =>
+              attempt(async () => {
+                const after = await globalThis.WV.send('wv:sync:encryption-off');
+                onSaved();
+                if (after?.state === 'error' || after?.state === 'waiting') say(errorText(after.error, (await getSyncConfig()).mode), true);
+              }),
+            { action: 'encryption-off' },
+          ),
+        ),
+      );
+    }
+    if (!encrypting) {
+      return h(
+        'div',
+        { class: 'sync-box', 'data-panel': 'encryption', 'data-encrypted': 'no' },
+        h('strong', { text: t('syncEncTitle') }),
+        h('p', { class: 'help', text: t('syncEncOff') }),
+        h('div', { class: 'buttons' }, button('syncEncStart', () => { encrypting = true; say(''); render(); }, { action: 'encryption-start' })),
+      );
+    }
+    const password = passwordField('syncEncPassword', 'password', 'new-password');
+    const repeat = passwordField('syncEncRepeat', 'repeat', 'new-password');
+    const remember = rememberRow();
+    return h(
+      'form',
+      {
+        class: 'sync-box',
+        'data-panel': 'encryption-form',
+        novalidate: true,
+        onsubmit: (event) => {
+          event.preventDefault();
+          // Said in words, before anything is sent anywhere.
+          if (password.input.value.length < MIN_PASSWORD_CHARS) say(t('syncEncTooShort', [String(MIN_PASSWORD_CHARS)]), true);
+          else if (password.input.value !== repeat.input.value) say(t('syncEncMismatch'), true);
+          else return unlock(password.input.value, remember.input.checked);
+          return render();
+        },
+      },
+      h('strong', { text: t('syncEncTitle') }),
+      h('p', { class: 'sync-notice bad', text: t('syncEncWarning') }),
+      password.row,
+      repeat.row,
+      remember.row,
+      h(
+        'div',
+        { class: 'buttons' },
+        h('button', { class: 'wv-btn wv-btn-primary', type: 'submit', 'data-action': 'encryption-on', disabled: busy, text: t('syncEncEnable') }),
+        button('syncCancel', () => { encrypting = false; say(''); render(); }, { action: 'cancel' }),
+      ),
+    );
+  }
+
   /** Connected: what to, how it is going, and the two things that can be done about it. */
   function statusPanel(config, status) {
     const account = config.account?.email || config.account?.name || '';
@@ -289,18 +403,22 @@ export function createSyncControls({ onSaved }) {
       [t('syncWhere'), whereOf(config.providerId, config.connection)],
       [t('syncLast'), status.lastSyncAt ? timeText(status.lastSyncAt) : t('syncNever')],
       [t('syncState'), stateText(status, config.mode)],
+      [t('syncEncTitle'), t(config.encryption?.enabled ? 'syncEncStateOn' : 'syncEncStateOff')],
     ].filter(Boolean);
-    return h(
-      'div',
-      { class: 'sync-box', 'data-panel': 'status', 'data-state': status.state },
-      h('dl', { class: 'facts' }, ...facts.flatMap(([label, value]) => [h('dt', { text: label }), h('dd', { text: value })]), ...usageLines(status)),
+    return [
       h(
         'div',
-        { class: 'buttons' },
-        button('syncNow', syncNow, { primary: true, action: 'sync-now' }),
-        button('syncDisconnect', () => { step = { kind: 'disconnect' }; render(); }, { action: 'disconnect' }),
+        { class: 'sync-box', 'data-panel': 'status', 'data-state': status.state },
+        h('dl', { class: 'facts' }, ...facts.flatMap(([label, value]) => [h('dt', { text: label }), h('dd', { text: value })]), ...usageLines(status)),
+        h(
+          'div',
+          { class: 'buttons' },
+          button('syncNow', syncNow, { primary: true, action: 'sync-now' }),
+          button('syncDisconnect', () => { step = { kind: 'disconnect' }; render(); }, { action: 'disconnect' }),
+        ),
       ),
-    );
+      encryptionBox(config, status),
+    ];
   }
 
   function browserPanel() {
@@ -435,8 +553,21 @@ export function createSyncControls({ onSaved }) {
     else if (showing === 'cloud') body = cloudPanel();
     else if (showing === 'server') body = serverPanel();
     else body = h('div', { class: 'sync-box', 'data-panel': 'off' }, h('p', { class: 'help', text: t('syncOffExplain') }));
-    panel.replaceChildren(...[body, noticeLine()].filter(Boolean));
+    panel.replaceChildren(...[body, noticeLine()].flat().filter(Boolean));
   }
 
-  return { element, render };
+  /**
+   * Shows what changed in storage (the engine's status). Put off while the user is typing into
+   * one of the forms here: redrawing would take the field away from under their fingers.
+   */
+  function refresh() {
+    const active = document.activeElement;
+    if (active && panel.contains(active) && ['INPUT', 'SELECT', 'TEXTAREA'].includes(active.tagName)) {
+      active.addEventListener('blur', () => setTimeout(refresh, 0), { once: true });
+      return Promise.resolve();
+    }
+    return render();
+  }
+
+  return { element, render, refresh };
 }

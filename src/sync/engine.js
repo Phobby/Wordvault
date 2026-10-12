@@ -11,10 +11,11 @@
 
 import { WordvaultError, serializeError } from '../lib/errors.js';
 import { decodeDocument, encodeDocument, fingerprint } from './codec.js';
+import { clearSecret, deriveSecret, getSecret, headerOf, isEncrypted, setSecret } from './crypto.js';
 import { applyDocument, readLocalDocument } from './local.js';
 import { mergeDocuments, purgeTombstones, serializeDocument } from './merge.js';
 import { getSyncProvider } from './providers/index.js';
-import { getSyncConfig, getSyncStatus, saveSyncStatus, updateConnection } from './state.js';
+import { getSyncConfig, getSyncStatus, saveSyncStatus, setSyncConfig, updateConnection } from './state.js';
 
 export const SYNC = Object.freeze({
   /** How often a write that lost a race is tried again within one run. */
@@ -49,13 +50,20 @@ function sessionFor(config) {
  * One exchange with the provider: read, merge, write if needed, apply.
  * Rejects with 'sync_conflict' if the remote copy changed between reading and writing.
  */
-async function exchange(provider, session) {
+async function exchange(provider, session, config) {
+  // Optional encryption (crypto.js). The key is only there once the user has given the password
+  // in this browser session, or asked for it to be remembered on this device.
+  const encrypting = Boolean(config.encryption?.enabled);
+  const secret = await getSecret();
+  if (encrypting && !secret) throw new WordvaultError('sync_password', 'the password has to be entered again');
+
   const remote = await provider.read(session);
   // Whatever cannot be read as a Wordvault document stops the run here, before anything is
-  // written: a damaged or foreign file is never overwritten with this device's vault.
-  const main = remote ? await decodeDocument(remote.data) : null;
+  // written: a damaged or foreign file is never overwritten with this device's vault. The same
+  // goes for an encrypted file that the key at hand does not open.
+  const main = remote ? await decodeDocument(remote.data, secret) : null;
   const others = [];
-  for (const other of remote?.others || []) others.push(await decodeDocument(other.data));
+  for (const other of remote?.others || []) others.push(await decodeDocument(other.data, secret));
 
   const local = await readLocalDocument();
   let merged = local;
@@ -66,10 +74,13 @@ async function exchange(provider, session) {
   merged = purgeTombstones(merged);
 
   const text = serializeDocument(merged);
-  const mustWrite = !main || others.length > 0 || serializeDocument(main) !== text;
-  if (mustWrite) await provider.write(session, await encodeDocument(merged), remote ? remote.version : null);
+  // Also written when only its form is to change: encrypted from now on, or no longer.
+  const mustWrite = !main || others.length > 0 || serializeDocument(main) !== text || isEncrypted(remote.data) !== encrypting;
+  if (mustWrite) await provider.write(session, await encodeDocument(merged, encrypting ? secret : null), remote ? remote.version : null);
   // Extra files (two devices created one each) go only now that the merged one is stored.
   if (others.length > 0 && provider.removeOthers) await provider.removeOthers(session, remote.others.map((other) => other.id));
+  // Encryption was switched off and the stored file is readable again: the key has done its job.
+  if (!encrypting && secret) await clearSecret();
 
   const changes = await applyDocument(merged);
   return { changes, uploaded: mustWrite, hash: await fingerprint(text) };
@@ -98,7 +109,7 @@ async function run({ reason, sleep }) {
     let result;
     for (let attempt = 1; ; attempt++) {
       try {
-        result = await exchange(provider, session);
+        result = await exchange(provider, session, config);
         break;
       } catch (error) {
         // Someone else wrote in between: read again, merge again, write again.
@@ -147,6 +158,46 @@ export function syncNow({ reason = 'manual', sleep = wait } = {}) {
       }
     });
   return running;
+}
+
+// --- Encryption ----------------------------------------------------------------------------------
+
+/**
+ * The user gave the password: on a device that turns encryption on, or on one that meets a
+ * stored file that is already encrypted. The key is derived (with the stored file's salt, if
+ * there is one, so that every device arrives at the same key), checked against the stored file,
+ * kept, and a synchronisation follows. The password itself is not kept anywhere.
+ *
+ * @param {{ password: string, remember?: boolean }} input  remember: keep the key on this
+ *   device, so that the password is not asked for again after the browser was closed.
+ * @returns {Promise<import('./state.js').SyncStatus>}
+ *   Rejects with 'sync_password' if the password does not open the stored file.
+ */
+export async function unlockEncryption({ password, remember = false }) {
+  const config = await getSyncConfig();
+  const provider = getSyncProvider(config.providerId);
+  if (config.mode === 'off' || !provider) throw new WordvaultError('sync_unknown_provider', config.providerId);
+  const remote = await provider.read(sessionFor(config));
+  let secret;
+  if (remote && isEncrypted(remote.data)) {
+    const { salt, rounds } = headerOf(remote.data);
+    secret = await deriveSecret(password, salt, rounds);
+    await decodeDocument(remote.data, secret);
+  } else {
+    secret = await deriveSecret(password);
+  }
+  await setSecret(secret, { remember: Boolean(remember) });
+  await setSyncConfig({ ...config, encryption: { enabled: true, remember: Boolean(remember) } });
+  return syncInBackground('manual');
+}
+
+/**
+ * Encryption off: the stored file is written unencrypted again, after which the key is
+ * forgotten (see exchange). A device that still has encryption on will encrypt the file anew.
+ */
+export async function turnOffEncryption() {
+  await setSyncConfig({ ...(await getSyncConfig()), encryption: { enabled: false, remember: false } });
+  return syncInBackground('manual');
 }
 
 // --- When it runs --------------------------------------------------------------------------------

@@ -71,6 +71,8 @@ export function syncStorageArea({ quotaBytes = 102_400, quotaBytesPerItem = 8192
  */
 export function createDevice(name = 'device', { uiLanguage = 'en-US', detect = () => null, sync = syncStorageArea() } = {}) {
   const local = storageArea();
+  /** Session storage: memory the browser clears when it is closed (see restartBrowser). */
+  const session = storageArea();
   const detected = [];
   const i18n = {
     getUILanguage: () => uiLanguage,
@@ -183,7 +185,7 @@ export function createDevice(name = 'device', { uiLanguage = 'en-US', detect = (
     clear: async () => true,
   };
   const api = {
-    storage: { local, sync },
+    storage: { local, sync, session },
     i18n,
     alarms,
     tabs,
@@ -232,6 +234,11 @@ export function createDevice(name = 'device', { uiLanguage = 'en-US', detect = (
     },
     /** A browser restart, as far as timers go: alarms are gone, storage stays. */
     forgetAlarms: () => alarmMap.clear(),
+    /** The browser is closed and opened again: what was only held for the session is gone. */
+    restartBrowser: () => {
+      alarmMap.clear();
+      session.data.clear();
+    },
     chrome: api,
     /** The quizzes sent to the page as a card: what was sent where, and just the quiz of each. */
     shows,

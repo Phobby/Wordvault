@@ -3,6 +3,7 @@
 // and costs nothing elsewhere.
 
 import { WordvaultError } from '../lib/errors.js';
+import { decrypt, encrypt, isEncrypted } from './crypto.js';
 import { serializeDocument } from './merge.js';
 import { normalizeDocument } from './model.js';
 
@@ -27,18 +28,26 @@ export async function gunzip(bytes) {
 
 const isGzip = (bytes) => bytes.length > 2 && bytes[0] === GZIP_MAGIC[0] && bytes[1] === GZIP_MAGIC[1];
 
-/** @returns {Promise<Uint8Array>} */
-export async function encodeDocument(document) {
-  return gzip(new TextEncoder().encode(serializeDocument(document)));
+/**
+ * @param {object} document
+ * @param {object | null} [secret]  The key to encrypt with (crypto.js); left out: not encrypted.
+ * @returns {Promise<Uint8Array>}
+ */
+export async function encodeDocument(document, secret = null) {
+  const packed = await gzip(new TextEncoder().encode(serializeDocument(document)));
+  return secret ? encrypt(packed, secret) : packed;
 }
 
 /**
  * Reads what a provider returned. Data that is not a Wordvault document is refused (the caller
  * then leaves the remote copy alone), never silently treated as empty.
  * @param {Uint8Array} bytes
+ * @param {object | null} [secret]  The key, if the user has given the password. An encrypted
+ *   document without the right key is refused with 'sync_password'.
  * @returns {Promise<{ v: number, e: Record<string, object> }>}
  */
-export async function decodeDocument(bytes) {
+export async function decodeDocument(bytes, secret = null) {
+  if (isEncrypted(bytes)) bytes = await decrypt(bytes, secret);
   // Plain JSON is accepted too: a file someone uploaded by hand, or an older writer.
   const text = new TextDecoder().decode(isGzip(bytes) ? await gunzip(bytes) : bytes);
   let raw;
@@ -51,24 +60,7 @@ export async function decodeDocument(bytes) {
   return normalizeDocument(raw);
 }
 
-/** Base64 for the places that only store text (browser sync). */
-export function toBase64(bytes) {
-  let binary = '';
-  for (let offset = 0; offset < bytes.length; offset += 0x8000) binary += String.fromCharCode(...bytes.subarray(offset, offset + 0x8000));
-  return btoa(binary);
-}
-
-export function fromBase64(text) {
-  let binary;
-  try {
-    binary = atob(text);
-  } catch {
-    throw new WordvaultError('sync_bad_document', 'not valid base64');
-  }
-  const bytes = new Uint8Array(binary.length);
-  for (let index = 0; index < binary.length; index++) bytes[index] = binary.charCodeAt(index);
-  return bytes;
-}
+export { fromBase64, toBase64 } from './bytes.js';
 
 /** A short fingerprint of a document's text, to tell "unchanged since the last synchronisation". */
 export async function fingerprint(text) {

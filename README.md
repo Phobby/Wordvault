@@ -7,14 +7,15 @@ kaydet, sonra kısa quizlerle tekrar et. Her şey tarayıcında çalışır; Wor
 > dil seçimi, telaffuz, "Kasaya ekle"), araç çubuğundaki kasa (liste, arama, detay, dışa/içe aktarma)
 > ve hedef dil ile çift tıklama ayarlarını içeren ayarlar sayfası.
 > Sırada: sağ tık menüsü, çeviri penceresinde kelime türü etiketi, önbellek ve 7 günlük temizlik,
-> quiz, altyazılar, ayarlar sayfasının kalanı (sağlayıcı ve API anahtarı) ve gizlilik politikası.
+> altyazılar ve ayarlar sayfasının kalanı (çeviri sağlayıcısı ve API anahtarı).
 >
-> Cihazlar arası senkronizasyon (`SPEC-SYNC.md`) yedi aşamada ekleniyor; şu an ilk altı aşama hazır:
-> veri modeli, birleştirme, silme kayıtları, sağlayıcı arayüzü, eşitleme motoru, ayarlar sayfasındaki
-> "Senkronizasyon ve yedekleme" bölümü, tarayıcı senkronu (`storage.sync`), Google Drive, OneDrive,
-> Dropbox ve kendi sunucu modu (WebDAV, basit HTTP uç noktası; `docs/self-hosted.md`). Varsayılan
-> "Sadece bu cihaz"tır: kullanıcı bir yol seçip onaylamadıkça hiçbir yere veri gönderilmez. Bulut
-> sağlayıcıları için bir kez geliştirici kurulumu gerekir: `SETUP-OAUTH.md`.
+> Cihazlar arası senkronizasyon (`SPEC-SYNC.md`, `SPEC-SYNC-UI.md`) hazır: veri modeli, birleştirme,
+> silme kayıtları, eşitleme motoru, ayarlar sayfasındaki "Senkronizasyon ve yedekleme" bölümü,
+> tarayıcı senkronu (`storage.sync`), Google Drive, OneDrive, Dropbox, kendi sunucu modu (WebDAV,
+> basit HTTP uç noktası) ve isteğe bağlı uçtan uca şifreleme. Varsayılan "Sadece bu cihaz"tır:
+> kullanıcı bir yol seçip onaylamadıkça hiçbir yere veri gönderilmez. Bulut sağlayıcıları için bir kez
+> geliştirici kurulumu gerekir (`SETUP-OAUTH.md`); o yapılana kadar kartları "Yapılandırma eksik" der.
+> Gizlilik: `PRIVACY.md`.
 >
 > Flash card sistemi (`SPEC-QUIZ.md`, `SPEC-QUIZ-POPUP.md`) aşamalı ekleniyor; şu an hazır olanlar:
 > zamanlayıcı, "Neden quiz çıkmıyor?" tanı paneli, "Şimdi test et", öğrenme algoritması, soru seçimi,
@@ -59,8 +60,9 @@ eklentiyle bağlantısını kaybeder.
 ## Proje yapısı
 
 ```
-SPEC.md, SPEC-SYNC.md,  İstenen davranışın tanımı (eklenti, senkronizasyon, flash card, quiz'in
-SPEC-QUIZ.md,           zamanlayıcısı ve görünümü)
+SPEC.md, SPEC-SYNC.md,  İstenen davranışın tanımı (eklenti, senkronizasyon ve arayüzü, flash card,
+SPEC-SYNC-UI.md,        quiz'in zamanlayıcısı ve görünümü)
+SPEC-QUIZ.md,
 SPEC-QUIZ-POPUP.md
 manifest.firefox.json   Firefox manifesti (background.scripts, gecko ayarları)
 manifest.chrome.json    Chrome manifesti (background.service_worker)
@@ -68,7 +70,9 @@ build.js                dist/ klasörlerini üretir
 tools/make-icons.js     src/icons altındaki PNG'leri üretir (yalnızca tasarım değişince)
 tools/self-hosted-server.js  "Kendi sunucum" için tek dosyalık örnek sunucu (bkz. docs/self-hosted.md)
 docs/self-hosted.md     Kendi sunucu modu: WebDAV, HTTP uç noktasının protokolü, örnek sunucu
+docs/store-listing.md   Mağaza açıklaması ve veri beyanları
 SETUP-OAUTH.md          Bulut sağlayıcıları için bir kez yapılan geliştirici kurulumu
+PRIVACY.md              Gizlilik politikası: tarayıcıdan ne, ne zaman, nereye çıkar
 tests/                  node:test testleri (tarayıcı API'leri bellek içi bir taklitle sağlanır)
 src/
   background/           Arka plan betiği: mesaj yönlendirme, tüm ağ istekleri
@@ -112,6 +116,8 @@ src/
     state.js            Senkron ayarı ve durumu (yalnızca storage.local)
     config.js           Geliştirici yapılandırması: OAuth client ID'leri (yer tutucu), dosya adı
     oauth.js            Oturum açma: launchWebAuthFlow ile PKCE ve örtük akış; client secret yok
+    crypto.js           İsteğe bağlı şifreleme: PBKDF2 + AES-256-GCM, anahtarın saklanması
+    bytes.js            Base64 yardımcıları
     request.js          Sağlayıcılara istek: ağ hataları ve durum kodlarının anlamı
     providers/          Sağlayıcılar (ortak arayüz: providers/index.js)
       browser.js        Tarayıcı senkronu (chrome.storage.sync, parçalı)
@@ -457,6 +463,17 @@ Bulut sağlayıcılarında da hesap dışına hiçbir şey gitmez: istekler tara
 Google API Services User Data Policy (Limited Use), Microsoft API Terms of Use ve Dropbox Developer
 Terms'e göre veri yalnızca kullanıcının istediği eşitleme için kullanılır, başka yere aktarılmaz.
 
+**Şifreleme (isteğe bağlı, bütün yollar için)** (`sync/crypto.js`): bağlıyken bölümden açılır.
+Dosya gzip'lendikten sonra, kullanıcının parolasından PBKDF2-HMAC-SHA-256 (600 000 tur) ile türetilen
+256 bitlik anahtarla AES-GCM ile şifrelenir. Zarf: `WVE1` | tur sayısı (4 bayt) | tuz (16) | nonce (12)
+| şifreli metin + etiket; nonce her yazmada yenidir, başlık şifreli metinle birlikte doğrulanır. Tuz
+dosyaya aittir: ikinci cihaz yalnızca parolayı sorar ve aynı anahtara varır. Parola hiçbir yerde
+saklanmaz; türetilen anahtar oturum boyunca bellekte (`chrome.storage.session`), kullanıcı "Bu cihazda
+hatırla" derse `storage.local` içinde durur. Anahtar yokken ya da parola yanlışken dosya okunamaz ve
+**üzerine yazılmaz**: bölüm parolayı sorar. Parola kaybolursa uzaktaki kopya kurtarılamaz (bölüm bunu
+açmadan önce söyler); cihazdaki kasa şifrelenmez ve etkilenmez. Kapatılırken dosya yeniden şifresiz
+yazılır ve anahtar unutulur; bütün cihazlarda kapatılmalıdır, açık kalan cihaz dosyayı yeniden şifreler.
+
 **iCloud sunulmuyor.** Apple'ın web için verdiği tek yol CloudKit JS'tir ve uygulamanın kendi CloudKit
 kapsayıcısına erişir (Apple Developer Program üyeliği, Xcode ile oluşturulmuş kapsayıcı, CloudKit
 Dashboard'dan API anahtarı gerekir); kullanıcının iCloud Drive'ına erişim vermez. Bunun yerine bölümde
@@ -500,11 +517,16 @@ iki manifestteki `host_permissions` listesine de ekle.
 Sekme açmak (`chrome.tabs.create`), ayarlar sayfasını açmak, eklenti açılır penceresini açmak
 (`action.openPopup`) ve quiz penceresini açmak (`windows.create`) izin gerektirmez; `tabs` izni istenmez.
 
-Firefox manifestindeki `data_collection_permissions` beyanı `websiteContent` içerir. Tarayıcıdan çıkan
-veriler şunlardır: çevrilmesini istediğin (seçtiğin) metin seçili çeviri servisine, kasaya eklediğin
+Chrome'daki `key` alanı bir izin değildir: yalnızca bir açık anahtardır ve geliştirici modunda yüklenen
+eklentinin kimliğini sabitler (OAuth yönlendirme adresi kimlikten türer; bkz. `SETUP-OAUTH.md`).
+
+Firefox manifestindeki `data_collection_permissions` beyanı `websiteContent` içerir. Eşitleme açılırsa
+kasadaki kelimeler (web sayfalarından alınmış metin) kullanıcının seçtiği hesaba ya da sunucuya gider;
+bu da aynı veri türüdür ve geliştiriciye ulaşmaz. Ayrıntı: `PRIVACY.md`. Tarayıcıdan çıkan veriler
+şunlardır: çevrilmesini istediğin (seçtiğin) metin seçili çeviri servisine, kasaya eklediğin
 kelime Wiktionary'ye gönderilir; Firefox tabanlı tarayıcılarda macOS'te telaffuz düğmesine bastığın
-kelime de ses kaydı için Wiktionary'ye sorulur. Bunun dışında hiçbir veri tarayıcıdan çıkmaz; analitik
-ya da izleme yoktur. Dil algılama tarayıcının kendi yerel algılayıcısıyla yapılır; diğer tarayıcılarda
+kelime de ses kaydı için Wiktionary'ye sorulur; eşitlemeyi açtıysan kasan seçtiğin yere gider. Bunun
+dışında hiçbir veri tarayıcıdan çıkmaz; analitik ya da izleme yoktur. Dil algılama tarayıcının kendi yerel algılayıcısıyla yapılır; diğer tarayıcılarda
 telaffuz cihazdaki seslerle yapılır. Seçimin etrafındaki cümle ve sayfa adresi yalnızca kasada, bu
 tarayıcıda saklanır.
 

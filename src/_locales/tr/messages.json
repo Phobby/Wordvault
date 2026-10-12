@@ -473,10 +473,64 @@
     "message": "o adreste yanıt veren bir şey yok"
   },
   "syncErrPassword": {
-    "message": "saklanan dosya şifreli; parola gerekiyor"
+    "message": "parola gerekiyor ya da girilen parola saklanan dosyayı açmıyor"
   },
   "syncErrProvider": {
     "message": "hata döndürdü"
+  },
+  "syncEncTitle": {
+    "message": "Şifreleme"
+  },
+  "syncEncStateOn": {
+    "message": "açık: yalnızca parolanla okunabilir"
+  },
+  "syncEncStateOff": {
+    "message": "kapalı"
+  },
+  "syncEncOff": {
+    "message": "Saklanan dosya şifreli değil: dosyanın tutulduğu yeri işleten kişi onu okuyabilir. Dosyayı, bu tarayıcıdan hiç çıkmayan bir parolayla şifreleyebilirsin."
+  },
+  "syncEncOn": {
+    "message": "Saklanan dosya, bu tarayıcıdan çıkmadan önce parolanla şifreleniyor. Parola olmadan kimse okuyamaz."
+  },
+  "syncEncOffNote": {
+    "message": "Kapatacaksan bütün cihazlarında kapat: şifrelemesi açık kalan bir cihaz dosyayı yeniden şifreler."
+  },
+  "syncEncStart": {
+    "message": "Parolayla şifrele…"
+  },
+  "syncEncWarning": {
+    "message": "Bu parolayı kaybedersen saklanan kopyayı kimse kurtaramaz. Bu cihazdaki kasa şifrelenmez ve etkilenmez. Diğer cihazların aynı parolayı soracak."
+  },
+  "syncEncPassword": {
+    "message": "Parola"
+  },
+  "syncEncRepeat": {
+    "message": "Parola (yeniden)"
+  },
+  "syncEncRemember": {
+    "message": "Bu cihazda hatırla"
+  },
+  "syncEncRememberHelp": {
+    "message": "İşaretlemezsen tarayıcı her kapatılıp açıldığında parola yeniden sorulur. Parolanın kendisi değil, ondan türetilen anahtar saklanır."
+  },
+  "syncEncEnable": {
+    "message": "Şifrelemeyi aç"
+  },
+  "syncEncDisable": {
+    "message": "Şifrelemeyi kapat"
+  },
+  "syncEncNeeded": {
+    "message": "Saklanan dosya şifreli. Bu cihazda eşitlemek için parolasını gir."
+  },
+  "syncEncUnlock": {
+    "message": "Kilidi aç"
+  },
+  "syncEncTooShort": {
+    "message": "En az $1 karakter kullan."
+  },
+  "syncEncMismatch": {
+    "message": "İki parola aynı değil."
   },
   "syncIcloudNote": {
     "message": "iCloud sunulmuyor: tarayıcı eklentilerinin iCloud Drive'a erişme yolu yok. Bunun yerine kasayı yukarıdan JSON olarak dışa aktarıp dosyayı iCloud Drive klasörüne kaydedebilirsin."

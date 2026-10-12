@@ -629,12 +629,84 @@
     "description": "Options page, synchronisation: reason."
   },
   "syncErrPassword": {
-    "message": "the stored file is encrypted and the password is needed",
+    "message": "the password is needed, or the one given does not open the stored file",
     "description": "Options page, synchronisation: reason."
   },
   "syncErrProvider": {
     "message": "it answered with an error",
     "description": "Options page, synchronisation: reason."
+  },
+  "syncEncTitle": {
+    "message": "Encryption",
+    "description": "Options page, synchronisation, encryption: heading and label."
+  },
+  "syncEncStateOn": {
+    "message": "on: only readable with your password",
+    "description": "Options page, synchronisation, encryption: status value."
+  },
+  "syncEncStateOff": {
+    "message": "off",
+    "description": "Options page, synchronisation, encryption: status value."
+  },
+  "syncEncOff": {
+    "message": "The stored file is not encrypted: whoever runs the place it is kept in could read it. You can encrypt it with a password that never leaves this browser.",
+    "description": "Options page, synchronisation, encryption: explanation while off."
+  },
+  "syncEncOn": {
+    "message": "The stored file is encrypted with your password before it leaves this browser. Nobody can read it without the password.",
+    "description": "Options page, synchronisation, encryption: explanation while on."
+  },
+  "syncEncOffNote": {
+    "message": "If you turn it off, turn it off on all your devices: a device that still has it on will encrypt the file again.",
+    "description": "Options page, synchronisation, encryption: note next to the turn-off button."
+  },
+  "syncEncStart": {
+    "message": "Encrypt with a password…",
+    "description": "Options page, synchronisation, encryption: button that opens the form."
+  },
+  "syncEncWarning": {
+    "message": "If you lose this password, nobody can recover the stored copy. The vault on this device is not encrypted and is not affected. Your other devices will ask for the same password.",
+    "description": "Options page, synchronisation, encryption: warning shown before encryption is turned on."
+  },
+  "syncEncPassword": {
+    "message": "Password",
+    "description": "Options page, synchronisation, encryption: form field."
+  },
+  "syncEncRepeat": {
+    "message": "Password again",
+    "description": "Options page, synchronisation, encryption: form field."
+  },
+  "syncEncRemember": {
+    "message": "Remember on this device",
+    "description": "Options page, synchronisation, encryption: checkbox."
+  },
+  "syncEncRememberHelp": {
+    "message": "Otherwise the password is asked for again each time the browser has been closed. Only a key made from the password is kept, never the password itself.",
+    "description": "Options page, synchronisation, encryption: explanation of the checkbox."
+  },
+  "syncEncEnable": {
+    "message": "Turn on encryption",
+    "description": "Options page, synchronisation, encryption: button."
+  },
+  "syncEncDisable": {
+    "message": "Turn off encryption",
+    "description": "Options page, synchronisation, encryption: button."
+  },
+  "syncEncNeeded": {
+    "message": "The stored file is encrypted. Enter its password to synchronise on this device.",
+    "description": "Options page, synchronisation, encryption: shown when the key is missing."
+  },
+  "syncEncUnlock": {
+    "message": "Unlock",
+    "description": "Options page, synchronisation, encryption: button."
+  },
+  "syncEncTooShort": {
+    "message": "Use at least $1 characters.",
+    "description": "Options page, synchronisation, encryption: validation. $1 is a number."
+  },
+  "syncEncMismatch": {
+    "message": "The two passwords are not the same.",
+    "description": "Options page, synchronisation, encryption: validation."
   },
   "syncIcloudNote": {
     "message": "iCloud is not offered: a browser extension has no way of reaching iCloud Drive. Export the vault as JSON above and save the file into your iCloud Drive folder instead.",

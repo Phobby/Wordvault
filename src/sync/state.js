@@ -17,6 +17,10 @@ export const MODES = Object.freeze(['off', 'browser', 'cloud', 'server']);
  * @property {object | null} connection   What the provider needs to reach the account: tokens,
  *                                        a server address and password. Opaque to everyone else.
  * @property {number} connectedAt
+ * @property {{ name?: string, email?: string } | null} [account]  Whose account it is, where the provider tells.
+ * @property {{ enabled: boolean, remember: boolean }} [encryption]
+ *   Whether the stored document is encrypted with the user's password (sync/crypto.js), and
+ *   whether the key is kept on this device beyond the browser session.
  *
  * @typedef {Object} SyncStatus
  * @property {'idle' | 'syncing' | 'waiting' | 'error'} state
