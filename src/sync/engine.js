@@ -191,6 +191,15 @@ let debounce = 0;
  */
 export async function vaultChanged() {
   if ((await getSyncConfig()).mode === 'off') return;
+  // During a run the change may be the engine's own (it writes what it fetched), or the user's:
+  // either way the run is followed by another, which finds out.
+  if (running) {
+    again = true;
+    return;
+  }
+  // The vault is as it was last synchronised: the engine's own writes, arriving late.
+  const { syncedHash } = await getSyncStatus();
+  if (syncedHash && syncedHash === (await fingerprint(serializeDocument(await readLocalDocument())))) return;
   await saveSyncStatus({ pending: true });
   await chrome.alarms.create(SYNC_SOON_ALARM, { when: Date.now() + SYNC.DEBOUNCE_MS });
   clearTimeout(debounce);

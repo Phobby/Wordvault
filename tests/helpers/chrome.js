@@ -116,6 +116,13 @@ export function createDevice(name = 'device', { uiLanguage = 'en-US', detect = (
     /** Windows that are open (created through windows.create and not removed). */
     windows: [],
     notifications: [],
+    /** The address the browser gives this extension for OAuth redirects. */
+    redirect: 'https://abcdefghijklmnopabcdefghijklmnop.chromiumapp.org/',
+    /** Plays the sign-in window: gets the address it was opened with and whether a window may
+     *  be shown, returns the address it ended on, or throws (the user closed it). */
+    signIn: null,
+    /** The sign-in windows that were asked for: `{ url, interactive }`. */
+    signIns: [],
   };
   const alarmMap = new Map();
   const alarms = {
@@ -182,6 +189,14 @@ export function createDevice(name = 'device', { uiLanguage = 'en-US', detect = (
     tabs,
     runtime: { getManifest: () => ({ version: '0.0.0-test', action: { default_popup: 'popup/popup.html' } }), getURL: (path) => `test-extension://${path}` },
     permissions: { contains: async () => browser.can.notification },
+    identity: {
+      getRedirectURL: () => browser.redirect,
+      launchWebAuthFlow: async ({ url, interactive }) => {
+        browser.signIns.push({ url, interactive: Boolean(interactive) });
+        if (!browser.signIn) throw new Error('User interaction required.');
+        return browser.signIn(new URL(url), Boolean(interactive));
+      },
+    },
     // What a browser cannot do is simply not there, as in a real one.
     get action() {
       return browser.can.popup ? action : { setPopup: action.setPopup };

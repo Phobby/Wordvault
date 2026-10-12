@@ -42,6 +42,12 @@
  *   Who the connected account belongs to, where that can be told without further permissions.
  * @property {(session: SyncSession) => Promise<{ used: number, total: number }>} [usage]
  *   How much of the room there is has been used, for providers where room is scarce.
+ * @property {(input?: object) => string[]} [origins]
+ *   The addresses (match patterns) the extension has to be allowed to talk to for this
+ *   provider. The settings page asks the browser for them when the user connects, and only
+ *   then. Throws a WordvaultError if the address the user entered cannot be used.
+ * @property {{ key: string, type: 'url' | 'text' | 'password', labelKey: string, placeholder?: string }[]} [fields]
+ *   What the user has to enter to connect (servers), rendered by the settings page.
  *
  * Error codes providers use (lib/errors.js): network, timeout (try again later); sync_auth (access
  * was withdrawn or expired for good: the user has to connect again); sync_quota (no room left);
@@ -49,9 +55,10 @@
  */
 
 import { browser } from './browser.js';
+import { gdrive } from './gdrive.js';
 
 /** @type {Map<string, SyncProvider>} */
-const providers = new Map([[browser.id, browser]]);
+const providers = new Map([browser, gdrive].map((provider) => [provider.id, provider]));
 
 /** Adds a provider (the built-in ones below, and the in-memory one the tests use). */
 export function registerSyncProvider(provider) {

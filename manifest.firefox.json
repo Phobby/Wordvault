@@ -24,8 +24,9 @@
     "page": "options/options.html",
     "open_in_tab": true
   },
-  "permissions": ["storage", "unlimitedStorage", "alarms"],
+  "permissions": ["storage", "unlimitedStorage", "alarms", "identity"],
   "optional_permissions": ["notifications"],
+  "optional_host_permissions": ["https://*/*", "http://localhost/*", "http://127.0.0.1/*"],
   "host_permissions": [
     "https://api.mymemory.translated.net/*",
     "https://en.wiktionary.org/*",

@@ -8,11 +8,11 @@
 // While an ID is still the placeholder, the settings page shows that provider as "setup missing"
 // and says so when it is chosen. Everything else works without any of this.
 
-export const OAUTH_CLIENT_IDS = Object.freeze({
+export const OAUTH_CLIENT_IDS = {
   gdrive: 'YOUR_GOOGLE_CLIENT_ID',
   onedrive: 'YOUR_MICROSOFT_CLIENT_ID',
   dropbox: 'YOUR_DROPBOX_APP_KEY',
-});
+};
 
 /** The name of the synchronised file with every provider that stores it as a file. */
 export const SYNC_FILE_NAME = 'wordvault-vault.json.gz';

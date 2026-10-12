@@ -9,10 +9,11 @@ kaydet, sonra kısa quizlerle tekrar et. Her şey tarayıcında çalışır; Wor
 > Sırada: sağ tık menüsü, çeviri penceresinde kelime türü etiketi, önbellek ve 7 günlük temizlik,
 > quiz, altyazılar, ayarlar sayfasının kalanı (sağlayıcı ve API anahtarı) ve gizlilik politikası.
 >
-> Cihazlar arası senkronizasyon (`SPEC-SYNC.md`) yedi aşamada ekleniyor; şu an ilk üç aşama hazır:
+> Cihazlar arası senkronizasyon (`SPEC-SYNC.md`) yedi aşamada ekleniyor; şu an ilk dört aşama hazır:
 > veri modeli, birleştirme, silme kayıtları, sağlayıcı arayüzü, eşitleme motoru, ayarlar sayfasındaki
-> "Senkronizasyon ve yedekleme" bölümü ve tarayıcı senkronu (`storage.sync`). Varsayılan "Sadece bu
-> cihaz"tır: kullanıcı bir yol seçip onaylamadıkça hiçbir yere veri gönderilmez.
+> "Senkronizasyon ve yedekleme" bölümü, tarayıcı senkronu (`storage.sync`) ve Google Drive. Varsayılan
+> "Sadece bu cihaz"tır: kullanıcı bir yol seçip onaylamadıkça hiçbir yere veri gönderilmez. Bulut
+> sağlayıcıları için bir kez geliştirici kurulumu gerekir: `SETUP-OAUTH.md`.
 >
 > Flash card sistemi (`SPEC-QUIZ.md`, `SPEC-QUIZ-POPUP.md`) aşamalı ekleniyor; şu an hazır olanlar:
 > zamanlayıcı, "Neden quiz çıkmıyor?" tanı paneli, "Şimdi test et", öğrenme algoritması, soru seçimi,
@@ -106,8 +107,11 @@ src/
     codec.js            Belgenin saklanan biçimi (gzip'lenmiş JSON)
     state.js            Senkron ayarı ve durumu (yalnızca storage.local)
     config.js           Geliştirici yapılandırması: OAuth client ID'leri (yer tutucu), dosya adı
+    oauth.js            Oturum açma: launchWebAuthFlow ile PKCE ve örtük akış; client secret yok
+    request.js          Sağlayıcılara istek: ağ hataları ve durum kodlarının anlamı
     providers/          Sağlayıcılar (ortak arayüz: providers/index.js)
       browser.js        Tarayıcı senkronu (chrome.storage.sync, parçalı)
+      gdrive.js         Google Drive (appDataFolder, yalnızca drive.appdata izni)
     model.js            Eşitlenen belgenin biçimi; kasa kaydı <-> eşitleme kaydı dönüşümü
     merge.js            İki belgeyi birleştirme, silme kayıtlarının temizliği
     local.js            Bu cihazın kasasını belge olarak okuma ve belgeyi kasaya uygulama
@@ -385,7 +389,7 @@ Ayarlar → **Senkronizasyon ve yedekleme** bölümünde, JSON dışa/içe aktar
 | --- | --- | --- |
 | Sadece bu cihaz (varsayılan) | Hiçbir yere | Hazır |
 | Tarayıcı senkronu | Tarayıcının kendi senkron deposuna (`chrome.storage.sync`); Firefox Sync ya da Chrome senkronu taşır | Hazır |
-| Bulut hesabı bağla | Google Drive, OneDrive ya da Dropbox'ta uygulamaya özel klasördeki tek dosyaya | Sonraki aşamalar; kartlar görünür, client ID girilene kadar "Yapılandırma eksik" der |
+| Bulut hesabı bağla | Google Drive, OneDrive ya da Dropbox'ta uygulamaya özel klasördeki tek dosyaya | Google Drive hazır; OneDrive ve Dropbox sonraki aşama. Kartlar her zaman görünür, client ID girilene kadar "Yapılandırma eksik" der (`SETUP-OAUTH.md`) |
 | Kendi sunucum | Kullanıcının girdiği WebDAV ya da HTTP adresine | Sonraki aşama |
 
 Bir yol seçmek tek başına hiçbir şey göndermez: önce neyin nereye gideceğini söyleyen onay metni
@@ -408,6 +412,17 @@ kasayı silmez ya da bozmaz. Ayar ve durum yalnızca `chrome.storage.local` içi
 karakterlik parçalara bölünür: `wv_meta` (`{ v, n, rev, at }`) ve `wv_0 … wv_<n-1>`. Bir sürümün bütün
 parçaları tek çağrıda yazılır, kısalan sürümün artan parçaları silinir. Doluluk bölümde gösterilir,
 %80'de uyarılır; sığmayan sürüm hiç yazılmaz, senkron durur ve kasa bu cihazda eksiksiz kalır.
+
+**Google Drive** (`sync/providers/gdrive.js`): belge, Drive'ın gizli uygulama verisi klasöründe
+(`appDataFolder`) `wordvault-vault.json.gz` adlı tek dosyadır; istenen tek izin `drive.appdata`'dır,
+kullanıcının dosyaları görülmez. Kullanıcı dosyayı Drive'da Ayarlar → Uygulamaları yönet → Wordvault
+altından görüp silebilir. Bağlanınca dosya aranır: yoksa yerel kasadan oluşturulur, varsa indirilip
+kasayla birleştirilir. İki cihaz aynı anda ilk kez bağlanıp iki dosya oluşturduysa bir sonraki eşitleme
+ikisini de okur, birleştirir, eskisini tutar ve diğerini birleşmiş dosya yazıldıktan sonra siler.
+Oturum açma `identity.launchWebAuthFlow` ile yapılır; pakette client secret yoktur. Google, eklentiye
+yönlendirebilen tek istemci türünde PKCE ile bile secret istediği için örtük akış kullanılır: erişim
+token'ı yaklaşık bir saat geçerlidir ve kullanıcı Google'da oturumu açık tuttuğu sürece sessizce
+yenilenir; yenilenemezse bölüm "yeniden bağlan" der. Token'lar yalnızca `storage.local` içindedir.
 
 **iCloud sunulmuyor.** Apple'ın web için verdiği tek yol CloudKit JS'tir ve uygulamanın kendi CloudKit
 kapsayıcısına erişir (Apple Developer Program üyeliği, Xcode ile oluşturulmuş kapsayıcı, CloudKit
@@ -440,6 +455,8 @@ iki manifestteki `host_permissions` listesine de ekle.
 | --- | --- |
 | `storage` | Ayarları ve kasayı (ileride çeviri önbelleğini) `chrome.storage.local` içinde, yalnızca bu tarayıcıda saklamak için. |
 | `alarms` | Quiz'in zamanlayıcısı için. Arka plan betiği uyurken zamanı gelince onu uyandırır. |
+| `identity` | Bulut hesabına bağlanırken sağlayıcının oturum penceresini açmak (`identity.launchWebAuthFlow`) için. Tarayıcı hesabının e-postası istenmez (`identity.email` yok). |
+| İsteğe bağlı adres izni: `https://*/*`, `http://localhost/*`, `http://127.0.0.1/*` | Kurulumda verilmez. Bir bulut hesabı ya da kendi sunucun bağlanırken tarayıcı yalnızca o adres için sorar (Google Drive için `www.googleapis.com` ve `oauth2.googleapis.com`). Desen geniştir çünkü kullanıcının gireceği sunucu adresi önceden bilinemez; verilen izin yalnızca istenen adrestir. |
 | `notifications` (isteğe bağlı) | Kurulumda istenmez. Yalnızca ayarlardan **İzin ver**'e basılırsa tarayıcı sorar; quiz başka hiçbir yolla gösterilemediğinde bildirimle haber vermek için. Ayarlardan geri alınabilir. |
 | `unlimitedStorage` | Kasa büyüdükçe `storage.local`'ın 10 MB sınırına takılmamak için. Kasadaki kelimeler asla otomatik silinmez. |
 | İçerik betiği: `<all_urls>` | Çift tıklama herhangi bir sayfada çalışmalı. Betik, kullanıcı bir kelimeye çift tıklayana kadar sayfadan hiçbir şey okumaz. |
