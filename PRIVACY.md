@@ -32,6 +32,13 @@ YouTube'da altyazıdaki bir kelimenin üzerinde imleci tuttuğunda da aynı şey
 ve dil çifti gönderilir. Altyazı satırı dili algılamak için tarayıcının içinde kullanılır, kelimeyi
 kasaya eklersen onunla birlikte saklanır; altyazı akışı kaydedilmez ya da indirilmez.
 
+### Ekrandan metin tarama (yalnızca sen başlattığında)
+
+Taramayı kısayolla ya da menüden başlattığında, o sekmenin o anki ekran görüntüsü alınır ve seçtiğin
+alan **bu tarayıcının içinde** okunur. Görüntü cihazından çıkmaz, hiçbir yere kaydedilmez ve okuma
+bitince bellekten atılır. Eklentinin sekmelerin görüntüsünü kendiliğinden alma izni yoktur
+(`activeTab`: yalnızca senin başlattığın anda, yalnızca o sekme). Bulut OCR kullanılmaz.
+
 ### Sözlük ve telaffuz (kelimeyi kasaya eklediğinde ya da dinlediğinde)
 
 Kasaya eklediğin kelime, türünü ve örnek cümlelerini almak için Wiktionary'ye

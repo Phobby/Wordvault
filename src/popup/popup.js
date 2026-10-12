@@ -13,6 +13,7 @@ document.documentElement.lang = languages.uiLanguage();
 
 const ICON_BACK = 'M15 6l-6 6 6 6';
 const ICON_SETTINGS = 'M4 7h9M17 7h3M15 5v4M4 17h3M11 17h9M9 15v4';
+const ICON_SCAN = 'M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3M8 10h8M8 14h5';
 const ICON_TRASH = 'M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 11v6M14 11v6';
 
 /** Example sentences shown per word: Wiktionary's, topped up with the saved sentence below this. */
@@ -126,6 +127,7 @@ document.getElementById('app').append(
     h('h1', { text: 'Wordvault' }),
     count,
     targetChip,
+    iconButton(ICON_SCAN, 'ocrMenuScan', scanScreen),
     iconButton(ICON_SETTINGS, 'tbSettings', openSettings),
   ),
   listView,
@@ -390,6 +392,12 @@ function openImport() {
   // The file picker is opened from the options page: a toolbar popup closes as soon as another
   // window (the picker) takes focus, and the chosen file would never arrive.
   chrome.tabs.create({ url: chrome.runtime.getURL('options/options.html#backup') });
+  window.close();
+}
+
+/** Starts a screen text scan on the tab this popup was opened over, and gets out of its way. */
+async function scanScreen() {
+  await WV.send('wv:ocr:begin').catch(() => {});
   window.close();
 }
 

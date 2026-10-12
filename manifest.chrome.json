@@ -25,7 +25,13 @@
     "page": "options/options.html",
     "open_in_tab": true
   },
-  "permissions": ["storage", "unlimitedStorage", "alarms", "identity"],
+  "permissions": ["storage", "unlimitedStorage", "alarms", "identity", "activeTab", "contextMenus"],
+  "commands": {
+    "scan-screen": {
+      "suggested_key": { "default": "Alt+Shift+S" },
+      "description": "__MSG_cmdScanScreen__"
+    }
+  },
   "optional_permissions": ["notifications"],
   "optional_host_permissions": ["https://*/*", "http://localhost/*", "http://127.0.0.1/*"],
   "host_permissions": [
@@ -70,6 +76,17 @@
       ],
       "run_at": "document_idle",
       "all_frames": true
+    },
+    {
+      "matches": ["<all_urls>"],
+      "js": [
+        "features/screen-ocr/content/area.js",
+        "features/screen-ocr/content/selector.js",
+        "features/screen-ocr/content/layer.js",
+        "features/screen-ocr/content/screen-ocr.js"
+      ],
+      "run_at": "document_idle",
+      "all_frames": false
     }
   ]
 }

@@ -53,7 +53,7 @@ function check(manifests) {
   }
   // Both browsers run the same code, so everything except the background declaration and the
   // browser-specific keys has to stay in sync between the two manifests.
-  const shared = ['permissions', 'optional_permissions', 'host_permissions', 'optional_host_permissions', 'content_scripts'];
+  const shared = ['permissions', 'optional_permissions', 'host_permissions', 'optional_host_permissions', 'content_scripts', 'commands'];
   if (manifests.firefox && manifests.chrome) {
     for (const key of shared) {
       if (JSON.stringify(manifests.firefox[key]) !== JSON.stringify(manifests.chrome[key])) {

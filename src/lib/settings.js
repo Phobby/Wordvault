@@ -42,6 +42,8 @@ export const DEFAULT_SETTINGS = Object.freeze({
    * Whatever is chosen, the other ways follow when it is not possible (quiz/display.js).
    */
   quizDisplay: 'auto',
+  /** Screen text scanning: start the next selection with the area that was scanned last. */
+  ocrRememberArea: false,
 });
 
 /** @returns {Promise<typeof DEFAULT_SETTINGS>} */

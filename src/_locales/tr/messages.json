@@ -936,5 +936,54 @@
   },
   "errUnknown": {
     "message": "Çeviri sırasında bir sorun oluştu."
+  },
+  "cmdScanScreen": {
+    "message": "Ekrandan metin tara"
+  },
+  "ocrMenuScan": {
+    "message": "Ekrandan metin tara"
+  },
+  "ocrHint": {
+    "message": "Sürükleyerek alan seç · Enter ya da çift tıklama: tüm ekran · Esc: iptal"
+  },
+  "ocrScan": {
+    "message": "Tara"
+  },
+  "ocrCancel": {
+    "message": "İptal"
+  },
+  "ocrClose": {
+    "message": "Taranan metni kapat"
+  },
+  "ocrReading": {
+    "message": "Metin okunuyor…"
+  },
+  "ocrErrForbidden": {
+    "message": "Bu sayfa taranamıyor. Taramayı kısayolla ya da menüden başlat; tarayıcı sayfaları ve eklenti mağazaları ise hiç izin vermez."
+  },
+  "ocrErrRate": {
+    "message": "Art arda çok fazla tarama yapıldı. Bir saniye bekleyip yeniden dene."
+  },
+  "ocrErrCapture": {
+    "message": "Ekran görüntüsü alınamadı. Taramayı kısayolla ya da menüden yeniden başlat."
+  },
+  "ocrErrNoText": {
+    "message": "Bu alanda metin bulunamadı."
+  },
+  "ocrResult": {
+    "message": "$COUNT$ kelime bulundu",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "ocrMockResult": {
+    "message": "$COUNT$ kutu bulundu (deneme motoru: yalnızca konum, henüz metin yok)",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
   }
 }

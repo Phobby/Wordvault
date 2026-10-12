@@ -6,6 +6,7 @@
 // requests would be subject to the CORS and CSP rules of whatever page they run in.
 
 import { lookupWord } from '../lib/dictionary.js';
+import { registerScreenOcr, screenOcrHandlers } from '../features/screen-ocr/background.js';
 import { WordvaultError, serializeError } from '../lib/errors.js';
 import { fetchRecording } from '../lib/pronunciation.js';
 import { getPreferences, setSiteSourceLanguage, setTargetLanguage, translate } from '../lib/translator.js';
@@ -97,6 +98,7 @@ const handlers = {
   // turned into a key here; it is not kept.
   'wv:sync:unlock': fromOwnPage((payload) => unlockEncryption({ password: payload?.password, remember: payload?.remember })),
   'wv:sync:encryption-off': fromOwnPage(() => turnOffEncryption()),
+  ...screenOcrHandlers,
 };
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
@@ -110,6 +112,11 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     );
   return true; // keep the channel open for the asynchronous response
 });
+
+// --- Screen text scanning ----------------------------------------------------------------------
+// Shortcut and menus; see features/screen-ocr/background.js.
+
+registerScreenOcr();
 
 // --- Quiz timer --------------------------------------------------------------------------------
 // The alarm survives the background script being stopped, but not always a browser restart, so

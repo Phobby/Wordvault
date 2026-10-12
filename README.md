@@ -65,6 +65,7 @@ SPEC-SYNC-UI.md,        quiz'in zamanlayıcısı ve görünümü)
 SPEC-QUIZ.md,
 SPEC-QUIZ-POPUP.md,
 SPEC-CAPTIONS.md        Video altyazılarında kelimenin üzerine gelince çeviri
+SPEC-OCR.md             Ekrandan metin tarama (OCR) ve üzerine gelince çeviri
 manifest.firefox.json   Firefox manifesti (background.scripts, gecko ayarları)
 manifest.chrome.json    Chrome manifesti (background.service_worker)
 build.js                dist/ klasörlerini üretir
@@ -103,6 +104,13 @@ src/
   features/captions/    Altyazı özelliği: yalnızca sitenin bağdaştırıcısını seçer
     selectors.js        Sitelerin oynatıcılarında kullanılan bütün seçiciler (tek yer)
     adapters/youtube.js YouTube altyazıları, bir kelime kaynağı olarak
+  features/screen-ocr/  Ekrandan metin tarama
+    background.js       Başlatma yolları (kısayol, sağ tık menüsü, araç çubuğu menüsü, kasa düğmesi)
+    scan.js             Ekran görüntüsünü alır, alanı kırpar, motora verir, sonucu sayfaya yerleştirir
+    geometry.js         Sayfanın CSS pikseli <-> ekran görüntüsünün pikseli; kelime/satır/blok gruplama
+    engines/mock.js     Deneme motoru: metni okumaz, mürekkebin yerini bulur (gerçek motorlar 2. aşamada)
+    content/            Sayfadaki kısım (yalnızca üst çerçeve): area.js (alanın kuralları),
+                        selector.js (alan seçimi), layer.js (metin katmanı), screen-ocr.js (akış)
   popup/                Araç çubuğu simgesinin açtığı kasa: liste, arama, detay, dışa aktarma
   options/              Ayarlar sayfası: hedef dil, çift tıklama, Flash card ayarları ve tanı paneli,
                         yedekleme (dışa/içe aktarma) ve senkronizasyon (options/sync.js)
@@ -173,6 +181,30 @@ kuralı, sözleşme) ve YouTube'un altyazı DOM'unu taklit eden çevrimdışı s
 Henüz yok (SPEC-CAPTIONS.md'nin sonraki aşamaları): otomatik duraklatma, tetikleme modları, akan
 otomatik altyazılarda kararlı vuruş, "Satırı çevir", ayarlar ve tanı paneli, kısayollar, satır geçmişi,
 YouTube dışındaki siteler.
+
+### Ekrandan metin tarama (OCR) — 1. aşama
+
+Başlatma: kısayol (varsayılan **Alt+Shift+S**; Chrome'da `chrome://extensions/shortcuts`, Firefox/Zen'de
+`about:addons` → dişli → **Manage Extension Shortcuts** ile değiştirilir), sayfada sağ tık →
+**Ekrandan metin tara**, araç çubuğu simgesine sağ tık → aynı madde, ya da kasa penceresindeki tarama
+düğmesi.
+
+Sayfa kararır, imleç artı olur; sürükleyerek bir alan seçilir, alan kenar ve köşelerinden ayarlanır,
+içinden tutulup taşınır. **Tara** ya da `Enter` alanı tarar; alan yokken `Enter` ya da çift tıklama
+görünen ekranın tamamını tarar; `Esc` iptal eder. Seçim arayüzü kaldırılıp tarayıcı sayfayı onsuz
+çizdikten sonra (iki kare) `tabs.captureVisibleTab` ile sekmenin görüntüsü alınır. Görüntü arka plan
+betiğinde kırpılır ve motora verilir; sayfaya yalnızca kutular ve metin döner. Görüntü hiçbir yere
+yazılmaz ve iş bitince belleği bırakılır.
+
+Koordinat eşleme `devicePixelRatio`'ya güvenmez: oran, dönen görüntünün gerçek boyutundan ölçülür
+(`geometry.js`), yatay ve dikey ayrı. Böylece ekran yoğunluğu, tarayıcı yakınlaştırması ve çimdik
+yakınlaştırma aynı hesapla doğru çıkar. Yüklü eklentiyle ölçüldü: Chromium'da 1x, 1.5x, 2x ekran ve
+%80, %125, %150 yakınlaştırma, Firefox'ta 1x ve 2x; kutular kelimelerin üstüne en çok bir ekran pikseli
+farkla oturuyor.
+
+Bu aşamada motor bir **deneme motorudur** (`engines/mock.js`): metni okumaz, yalnızca yazının yerini
+bulur; kutular kırmızı çerçeveyle çizilir ki hizaları gözle görülebilsin. Gerçek OCR (Tesseract.js),
+üzerine gelince çeviri, düzeltme, ayarlar ve kıyaslama SPEC-OCR.md'nin sonraki aşamalarıdır.
 
 ### Hedef ve kaynak dil
 
@@ -542,11 +574,14 @@ iki manifestteki `host_permissions` listesine de ekle.
 | --- | --- |
 | `storage` | Ayarları ve kasayı (ileride çeviri önbelleğini) `chrome.storage.local` içinde, yalnızca bu tarayıcıda saklamak için. |
 | `alarms` | Quiz'in zamanlayıcısı için. Arka plan betiği uyurken zamanı gelince onu uyandırır. |
+| `activeTab` | Ekrandan metin tarama için: kullanıcı kısayola bastığında ya da menüden seçtiğinde, yalnızca o sekmenin ekran görüntüsünü almak (`tabs.captureVisibleTab`). Sürekli bir izin değildir; kullanıcı taramayı başlatmadıkça hiçbir sekmenin görüntüsü alınamaz. |
+| `contextMenus` | Sağ tık menüsüne ve araç çubuğu simgesinin menüsüne "Ekrandan metin tara" maddesini eklemek için. Sayfa içeriğine erişim vermez. |
 | `identity` | Bulut hesabına bağlanırken sağlayıcının oturum penceresini açmak (`identity.launchWebAuthFlow`) için. Tarayıcı hesabının e-postası istenmez (`identity.email` yok). |
 | İsteğe bağlı adres izni: `https://*/*`, `http://localhost/*`, `http://127.0.0.1/*` | Kurulumda verilmez. Bir bulut hesabı ya da kendi sunucun bağlanırken tarayıcı yalnızca o adres için sorar (Google Drive: `www.googleapis.com`, `oauth2.googleapis.com`; OneDrive: `graph.microsoft.com`, `login.microsoftonline.com`; Dropbox: `api.dropboxapi.com`, `content.dropboxapi.com`). Desen geniştir çünkü kullanıcının gireceği sunucu adresi önceden bilinemez; verilen izin yalnızca istenen adrestir. |
 | `notifications` (isteğe bağlı) | Kurulumda istenmez. Yalnızca ayarlardan **İzin ver**'e basılırsa tarayıcı sorar; quiz başka hiçbir yolla gösterilemediğinde bildirimle haber vermek için. Ayarlardan geri alınabilir. |
 | `unlimitedStorage` | Kasa büyüdükçe `storage.local`'ın 10 MB sınırına takılmamak için. Kasadaki kelimeler asla otomatik silinmez. |
 | İçerik betiği: `*://*.youtube.com/*`, `*://*.youtube-nocookie.com/*` (bütün çerçevelerde) | Altyazıda üzerine gelinen kelimeyi bulmak için. Yalnızca YouTube'da (gömülü oynatıcılar dahil) yüklenir; yeni bir izin değildir, `<all_urls>` betiğinin kapsamı içindedir ama altyazı kodu başka sitelere hiç eklenmez. Altyazı metni kaydedilmez ya da indirilmez. |
+| İçerik betiği: `<all_urls>` (yalnızca üst çerçeve) | Tarama alanını seçtiren arayüz ve taranan metnin katmanı. Kullanıcı taramayı başlatana kadar hiçbir şey yapmaz, sayfadan hiçbir şey okumaz. |
 | İçerik betiği: `<all_urls>` | Çift tıklama herhangi bir sayfada çalışmalı. Betik, kullanıcı bir kelimeye çift tıklayana kadar sayfadan hiçbir şey okumaz. |
 | Sunucu izni: `https://api.mymemory.translated.net/*` | Varsayılan çeviri servisi. İstekler arka plan betiğinden gider. |
 | Sunucu izni: `https://en.wiktionary.org/*` | Kasaya eklenen kelimenin türünü, tanımlarını ve örnek cümlelerini almak; Firefox/macOS'te kelimenin ses kaydını bulmak için. |
@@ -554,6 +589,7 @@ iki manifestteki `host_permissions` listesine de ekle.
 
 Sekme açmak (`chrome.tabs.create`), ayarlar sayfasını açmak, eklenti açılır penceresini açmak
 (`action.openPopup`) ve quiz penceresini açmak (`windows.create`) izin gerektirmez; `tabs` izni istenmez.
+Klavye kısayolu (`commands`) bir izin değildir.
 
 Chrome'daki `key` alanı bir izin değildir: yalnızca bir açık anahtardır ve geliştirici modunda yüklenen
 eklentinin kimliğini sabitler (OAuth yönlendirme adresi kimlikten türer; bkz. `SETUP-OAUTH.md`).

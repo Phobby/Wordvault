@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Wordvault: ekran tarama test sayfası</title>
+    <!--
+      Ekrandan metin tarama (SPEC-OCR.md) için çevrimdışı test sayfası.
+      Üstteki siyah dikdörtgenler konumu kesin bilinen "kelimeler"dir (data-word): deneme motoru
+      mürekkebin yerini bulduğu için kutuların bunların tam üstüne oturması, sayfa ile ekran
+      görüntüsü arasındaki koordinat eşlemesinin doğru olduğunu gösterir. Alttaki gerçek metin gözle
+      bakmak içindir.
+    -->
+    <style>
+      html, body { margin: 0; background: #fff; color: #000; }
+      body { height: 2400px; font: 22px/1.5 Arial, Helvetica, sans-serif; }
+      .w { position: absolute; background: #000; height: 20px; }
+      #text { position: absolute; left: 60px; top: 380px; width: 700px; }
+      #dark { position: absolute; left: 60px; top: 560px; width: 700px; padding: 16px; background: #111; color: #fff; }
+    </style>
+  </head>
+  <body>
+    <!-- line 1 -->
+    <div class="w" data-word style="left: 80px; top: 80px; width: 90px"></div>
+    <div class="w" data-word style="left: 190px; top: 80px; width: 60px"></div>
+    <div class="w" data-word style="left: 270px; top: 80px; width: 140px"></div>
+    <!-- line 2 -->
+    <div class="w" data-word style="left: 80px; top: 116px; width: 120px"></div>
+    <div class="w" data-word style="left: 220px; top: 116px; width: 44px"></div>
+    <!-- a separate block -->
+    <div class="w" data-word style="left: 80px; top: 220px; width: 200px"></div>
+    <div class="w" data-word style="left: 300px; top: 220px; width: 75.5px"></div>
+    <!-- outside the area the test selects -->
+    <div class="w" data-word style="left: 620px; top: 100px; width: 100px"></div>
+
+    <div id="text">The quick brown <span id="fox">fox</span> jumps over the lazy dog. Hızlı kahverengi tilki tembel köpeğin üzerinden atlar.</div>
+    <div id="dark">Light text on a dark background, like a subtitle.</div>
+  </body>
+</html>

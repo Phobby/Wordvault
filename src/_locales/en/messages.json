@@ -1246,5 +1246,67 @@
   "errUnknown": {
     "message": "Something went wrong while translating.",
     "description": "Error: fallback for anything unexpected."
+  },
+  "cmdScanScreen": {
+    "message": "Scan text on screen",
+    "description": "Keyboard shortcut (shown in the browser's shortcut settings): start choosing an area of the page whose text is read from a screenshot."
+  },
+  "ocrMenuScan": {
+    "message": "Scan text on screen",
+    "description": "Right-click menu item, toolbar button menu item and tooltip of the button in the toolbar popup: start a screen text scan."
+  },
+  "ocrHint": {
+    "message": "Drag to choose an area · Enter or double-click: whole screen · Esc: cancel",
+    "description": "Screen scan: hint shown at the top while the user chooses an area."
+  },
+  "ocrScan": {
+    "message": "Scan",
+    "description": "Screen scan: button that scans the chosen area."
+  },
+  "ocrCancel": {
+    "message": "Cancel",
+    "description": "Screen scan: button that leaves the area selection without scanning."
+  },
+  "ocrClose": {
+    "message": "Close the scanned text",
+    "description": "Screen scan: tooltip of the button that removes the text layer."
+  },
+  "ocrReading": {
+    "message": "Reading the text…",
+    "description": "Screen scan: shown while the screenshot is being read."
+  },
+  "ocrErrForbidden": {
+    "message": "This page cannot be scanned. Start the scan with the shortcut or the menu; browser pages and add-on stores do not allow it at all.",
+    "description": "Screen scan error: the browser does not let extensions work on this page."
+  },
+  "ocrErrRate": {
+    "message": "Too many scans in a row. Wait a second and try again.",
+    "description": "Screen scan error: the browser limits how often a tab may be captured."
+  },
+  "ocrErrCapture": {
+    "message": "The screenshot could not be taken. Start the scan again with the shortcut or the menu.",
+    "description": "Screen scan error: capturing the tab failed for a reason we have no better message for."
+  },
+  "ocrErrNoText": {
+    "message": "No text was found in this area.",
+    "description": "Screen scan error: the engine found nothing."
+  },
+  "ocrResult": {
+    "message": "$COUNT$ words found",
+    "description": "Screen scan: shown next to the scanned area when it has been read.",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "ocrMockResult": {
+    "message": "$COUNT$ boxes found (test engine: positions only, no text yet)",
+    "description": "Screen scan: result of the stand-in engine, which finds where text is but cannot read it.",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
   }
 }
