@@ -158,11 +158,14 @@ export function createSyncControls({ onSaved }) {
       step = null;
       chosen = null;
       onSaved();
-      const account = await provider.accountInfo({ connection, update: (patch) => updateConnection(providerId, patch) }).catch(() => null);
-      if (account) await setSyncConfig({ ...(await getSyncConfig()), account });
       // The first synchronisation: find the remote copy or create it, and merge.
       const status = await globalThis.WV.send('wv:sync:now');
       if (status?.state === 'error' || status?.state === 'waiting') say(errorText(status.error), true);
+      // Whose account it is, where the provider tells (asked after the first write: with some
+      // providers the application's folder only exists from then on).
+      const current = await getSyncConfig();
+      const account = await provider.accountInfo({ connection: current.connection || connection, update: (patch) => updateConnection(providerId, patch) }).catch(() => null);
+      if (account && current.providerId === providerId) await setSyncConfig({ ...(await getSyncConfig()), account });
     });
   }
 

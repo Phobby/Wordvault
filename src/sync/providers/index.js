@@ -55,10 +55,12 @@
  */
 
 import { browser } from './browser.js';
+import { dropbox } from './dropbox.js';
 import { gdrive } from './gdrive.js';
+import { onedrive } from './onedrive.js';
 
 /** @type {Map<string, SyncProvider>} */
-const providers = new Map([browser, gdrive].map((provider) => [provider.id, provider]));
+const providers = new Map([browser, gdrive, onedrive, dropbox].map((provider) => [provider.id, provider]));
 
 /** Adds a provider (the built-in ones below, and the in-memory one the tests use). */
 export function registerSyncProvider(provider) {

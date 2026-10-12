@@ -9,9 +9,10 @@ kaydet, sonra kısa quizlerle tekrar et. Her şey tarayıcında çalışır; Wor
 > Sırada: sağ tık menüsü, çeviri penceresinde kelime türü etiketi, önbellek ve 7 günlük temizlik,
 > quiz, altyazılar, ayarlar sayfasının kalanı (sağlayıcı ve API anahtarı) ve gizlilik politikası.
 >
-> Cihazlar arası senkronizasyon (`SPEC-SYNC.md`) yedi aşamada ekleniyor; şu an ilk dört aşama hazır:
+> Cihazlar arası senkronizasyon (`SPEC-SYNC.md`) yedi aşamada ekleniyor; şu an ilk beş aşama hazır:
 > veri modeli, birleştirme, silme kayıtları, sağlayıcı arayüzü, eşitleme motoru, ayarlar sayfasındaki
-> "Senkronizasyon ve yedekleme" bölümü, tarayıcı senkronu (`storage.sync`) ve Google Drive. Varsayılan
+> "Senkronizasyon ve yedekleme" bölümü, tarayıcı senkronu (`storage.sync`), Google Drive, OneDrive ve
+> Dropbox. Varsayılan
 > "Sadece bu cihaz"tır: kullanıcı bir yol seçip onaylamadıkça hiçbir yere veri gönderilmez. Bulut
 > sağlayıcıları için bir kez geliştirici kurulumu gerekir: `SETUP-OAUTH.md`.
 >
@@ -112,6 +113,8 @@ src/
     providers/          Sağlayıcılar (ortak arayüz: providers/index.js)
       browser.js        Tarayıcı senkronu (chrome.storage.sync, parçalı)
       gdrive.js         Google Drive (appDataFolder, yalnızca drive.appdata izni)
+      onedrive.js       OneDrive (Microsoft Graph, approot, Files.ReadWrite.AppFolder)
+      dropbox.js        Dropbox (App folder, files.content.read/write)
     model.js            Eşitlenen belgenin biçimi; kasa kaydı <-> eşitleme kaydı dönüşümü
     merge.js            İki belgeyi birleştirme, silme kayıtlarının temizliği
     local.js            Bu cihazın kasasını belge olarak okuma ve belgeyi kasaya uygulama
@@ -389,7 +392,7 @@ Ayarlar → **Senkronizasyon ve yedekleme** bölümünde, JSON dışa/içe aktar
 | --- | --- | --- |
 | Sadece bu cihaz (varsayılan) | Hiçbir yere | Hazır |
 | Tarayıcı senkronu | Tarayıcının kendi senkron deposuna (`chrome.storage.sync`); Firefox Sync ya da Chrome senkronu taşır | Hazır |
-| Bulut hesabı bağla | Google Drive, OneDrive ya da Dropbox'ta uygulamaya özel klasördeki tek dosyaya | Google Drive hazır; OneDrive ve Dropbox sonraki aşama. Kartlar her zaman görünür, client ID girilene kadar "Yapılandırma eksik" der (`SETUP-OAUTH.md`) |
+| Bulut hesabı bağla | Google Drive, OneDrive ya da Dropbox'ta uygulamaya özel klasördeki tek dosyaya | Hazır. Kartlar her zaman görünür; client ID girilene kadar "Yapılandırma eksik" der ve "Bağlan" neyin eksik olduğunu söyler (`SETUP-OAUTH.md`) |
 | Kendi sunucum | Kullanıcının girdiği WebDAV ya da HTTP adresine | Sonraki aşama |
 
 Bir yol seçmek tek başına hiçbir şey göndermez: önce neyin nereye gideceğini söyleyen onay metni
@@ -424,6 +427,21 @@ yönlendirebilen tek istemci türünde PKCE ile bile secret istediği için ört
 token'ı yaklaşık bir saat geçerlidir ve kullanıcı Google'da oturumu açık tuttuğu sürece sessizce
 yenilenir; yenilenemezse bölüm "yeniden bağlan" der. Token'lar yalnızca `storage.local` içindedir.
 
+**OneDrive** (`sync/providers/onedrive.js`): dosya `Uygulamalar/Wordvault` klasöründedir (Graph'ta
+`approot`); izinler `Files.ReadWrite.AppFolder` ve `offline_access`. Oturum açma PKCE ile, secret'sız.
+Yazma koşulludur (`If-Match` ile `eTag`; ilk yazmada `conflictBehavior=fail`). Microsoft'un secret'sız
+tarayıcı istemcilerine verdiği yenileme token'ı 24 saat yaşar; dolunca oturum sessizce yinelenir,
+olmazsa "yeniden bağlan" denir.
+
+**Dropbox** (`sync/providers/dropbox.js`): dosya `Uygulamalar/<uygulama adı>` klasöründedir ("App
+folder" erişimi); izinler `files.content.read` ve `files.content.write`. Oturum açma PKCE ile,
+secret'sız; yenileme token'ının süresi dolmaz. Yazma koşulludur (dosya yoksa `add`, varsa okunan `rev`
+ile `update`).
+
+Üç sağlayıcıda da hesap dışına hiçbir şey gitmez: istekler tarayıcıdan doğrudan sağlayıcıya yapılır.
+Google API Services User Data Policy (Limited Use), Microsoft API Terms of Use ve Dropbox Developer
+Terms'e göre veri yalnızca kullanıcının istediği eşitleme için kullanılır, başka yere aktarılmaz.
+
 **iCloud sunulmuyor.** Apple'ın web için verdiği tek yol CloudKit JS'tir ve uygulamanın kendi CloudKit
 kapsayıcısına erişir (Apple Developer Program üyeliği, Xcode ile oluşturulmuş kapsayıcı, CloudKit
 Dashboard'dan API anahtarı gerekir); kullanıcının iCloud Drive'ına erişim vermez. Bunun yerine bölümde
@@ -456,7 +474,7 @@ iki manifestteki `host_permissions` listesine de ekle.
 | `storage` | Ayarları ve kasayı (ileride çeviri önbelleğini) `chrome.storage.local` içinde, yalnızca bu tarayıcıda saklamak için. |
 | `alarms` | Quiz'in zamanlayıcısı için. Arka plan betiği uyurken zamanı gelince onu uyandırır. |
 | `identity` | Bulut hesabına bağlanırken sağlayıcının oturum penceresini açmak (`identity.launchWebAuthFlow`) için. Tarayıcı hesabının e-postası istenmez (`identity.email` yok). |
-| İsteğe bağlı adres izni: `https://*/*`, `http://localhost/*`, `http://127.0.0.1/*` | Kurulumda verilmez. Bir bulut hesabı ya da kendi sunucun bağlanırken tarayıcı yalnızca o adres için sorar (Google Drive için `www.googleapis.com` ve `oauth2.googleapis.com`). Desen geniştir çünkü kullanıcının gireceği sunucu adresi önceden bilinemez; verilen izin yalnızca istenen adrestir. |
+| İsteğe bağlı adres izni: `https://*/*`, `http://localhost/*`, `http://127.0.0.1/*` | Kurulumda verilmez. Bir bulut hesabı ya da kendi sunucun bağlanırken tarayıcı yalnızca o adres için sorar (Google Drive: `www.googleapis.com`, `oauth2.googleapis.com`; OneDrive: `graph.microsoft.com`, `login.microsoftonline.com`; Dropbox: `api.dropboxapi.com`, `content.dropboxapi.com`). Desen geniştir çünkü kullanıcının gireceği sunucu adresi önceden bilinemez; verilen izin yalnızca istenen adrestir. |
 | `notifications` (isteğe bağlı) | Kurulumda istenmez. Yalnızca ayarlardan **İzin ver**'e basılırsa tarayıcı sorar; quiz başka hiçbir yolla gösterilemediğinde bildirimle haber vermek için. Ayarlardan geri alınabilir. |
 | `unlimitedStorage` | Kasa büyüdükçe `storage.local`'ın 10 MB sınırına takılmamak için. Kasadaki kelimeler asla otomatik silinmez. |
 | İçerik betiği: `<all_urls>` | Çift tıklama herhangi bir sayfada çalışmalı. Betik, kullanıcı bir kelimeye çift tıklayana kadar sayfadan hiçbir şey okumaz. |

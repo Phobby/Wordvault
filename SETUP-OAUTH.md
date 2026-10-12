@@ -79,7 +79,74 @@ kullanıcıya dönük özelliği (kasanın eşitlenmesi) sağlamak için kullan�
 reklam için kullanılmaz, insanlar tarafından okunmaz. Wordvault'un sunucusu olmadığı için veri
 tarayıcıdan doğrudan kullanıcının Drive'ına gider.
 
-## 3. Kurulumu sınamak
+## 3. OneDrive (Microsoft)
+
+Kullanılan izinler: `Files.ReadWrite.AppFolder` (yalnızca uygulamanın kendi klasörü) ve
+`offline_access` (bağlı kalabilmek için).
+
+1. [Microsoft Entra yönetim merkezi](https://entra.microsoft.com/) → **Applications → App
+   registrations → New registration**.
+   - **Name:** Wordvault. (OneDrive'daki klasör bu adı alır: `Uygulamalar/Wordvault`.)
+   - **Supported account types:** "Accounts in any organizational directory and personal Microsoft
+     accounts". (Wordvault `common` uç noktasını kullanır; yalnızca kişisel hesaplara açılmış bir
+     kayıt o uç noktada çalışmaz.)
+   - **Redirect URI:** platform olarak **Single-page application (SPA)** seç ve 1. bölümdeki Chrome
+     adresini yaz.
+2. **Authentication** sayfasında aynı **Single-page application** platformuna Firefox adresini
+   (`…extensions.allizom.org/`) da ekle. "Implicit grant" kutularını işaretleme.
+3. **API permissions → Add a permission → Microsoft Graph → Delegated permissions:**
+   `Files.ReadWrite.AppFolder` ve `offline_access`. Kendiliğinden eklenen `User.Read` kaldırılabilir.
+4. **Certificates & secrets** boş kalır: client secret oluşturma.
+5. **Overview** sayfasındaki **Application (client) ID**'yi `src/sync/config.js` içinde `onedrive`
+   değerine yaz, yeniden derle.
+
+**Neden "Single-page application":** Token isteği tarayıcı içinden yapılır ve `Origin` başlığı taşır.
+Microsoft, secret'sız (PKCE ile) kod-token değişimini başka kaynaktan gelen isteklerde yalnızca bu
+türdeki yönlendirme adresleri için yapar; "Web" ya da "Mobile and desktop" türünde kaydedilmiş adresle
+"AADSTS9002326/9002327" hatası alınır.
+
+**Bunun sonucu:** Bu türde yenileme token'ı 24 saat geçerlidir. Süresi dolunca Wordvault oturum açmayı
+pencere açmadan (`prompt=none`) yineler; bu, kullanıcı o tarayıcıda Microsoft'ta oturumu açık tuttuğu
+sürece çalışır. Aksi halde ayarlar sayfası "yeniden bağlan" der.
+
+**Dosya nerede:** Kullanıcının OneDrive'ında `Uygulamalar (Apps) → Wordvault` klasöründe,
+`wordvault-vault.json.gz` adıyla. Klasör ilk yazmada kendiliğinden oluşur.
+
+**Politika:** Microsoft API Terms of Use ve Microsoft Graph veri kullanım koşullarına göre veri yalnızca
+kullanıcının istediği işlev için kullanılır; Wordvault veriyi kendi tarafına almaz.
+
+## 4. Dropbox
+
+Kullanılan izinler: `files.content.read` ve `files.content.write`, yalnızca uygulamanın kendi
+klasöründe.
+
+1. [Dropbox App Console](https://www.dropbox.com/developers/apps) → **Create app**.
+   - **Choose an API:** Scoped access.
+   - **Type of access:** **App folder**. (Full Dropbox seçme.)
+   - **Name:** benzersiz bir ad (örneğin `Wordvault-vault`). Dropbox'taki klasör bu adı alır:
+     `Uygulamalar/<ad>`.
+2. **Settings** sekmesi → **OAuth 2**:
+   - **Redirect URIs:** 1. bölümdeki Chrome ve Firefox (`…extensions.allizom.org/`) adreslerini ekle.
+   - **Allow public clients (Implicit Grant & PKCE):** Allow.
+3. **Permissions** sekmesi: `files.content.write` ve `files.content.read` kutularını işaretle,
+   **Submit**. (`account_info.read` varsayılan olarak açıktır; Wordvault onu kullanmaz, bu yüzden bağlı
+   hesabın adı ayarlarda görünmez.)
+4. **Settings** sekmesindeki **App key**'i `src/sync/config.js` içinde `dropbox` değerine yaz, yeniden
+   derle. **App secret kullanılmaz.**
+5. Uygulama "Development" durumundayken sınırlı sayıda kullanıcı bağlanabilir; herkese açmak için
+   aynı sayfadan **Apply for production**.
+
+Dropbox PKCE ile secret istemez ve `token_access_type=offline` ile süresi dolmayan bir yenileme token'ı
+verir; bağlantı, kullanıcı kesene (ya da Dropbox ayarlarından uygulamayı kaldırana) kadar sürer.
+
+**Dosya nerede:** Kullanıcının Dropbox'ında `Uygulamalar (Apps) → <uygulama adı>` klasöründe,
+`wordvault-vault.json.gz` adıyla.
+
+**Politika:** Dropbox Developer Terms & Conditions ve Developer Branding Guide'a göre veri yalnızca
+kullanıcıya dönük işlev için kullanılır; ad ve logoda "Dropbox" sözcüğü uygulama adının başında
+kullanılmaz.
+
+## 5. Kurulumu sınamak
 
 1. Eklentiyi yeniden yükle, ayarlar sayfasını aç.
 2. **Senkronizasyon ve yedekleme → Bulut hesabı bağla**: sağlayıcının kartında "Yapılandırma eksik"
