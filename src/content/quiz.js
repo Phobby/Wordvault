@@ -43,7 +43,8 @@
     if (document.visibilityState !== 'visible') return 'tab_hidden';
     if (!document.hasFocus()) return 'window_not_focused';
     if (WV.quizCard.isOpen()) return 'already_showing';
-    if (WV.popup?.isOpen()) return 'popup_open';
+    // The same goes for a screen scan in progress: its selection and its text layer are ours too.
+    if (WV.popup?.isOpen() || WV.ocrSelector?.isOpen() || WV.ocrLayer?.isOpen()) return 'popup_open';
     if (document.fullscreenElement) return 'fullscreen';
     if (videoPlaying()) return 'video_playing';
     if (focusedEditable() && Date.now() - lastTypedAt < TYPING_WINDOW_MS) return 'typing';
