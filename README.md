@@ -124,6 +124,7 @@ src/
                         yedekleme (dışa/içe aktarma) ve senkronizasyon (options/sync.js)
   lib/                  Arka plan ve eklenti sayfalarının paylaştığı ES modülleri
     translator.js       Hedef/kaynak dil kararı ve sağlayıcı çağrısı
+    text-damage.js      Yolda harf kaybetmiş metni tanır ("e?itle")
     settings.js         Ayarlar ve site bazlı kaynak dil
     vault.js            Kasa deposu
     dictionary.js       Wiktionary: kelime türü, tanım, örnek cümle
@@ -197,12 +198,19 @@ Ekranda görünen yazıyı, videoların ve resimlerin **piksellerindeki** yazı 
 okunan kelimeye tıkla: mevcut çeviri penceresi açılır, "Kasaya ekle" kelimeyi okunan satırla birlikte
 saklar.
 
-**Başlatma:** kısayol (Chrome'da varsayılan **Cmd+Shift+E** / **Ctrl+Shift+E**, Firefox/Zen'de
+**Başlatma:** kısayol (iki tarayıcıda da aynı: macOS'te **Cmd+Shift+E**, Windows/Linux/ChromeOS'ta
 **Alt+Shift+S**), sayfada sağ tık → **Ekrandan metin tara**, araç çubuğu simgesine sağ tık → aynı
 madde, ya da kasa penceresindeki tarama düğmesi. Kısayol Chrome'da `chrome://extensions/shortcuts`,
 Firefox/Zen'de `about:addons` → dişli → **Manage Extension Shortcuts** ile değiştirilir; ayarlar
-sayfası geçerli kısayolu ve bu adresi gösterir. Chrome önerilen kısayolu yalnızca **ilk kurulumda**
-atar: eklenti zaten kuruluysa yeni varsayılan kendiliğinden gelmez, o sayfadan elle atanır.
+sayfası geçerli kısayolu ve bu adresi gösterir; kısayol atanmamışsa ya da Mac'te Option tuşu
+içeriyorsa uyarır. Chrome önerilen kısayolu yalnızca **ilk kurulumda** atar: eklenti zaten kuruluysa
+yeni varsayılan kendiliğinden gelmez, o sayfadan elle atanır.
+
+Mac'te Option kullanılmaz: Option+harf macOS'te özel karakter yazar (Option+S → ß) ve tarayıcı
+kısayolu olarak güvenilir değildir. Cmd+Shift+E seçildi çünkü macOS'in (Cmd+Shift+3/4/5 ekran
+görüntüsü), Chrome'un ve Firefox'un Mac'teki kendi kısayollarıyla çakışmıyor (Cmd+Shift+S Firefox'ta
+ekran görüntüsü aracıdır). Windows/Linux'ta Ctrl+Shift+E Firefox'ta ağ izleyicisini açtığı için orada
+Alt+Shift+S kaldı; Alt bu sistemlerde özel karakter üretmez.
 
 **Alan seçimi:** sayfa kararır, imleç artı olur; sürükleyerek bir alan seçilir, alan kenar ve
 köşelerinden ayarlanır, içinden tutulup taşınır. **Tara** ya da `Enter` alanı tarar; alan yokken
@@ -613,6 +621,19 @@ Speech API'de bunu değiştiren bir ayar yok. Bu tarayıcılarda kelime, Wiktion
 "Bu kelimenin ses kaydı yok" der; ayarlar sayfasındaki anahtarla bu durumda tarayıcının sesi (çıtlamasıyla
 birlikte) kullanılabilir. Çalınan kaydın Commons sayfasına (yazar ve lisans orada) pencerenin altından
 bağlantı verilir.
+
+### Çeviride kaybolan harfler
+
+Çeviri servisi bazen bir kelimeyi harfleri kendi tarafında bozulmuş olarak gönderir: MyMemory'nin
+makine çevirisi `sync` için `e? itle` döndürür (`ş` yerine `?`), aynı kelime `Sync` yazılınca ya da dil
+çiftiyle sorulunca doğru gelir. Zincirin bizim tarafında (yanıtın okunması, mesajlaşma, kasa, yedek
+dosyası, eşitleme belgesi) karakter kaybı yoktur; `tests/characters.test.js` bunu Türkçe ve bir düzine
+başka yazı sistemiyle doğrular. Bozuk yanıt `lib/text-damage.js` ile fark edilir (kelime içinde `?`,
+`U+FFFD`, `ÅŸ` gibi yanlış çözülmüş UTF-8); sağlayıcı o zaman temiz olan diğer yanıtı kullanır, o da
+bozuksa kelimeyi ilk harfi diğer büyüklükte yeniden sorar. Temiz yanıt alınamazsa çeviri penceresi bunu
+bir notla söyler. Kasadaki eski kayıtlar değiştirilmez; kasa penceresi "N kayıtlı çeviride harf
+kaybolmuş görünüyor" diye haber verir ve yalnızca onları listeleyebilir. Çeviri önbelleği olmadığı için
+temizlenecek bozuk önbellek yoktur.
 
 ### Yeni çeviri sağlayıcısı eklemek
 

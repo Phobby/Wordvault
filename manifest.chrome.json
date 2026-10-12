@@ -28,7 +28,7 @@
   "permissions": ["storage", "unlimitedStorage", "alarms", "identity", "activeTab", "contextMenus", "offscreen", "scripting"],
   "commands": {
     "scan-screen": {
-      "suggested_key": { "default": "Ctrl+Shift+E", "mac": "Command+Shift+E" },
+      "suggested_key": { "default": "Alt+Shift+S", "mac": "Command+Shift+E", "windows": "Alt+Shift+S", "linux": "Alt+Shift+S", "chromeos": "Alt+Shift+S" },
       "description": "__MSG_cmdScanScreen__"
     }
   },

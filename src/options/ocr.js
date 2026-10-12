@@ -8,7 +8,10 @@ const { h, t } = globalThis.WV;
 const SCAN_COMMAND = 'scan-screen';
 const isFirefox = chrome.runtime.getURL('').startsWith('moz-extension:');
 /** Where the browser lets shortcuts be changed. Extension pages may not link there; the address is offered for copying. */
-const SHORTCUTS_ADDRESS = 'chrome://extensions/shortcuts';
+const SHORTCUTS_ADDRESS = isFirefox ? 'about:addons' : 'chrome://extensions/shortcuts';
+const isMac = /mac/i.test(navigator.userAgentData?.platform || navigator.platform || '');
+/** The Option key, as the browsers write it in a shortcut ("⌥⇧S", "Alt+Shift+S"). */
+const OPTION_KEY = /⌥|Alt|Option/i;
 
 /**
  * @param {{ flashSaved: () => void, switchRow: Function, fieldRow: Function }} page  Helpers of the options page.
@@ -21,6 +24,12 @@ export function createOcrSection({ flashSaved, switchRow, fieldRow }) {
   };
 
   const shortcut = h('strong', { class: 'ocr-shortcut' });
+  const warning = h('p', { class: 'ocr-warning', role: 'status', hidden: true });
+  // Firefox can open its shortcut page for us (commands.openShortcutSettings, Firefox 137+).
+  const openSettings =
+    typeof chrome.commands?.openShortcutSettings === 'function'
+      ? h('button', { class: 'wv-btn wv-btn-sm', type: 'button', text: t('optOcrShortcutOpen'), onclick: () => chrome.commands.openShortcutSettings().catch(() => {}) })
+      : '';
   const address = h('input', { type: 'text', readonly: true, value: SHORTCUTS_ADDRESS, class: 'ocr-address', 'aria-label': t('optOcrShortcutAddress'), onfocus: () => address.select() });
   const copy = h('button', {
     class: 'wv-btn wv-btn-sm',
@@ -65,8 +74,9 @@ export function createOcrSection({ flashSaved, switchRow, fieldRow }) {
     h('h2', { text: t('optOcrTitle') }),
     h('p', { class: 'help', text: t('optOcrHelp') }),
     fieldRow('optOcrShortcut', isFirefox ? 'optOcrShortcutHelpFirefox' : 'optOcrShortcutHelpChrome', shortcut),
-    // Chrome does not let a page open its shortcut settings, so the address is given as text.
-    isFirefox ? '' : h('div', { class: 'ocr-address-row' }, address, copy),
+    warning,
+    // A page may not open the browser's shortcut settings by a link, so the address is given as text.
+    h('div', { class: 'ocr-address-row' }, address, copy, openSettings),
     fieldRow('optOcrLang', 'optOcrLangHelp', language),
     fieldRow('optOcrConfidence', 'optOcrConfidenceHelp', confidence),
     switchRow(showBoxes, 'optOcrShowBoxes', 'optOcrShowBoxesHelp'),
@@ -82,8 +92,13 @@ export function createOcrSection({ flashSaved, switchRow, fieldRow }) {
     remember.checked = settings.ocrRememberArea === true;
     try {
       const command = (await chrome.commands.getAll()).find((candidate) => candidate.name === SCAN_COMMAND);
-      shortcut.textContent = command?.shortcut || t('optOcrShortcutNone');
-      shortcut.classList.toggle('missing', !command?.shortcut);
+      const assigned = command?.shortcut || '';
+      shortcut.textContent = assigned || t('optOcrShortcutNone');
+      shortcut.classList.toggle('missing', !assigned);
+      // Not assigned, or assigned to something that does not work on this system: say so.
+      const problem = !assigned ? 'optOcrShortcutWarnNone' : isMac && OPTION_KEY.test(assigned) ? 'optOcrShortcutWarnOption' : '';
+      warning.hidden = !problem;
+      warning.textContent = problem ? t(problem) : '';
     } catch {
       shortcut.textContent = '';
     }

@@ -223,3 +223,4 @@ body {
 .ocr-shortcut.missing { color: var(--wv-danger); }
 .ocr-address-row { display: flex; gap: 8px; align-items: center; margin: 0 0 14px; }
 .ocr-address { flex: 1 1 auto; min-width: 0; padding: 5px 8px; border: 1px solid var(--wv-border); border-radius: 6px; background: transparent; color: inherit; font: 12.5px ui-monospace, SFMono-Regular, Menlo, monospace; }
+.ocr-warning { margin: 0 0 10px; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--wv-danger); color: var(--wv-danger); font-size: 13px; }

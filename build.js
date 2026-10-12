@@ -57,7 +57,7 @@ function check(manifests) {
   // happens in an offscreen document; and Chrome does not put content scripts into tabs that
   // were already open, so they are injected on demand.
   const CHROME_ONLY_PERMISSIONS = ['offscreen', 'scripting'];
-  const shared = ['permissions', 'optional_permissions', 'host_permissions', 'optional_host_permissions', 'content_scripts', 'content_security_policy'];
+  const shared = ['permissions', 'optional_permissions', 'host_permissions', 'optional_host_permissions', 'content_scripts', 'content_security_policy', 'commands'];
   if (manifests.firefox && manifests.chrome) {
     const comparable = (target, key) => {
       const value = manifests[target][key];
