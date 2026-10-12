@@ -1,0 +1,8 @@
+/* The welcome page, opened once after the extension is installed. Layout comes from the
+   options page's stylesheet. */
+
+.welcome-lead { margin: 0 0 20px; font-size: 15px; color: var(--wv-muted); }
+.features { margin: 0; padding: 0; list-style: none; display: grid; gap: 12px; }
+.features li { display: grid; gap: 2px; }
+.features strong { font-weight: 650; }
+.welcome-actions { display: flex; gap: 10px; margin: 20px 0 24px; }

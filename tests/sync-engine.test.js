@@ -450,10 +450,15 @@ test('only one synchronisation runs at a time; a request made meanwhile is follo
   const first = syncNow({ reason: 'manual', sleep });
   const second = syncNow({ reason: 'manual', sleep });
   assert.equal(first, second, 'the second request joins the run in progress');
-  await new Promise((resolve) => setTimeout(resolve, 5));
+  // Not a fixed wait: on a busy machine the run takes longer than any guess to reach its write.
+  const until = async (condition) => {
+    for (let waited = 0; !(await condition()) && waited < 5000; waited += 2) await new Promise((resolve) => setTimeout(resolve, 2));
+  };
+  await until(() => typeof release === 'function');
   release();
   assert.equal((await first).state, 'idle');
-  await new Promise((resolve) => setTimeout(resolve, 20)); // the follow-up run
+  await until(async () => (await getSyncStatus()).state === 'idle' && !(await getSyncStatus()).pending); // the follow-up run
+  await new Promise((resolve) => setTimeout(resolve, 20));
   assert.equal(cloud.writes, 1);
   assert.equal((await getSyncStatus()).state, 'idle');
 });

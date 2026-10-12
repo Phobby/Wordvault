@@ -1247,6 +1247,86 @@
     "message": "Something went wrong while translating.",
     "description": "Error: fallback for anything unexpected."
   },
+  "supportTitle": {
+    "message": "Support the project",
+    "description": "Support card: title."
+  },
+  "supportText": {
+    "message": "Wordvault is free, has no ads and collects nothing. If it helps you learn, a coffee keeps it going. Thank you!",
+    "description": "Support card: a short, friendly text next to the button."
+  },
+  "supportButton": {
+    "message": "Buy me a coffee",
+    "description": "Support card: text of the button that opens the support page in a new tab."
+  },
+  "supportLink": {
+    "message": "Support",
+    "description": "Toolbar popup: small link to the support page."
+  },
+  "supportDismiss": {
+    "message": "Don't show again",
+    "description": "Welcome page: link that hides the support card for good."
+  },
+  "welcomeTitle": {
+    "message": "Welcome to Wordvault",
+    "description": "Welcome page (opened once after installing): title."
+  },
+  "welcomeLead": {
+    "message": "Learn words while you browse. Here is what you can do.",
+    "description": "Welcome page: line under the title."
+  },
+  "welcomeTranslateTitle": {
+    "message": "Translate a word",
+    "description": "Welcome page: feature title."
+  },
+  "welcomeTranslateText": {
+    "message": "Double-click any word on a page: its translation opens right there, and you can listen to it.",
+    "description": "Welcome page: feature text."
+  },
+  "welcomeVaultTitle": {
+    "message": "Keep it in your vault",
+    "description": "Welcome page: feature title."
+  },
+  "welcomeVaultText": {
+    "message": "\"Add to vault\" saves the word with the sentence it came from. The toolbar button opens your vault.",
+    "description": "Welcome page: feature text."
+  },
+  "welcomeQuizTitle": {
+    "message": "Review with quick quizzes",
+    "description": "Welcome page: feature title."
+  },
+  "welcomeQuizText": {
+    "message": "Now and then Wordvault asks you one of your words. The ones you miss come back sooner.",
+    "description": "Welcome page: feature text."
+  },
+  "welcomeCaptionsTitle": {
+    "message": "Video captions",
+    "description": "Welcome page: feature title."
+  },
+  "welcomeCaptionsText": {
+    "message": "On YouTube, rest the pointer on a word of the captions to translate it.",
+    "description": "Welcome page: feature text."
+  },
+  "welcomeScanTitle": {
+    "message": "Scan text on screen",
+    "description": "Welcome page: feature title."
+  },
+  "welcomeScanText": {
+    "message": "Text inside a video or a picture: pause, start the scan from the right-click menu, drag an area and click a word.",
+    "description": "Welcome page: feature text."
+  },
+  "welcomeSyncTitle": {
+    "message": "Your words stay yours",
+    "description": "Welcome page: feature title."
+  },
+  "welcomeSyncText": {
+    "message": "Everything is kept in this browser. Synchronising with your own account or server is optional and off by default.",
+    "description": "Welcome page: feature text."
+  },
+  "welcomeOpenSettings": {
+    "message": "Open settings",
+    "description": "Welcome page: button that opens the options page."
+  },
   "tbDamagedShow": {
     "message": "Show them",
     "description": "Toolbar popup: link that lists only the words whose translation seems to have lost letters."

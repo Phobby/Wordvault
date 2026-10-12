@@ -1,6 +1,7 @@
 // Toolbar popup: the vault. Lists the saved words, shows the details of one, and links to
 // export, import and the settings.
 
+import { supportLink } from '../support/support.js';
 import { looksDamaged } from '../lib/text-damage.js';
 import { downloadBackup } from '../lib/backup.js';
 import { getPreferences, setTargetLanguage } from '../lib/translator.js';
@@ -133,6 +134,8 @@ const listView = h(
     h('button', { class: 'wv-btn wv-btn-sm', type: 'button', text: t('tbExport'), onclick: exportVault }),
     h('button', { class: 'wv-btn wv-btn-sm', type: 'button', text: t('tbImport'), onclick: openImport }),
     status,
+    // Only there when a support page is configured (config.js).
+    supportLink() || '',
   ),
 );
 const detailView = h('section', { class: 'view', hidden: true });

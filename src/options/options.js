@@ -2,6 +2,7 @@
 // (lib/settings.js); nothing is kept here.
 
 import { createOcrSection } from './ocr.js';
+import { supportCard } from '../support/support.js';
 import { downloadBackup, restoreBackup } from '../lib/backup.js';
 import { getSettings, updateSettings } from '../lib/settings.js';
 import { getPreferences, setTargetLanguage } from '../lib/translator.js';
@@ -479,6 +480,8 @@ document.getElementById('app').append(
     h('h1', { text: t('optionsTitle') }),
     saved,
   ),
+  // Only there when a support page is configured (config.js). (append() would write a null out as text.)
+  supportCard() || '',
   h(
     'section',
     { class: 'card' },

@@ -113,6 +113,18 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   return true; // keep the channel open for the asynchronous response
 });
 
+// --- Welcome page ------------------------------------------------------------------------------
+// Opened once, when the extension is first installed. The flag guards against browsers that
+// report "install" again (a temporary add-on is installed anew every time it is loaded).
+
+chrome.runtime.onInstalled.addListener(async ({ reason }) => {
+  if (reason !== 'install') return;
+  const { welcomeShown } = await chrome.storage.local.get('welcomeShown');
+  if (welcomeShown) return;
+  await chrome.storage.local.set({ welcomeShown: true });
+  chrome.tabs.create({ url: chrome.runtime.getURL('welcome/welcome.html') }).catch(() => {});
+});
+
 // --- Screen text scanning ----------------------------------------------------------------------
 // Shortcut and menus; see features/screen-ocr/background.js.
 

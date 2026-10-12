@@ -66,6 +66,7 @@ SPEC-QUIZ.md,
 SPEC-QUIZ-POPUP.md,
 SPEC-CAPTIONS.md        Video altyazılarında kelimenin üzerine gelince çeviri
 SPEC-OCR.md             Ekrandan metin tarama (OCR) ve üzerine gelince çeviri
+SPEC-SUPPORT.md         Destek bağlantısı, iletişim/geri bildirim ve mağaza hazırlığı
 manifest.firefox.json   Firefox manifesti (background.scripts, gecko ayarları)
 manifest.chrome.json    Chrome manifesti (background.service_worker)
 build.js                dist/ klasörlerini üretir
@@ -77,6 +78,9 @@ SETUP-OAUTH.md          Bulut sağlayıcıları için bir kez yapılan geliştir
 PRIVACY.md              Gizlilik politikası: tarayıcıdan ne, ne zaman, nereye çıkar
 tests/                  node:test testleri (tarayıcı API'leri bellek içi bir taklitle sağlanır)
 src/
+  config.js             Yayıncıya ait adresler: SUPPORT_URL (destek sayfası)
+  support/              "Projeyi destekle" kartı, düğmesi ve küçük bağlantısı (support.js, support.css)
+  welcome/              İlk kurulumda bir kez açılan karşılama sayfası
   background/           Arka plan betiği: mesaj yönlendirme, tüm ağ istekleri
   shared/               Hem sayfaya eklenen betiklerin hem eklenti sayfalarının kullandığı arayüz
                         parçaları (klasik betik, ortak WV ad alanı)
@@ -265,6 +269,22 @@ görüntünün kendisinden kare başına bir iki sahte kısa kelime çıkabiliyo
 Henüz yok (SPEC-OCR.md): üzerine gelince kendiliğinden açılan pencere (şimdilik tıklama), kelime
 düzeltme, "Satırı/Bloğu çevir", sürükleyerek ifade seçimi, videoyu otomatik duraklatma, başka dillerin
 verisini indirme ve silme, tanı paneli, PaddleOCR denemesi ve kıyaslama aracı.
+
+### Destek bağlantısı ve karşılama sayfası
+
+Destek sayfasının adresi tek bir sabittir: `src/config.js` içindeki `SUPPORT_URL`. Başka bir servise
+geçmek o satırı değiştirmektir. Sabit boşken ya da yer tutucuyken (`…/YOUR_PAGE`), `https` olmayan bir
+adres yazıldığında da, destek arayüzünün **hiçbiri** gösterilmez.
+
+Adres varken üç yerde görünür: ayarlar sayfasının en üstünde "Projeyi destekle" kartı, kasa
+penceresinin altında küçük bir "Destekle" bağlantısı ve karşılama sayfasında aynı kart. Düğme sade bir
+bağlantıdır (`target="_blank" rel="noopener noreferrer"`); destek servisinden betik, widget, resim ya da
+yazı tipi yüklenmez, düğmenin rengi ve fincan simgesi pakettedir. Açılır pencere ya da hatırlatma
+yoktur. Karşılama sayfasındaki kart "Bir daha gösterme" ile kalıcı olarak kapanır (`supportDismissed`,
+yalnızca bu tarayıcıda); ayarlardaki kart yerinde kalır.
+
+Karşılama sayfası (`welcome/welcome.html`) eklenti ilk kurulduğunda bir kez açılır (`welcomeShown`
+bayrağı; geçici yüklemelerde her seferinde açılmasın diye). Sekme açmak izin gerektirmez.
 
 ### Hedef ve kaynak dil
 

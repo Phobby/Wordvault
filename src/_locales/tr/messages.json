@@ -937,6 +937,66 @@
   "errUnknown": {
     "message": "Çeviri sırasında bir sorun oluştu."
   },
+  "supportTitle": {
+    "message": "Projeyi destekle"
+  },
+  "supportText": {
+    "message": "Wordvault ücretsiz, reklamsız ve hiçbir veri toplamıyor. Öğrenmene yardımı oluyorsa bir kahve ısmarlayarak devam etmesine destek olabilirsin. Teşekkürler!"
+  },
+  "supportButton": {
+    "message": "Bir kahve ısmarla"
+  },
+  "supportLink": {
+    "message": "Destekle"
+  },
+  "supportDismiss": {
+    "message": "Bir daha gösterme"
+  },
+  "welcomeTitle": {
+    "message": "Wordvault'a hoş geldin"
+  },
+  "welcomeLead": {
+    "message": "Gezinirken kelime öğren. Neler yapabileceğin kısaca şöyle."
+  },
+  "welcomeTranslateTitle": {
+    "message": "Bir kelimeyi çevir"
+  },
+  "welcomeTranslateText": {
+    "message": "Sayfadaki herhangi bir kelimeye çift tıkla: çevirisi orada açılır, telaffuzunu dinleyebilirsin."
+  },
+  "welcomeVaultTitle": {
+    "message": "Kasana kaydet"
+  },
+  "welcomeVaultText": {
+    "message": "\"Kasaya ekle\" kelimeyi geçtiği cümleyle birlikte saklar. Araç çubuğundaki düğme kasanı açar."
+  },
+  "welcomeQuizTitle": {
+    "message": "Kısa quizlerle tekrar et"
+  },
+  "welcomeQuizText": {
+    "message": "Wordvault ara sıra kelimelerinden birini sorar. Bilemediklerin daha sık gelir."
+  },
+  "welcomeCaptionsTitle": {
+    "message": "Video altyazıları"
+  },
+  "welcomeCaptionsText": {
+    "message": "YouTube'da altyazıdaki bir kelimenin üzerinde imleci tut, çevirisi açılsın."
+  },
+  "welcomeScanTitle": {
+    "message": "Ekrandan metin tara"
+  },
+  "welcomeScanText": {
+    "message": "Videonun ya da resmin içindeki yazı: durdur, sağ tık menüsünden taramayı başlat, bir alan sürükle ve kelimeye tıkla."
+  },
+  "welcomeSyncTitle": {
+    "message": "Kelimelerin sende kalır"
+  },
+  "welcomeSyncText": {
+    "message": "Her şey bu tarayıcıda durur. Kendi hesabınla ya da sunucunla eşitleme isteğe bağlıdır ve varsayılan olarak kapalıdır."
+  },
+  "welcomeOpenSettings": {
+    "message": "Ayarları aç"
+  },
   "tbDamagedShow": {
     "message": "Göster"
   },
