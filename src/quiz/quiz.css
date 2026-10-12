@@ -1,0 +1,16 @@
+/* The quiz in a place of its own: the toolbar popup or the quiz window. The quiz itself is
+   styled by shared/styles.js, which page.js adopts into this document. */
+
+:root { color-scheme: light dark; }
+
+body {
+  margin: 0;
+  background: var(--wv-bg, Canvas);
+}
+
+/* The toolbar popup takes the size of its content. */
+html[data-surface="popup"] body { width: 340px; }
+
+/* The window has a size of its own; the quiz sits at its top, no wider than is good to read. */
+html[data-surface="window"] body { min-height: 100vh; }
+html[data-surface="window"] #app { max-width: 420px; margin: 0 auto; }

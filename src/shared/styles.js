@@ -364,9 +364,16 @@
     .wv-foot:empty { display: none; }
   `;
 
-  /** The quiz card in the top right corner. */
+  /** The quiz: as a card in the top right corner of a page (.wv-quiz-floating), or filling the
+   *  toolbar popup or the quiz window. */
   const quiz = `
     .wv-quiz {
+      position: relative;
+      box-sizing: border-box;
+      padding: 8px 14px 10px;
+      background: var(--wv-bg);
+    }
+    .wv-quiz-floating {
       /* The host sits in the top layer at the viewport origin, so "fixed" is the viewport. */
       position: fixed;
       top: 16px;
@@ -374,17 +381,15 @@
       width: min(300px, calc(100vw - 32px));
       max-height: calc(100vh - 32px);
       overflow: hidden auto;
-      padding: 8px 14px 12px;
       border: 1px solid var(--wv-border);
       border-radius: 12px;
-      background: var(--wv-bg);
       box-shadow: var(--wv-shadow);
       animation: wv-quiz-in 0.18s ease-out;
     }
     @keyframes wv-quiz-in { from { opacity: 0; transform: translateY(-6px); } }
-    @media (prefers-reduced-motion: reduce) { .wv-quiz { animation: none; } }
+    @media (prefers-reduced-motion: reduce) { .wv-quiz-floating { animation: none; } }
 
-    .wv-quiz-head { display: flex; align-items: center; margin-right: -8px; }
+    .wv-quiz-head { display: flex; align-items: baseline; gap: 8px; min-height: 22px; margin-bottom: 2px; }
     .wv-quiz-title {
       flex: 1 1 auto;
       font-size: 11px;
@@ -393,6 +398,8 @@
       text-transform: uppercase;
       color: var(--wv-muted);
     }
+    /* "2 / 5" while a quiz asks several questions. */
+    .wv-quiz-progress { font-size: 11.5px; font-weight: 600; color: var(--wv-muted); font-variant-numeric: tabular-nums; }
     .wv-quiz-word { font-size: 18px; font-weight: 650; line-height: 1.3; overflow-wrap: anywhere; }
     .wv-quiz-prompt { margin: 2px 0 10px; font-size: 12px; color: var(--wv-muted); }
     .wv-quiz-choices { display: grid; gap: 6px; }
@@ -435,6 +442,21 @@
     .wv-quiz-feedback { font-size: 12.5px; font-weight: 600; }
     .wv-quiz-feedback.wv-right { color: var(--wv-ok); }
     .wv-quiz-feedback.wv-wrong { color: var(--wv-danger); }
+
+    /* Always there: "Not today" and "Close". */
+    .wv-quiz-bottom {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      margin: 8px -6px 0;
+      padding-top: 6px;
+      border-top: 1px solid var(--wv-border);
+    }
+    .wv-quiz-bottom .wv-quiz-action { font-weight: 500; }
+
+    /* "3/5 correct", at the end of a quiz with several questions. */
+    .wv-quiz-summary { padding: 18px 0 14px; text-align: center; }
+    .wv-quiz-score { font-size: 20px; font-weight: 650; }
 
     /* The time left to answer, along the bottom edge (shrunk by quiz-card.js). */
     .wv-quiz-timer { position: absolute; left: 0; right: 0; bottom: 0; height: 3px; }

@@ -25,6 +25,7 @@
     "open_in_tab": true
   },
   "permissions": ["storage", "unlimitedStorage", "alarms"],
+  "optional_permissions": ["notifications"],
   "host_permissions": [
     "https://api.mymemory.translated.net/*",
     "https://en.wiktionary.org/*",

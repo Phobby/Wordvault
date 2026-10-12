@@ -6,7 +6,8 @@ import { beforeEach, test } from 'node:test';
 
 import { updateSettings } from '../src/lib/settings.js';
 import { addEntry } from '../src/lib/vault.js';
-import { ALARM_NAME, RETRY_MINUTES, ensureScheduled, getDiagnostics, getQuizState, runScheduledQuiz, showQuiz, testQuiz } from '../src/quiz/scheduler.js';
+import { ALARM_NAME, RETRY_MINUTES, answerQuestion, ensureScheduled, getDiagnostics, getQuizState, runScheduledQuiz, showQuiz, testQuiz } from '../src/quiz/scheduler.js';
+import { clearSession } from '../src/quiz/session.js';
 import { createDevice, use } from './helpers/chrome.js';
 
 const T0 = 1_790_000_000_000;
@@ -126,14 +127,16 @@ test('a due quiz is sent to the active tab; the next one is a full interval late
   await fill();
   await ensureScheduled();
   assert.equal(await alarmGoesOff(t), 'shown');
-  assert.equal(device.browser.sent.length, 1);
-  const { tabId, message, options } = device.browser.sent[0];
+  assert.equal(device.cards().length, 1);
+  const { tabId, message, options } = device.shows()[0];
   assert.deepEqual([tabId, message.type, message.force, options], [1, 'wv:quiz:show', false, { frameId: 0 }]);
-  assert.equal(message.payload.choices.length, 4);
+  assert.equal(message.quiz.question.choices.length, 4);
+  assert.deepEqual([message.quiz.index, message.quiz.total, message.quiz.timeoutSeconds], [1, 1, 30]);
   assert.equal(alarmAt(), T0 + 40 * MINUTE);
   const state = await getQuizState();
   assert.deepEqual(state.lastAttempt, { at: T0 + 20 * MINUTE, reason: 'shown' });
-  assert.deepEqual(state.lastShown, { at: T0 + 20 * MINUTE });
+  assert.equal(state.lastShown.at, T0 + 20 * MINUTE);
+  assert.equal(state.lastShown.method, 'card');
   assert.equal(state.lastSkip, null);
 });
 
@@ -141,19 +144,22 @@ test('after every quiz, shown or not, the next one is set', async (t) => {
   await fill();
   await updateSettings({ quizIntervalMinutes: 10 });
   await ensureScheduled();
-  const replies = [{ shown: true }, { shown: false, reason: 'typing' }, { shown: true }, { shown: false, reason: 'video_playing' }, { shown: false, reason: 'fullscreen' }, { shown: true }, { shown: true }];
+  // What the page says about the moment each time a quiz is due ('' = fine).
+  const moments = ['', 'typing', '', 'video_playing', 'fullscreen', '', ''];
   let expected = T0 + 10 * MINUTE;
-  for (const [round, reply] of replies.entries()) {
-    device.browser.reply = () => reply;
+  for (const [round, blocked] of moments.entries()) {
+    device.browser.page.blocked = blocked;
     assert.equal(alarmAt(), expected, `round ${round}: the alarm is where the plan says`);
     const reason = await alarmGoesOff(t);
-    assert.equal(reason, reply.shown ? 'shown' : reply.reason);
-    expected += (reply.shown ? 10 : RETRY_MINUTES) * MINUTE;
+    assert.equal(reason, blocked || 'shown');
+    // The quiz on screen is over before the next one is due.
+    if (!blocked) await answerQuestion({ sessionId: device.cards().at(-1).sessionId, id: device.lastQuestion().id, correct: true, ms: 2000 });
+    expected += (blocked ? RETRY_MINUTES : 10) * MINUTE;
     assert.equal((await getQuizState()).sonrakiQuizZamani, expected);
     assert.equal(device.alarm(ALARM_NAME).periodInMinutes, 10);
   }
   assert.equal(alarmAt(), expected, 'and after the last one too');
-  assert.equal(device.browser.sent.length, replies.length, 'every due quiz reached the page');
+  assert.equal(device.cards().length, moments.filter((blocked) => !blocked).length, 'every quiz that could be shown was shown');
 });
 
 test('the alarm repeats, so a run that was cut short does not silence the timer', async (t) => {
@@ -178,7 +184,7 @@ test('an alarm that goes off before the planned time shows nothing', async (t) =
   await ensureScheduled();
   at(t, T0 + 5 * MINUTE);
   assert.equal(await runScheduledQuiz(), 'not_due');
-  assert.equal(device.browser.sent.length, 0);
+  assert.equal(device.cards().length, 0);
   assert.equal(alarmAt(), T0 + 20 * MINUTE, 'the plan stands');
   assert.equal((await getQuizState()).lastAttempt, null);
 });
@@ -196,7 +202,7 @@ test('waking up for a due quiz: the start-up check and the quiz do not undo each
     const both = order === 'check first' ? [ensureScheduled(), runScheduledQuiz()] : [runScheduledQuiz(), ensureScheduled()];
     const results = await Promise.all(both);
     assert.ok(results.includes('shown'), order);
-    assert.equal(device.browser.sent.length, 1, `${order}: one quiz`);
+    assert.equal(device.cards().length, 1, `${order}: one quiz`);
     assert.equal(alarmAt(), T0 + 40 * MINUTE, `${order}: the alarm is one interval ahead, not left at "as soon as possible"`);
     assert.equal((await getQuizState()).sonrakiQuizZamani, T0 + 40 * MINUTE);
   }
@@ -205,7 +211,7 @@ test('waking up for a due quiz: the start-up check and the quiz do not undo each
 test('too few words or meanings: nothing is sent and the reason is recorded', async () => {
   await fill(9);
   assert.equal(await runScheduledQuiz(), 'below_min_cards');
-  assert.equal(device.browser.sent.length, 0);
+  assert.equal(device.cards().length, 0);
   assert.equal(alarmAt(), T0 + 20 * MINUTE, 'checked again at the regular interval');
   const state = await getQuizState();
   assert.deepEqual(state.lastAttempt, { at: T0, reason: 'below_min_cards' });
@@ -216,7 +222,7 @@ test('too few words or meanings: nothing is sent and the reason is recorded', as
   await updateSettings({ quizMinCards: 2 });
   await fill(3);
   assert.equal(await runScheduledQuiz(), 'not_enough_choices');
-  assert.equal(device.browser.sent.length, 0);
+  assert.equal(device.cards().length, 0);
 });
 
 test('a bad moment does not skip the quiz: it is tried again a few minutes later', async (t) => {
@@ -225,38 +231,42 @@ test('a bad moment does not skip the quiz: it is tried again a few minutes later
     ['no_active_tab', () => { device.browser.tab = null; }],
     ['window_not_focused', () => { device.browser.focused = false; }],
     ['media_playing', () => { device.browser.tab.audible = true; }],
-    ['video_playing', () => { device.browser.reply = () => ({ shown: false, reason: 'video_playing' }); }],
-    ['typing', () => { device.browser.reply = () => ({ shown: false, reason: 'typing' }); }],
-    ['fullscreen', () => { device.browser.reply = () => ({ shown: false, reason: 'fullscreen' }); }],
-    ['popup_open', () => { device.browser.reply = () => ({ shown: false, reason: 'popup_open' }); }],
-    ['page_not_supported', () => { device.browser.reply = () => { throw new Error('Could not establish connection. Receiving end does not exist.'); }; }],
+    ['video_playing', () => { device.browser.page.blocked = 'video_playing'; }],
+    ['typing', () => { device.browser.page.blocked = 'typing'; }],
+    ['fullscreen', () => { device.browser.page.blocked = 'fullscreen'; }],
+    ['popup_open', () => { device.browser.page.blocked = 'popup_open'; }],
+    // a page extensions cannot run on, in a browser that offers no other way of showing a quiz
+    ['no_display', () => { device.browser.page.supported = false; }],
   ];
   let now = T0;
   for (const [expected, setScene] of scenes) {
     device.browser.tab = { id: 1, windowId: 1, active: true, audible: false };
     device.browser.focused = true;
-    device.browser.reply = () => ({ shown: true });
+    device.browser.page = { supported: true, blocked: '' };
     setScene();
     now += 10 * MINUTE;
     at(t, now);
     assert.equal(await runScheduledQuiz(), expected);
     assert.equal(alarmAt(), now + RETRY_MINUTES * MINUTE, `${expected}: retried soon`);
     assert.deepEqual((await getQuizState()).lastAttempt, { at: now, reason: expected });
-    assert.deepEqual((await getQuizState()).lastSkip, { at: now, reason: expected });
+    const { lastSkip } = await getQuizState();
+    assert.deepEqual([lastSkip.at, lastSkip.reason], [now, expected]);
   }
   // The scene clears: the retry shows the quiz and the regular rhythm resumes.
-  device.browser.reply = () => ({ shown: true });
+  device.browser.page = { supported: true, blocked: '' };
   at(t, now + RETRY_MINUTES * MINUTE);
   assert.equal(await runScheduledQuiz(), 'shown');
   assert.equal(alarmAt(), now + RETRY_MINUTES * MINUTE + 20 * MINUTE);
-  assert.equal((await getQuizState()).lastSkip.reason, 'page_not_supported', 'the last skip stays on record next to the last quiz shown');
+  const { lastSkip } = await getQuizState();
+  assert.equal(lastSkip.reason, 'no_display', 'the last skip stays on record next to the last quiz shown');
+  assert.deepEqual(lastSkip.tried.map((way) => `${way.method}: ${way.reason}`), ['popup: popup_unsupported', 'window: window_unsupported', 'card: page_not_supported', 'notification: notification_not_allowed'], 'with the reason each way of showing it failed');
 });
 
 test('with a short interval the retry is not later than the interval itself', async (t) => {
   await fill();
   await updateSettings({ quizIntervalMinutes: 1 });
   await ensureScheduled();
-  device.browser.reply = () => ({ shown: false, reason: 'typing' });
+  device.browser.page.blocked = 'typing';
   assert.equal(await alarmGoesOff(t), 'typing');
   assert.equal(alarmAt(), T0 + 2 * MINUTE);
 });
@@ -266,8 +276,8 @@ test('only one tab is ever asked, and only its top frame', async (t) => {
   await ensureScheduled();
   await alarmGoesOff(t);
   await alarmGoesOff(t);
-  assert.ok(device.browser.sent.every((sent) => sent.tabId === 1 && sent.options.frameId === 0));
-  assert.equal(device.browser.sent.length, 2);
+  assert.ok(device.browser.sent.every((sent) => sent.tabId === 1 && sent.options.frameId === 0), 'the question about the moment included');
+  assert.equal(device.cards().length, 2);
 });
 
 test('the diagnostics say what the panel needs to know', async (t) => {
@@ -280,7 +290,7 @@ test('the diagnostics say what the panel needs to know', async (t) => {
   );
 
   await fill();
-  device.browser.reply = () => ({ shown: false, reason: 'video_playing' });
+  device.browser.page.blocked = 'video_playing';
   at(t, T0 + 20 * MINUTE);
   await runScheduledQuiz();
   d = await getDiagnostics();
@@ -289,11 +299,11 @@ test('the diagnostics say what the panel needs to know', async (t) => {
   assert.deepEqual(d.lastSkip, { at: T0 + 20 * MINUTE, reason: 'video_playing' });
   assert.equal(d.nextAt, T0 + (20 + RETRY_MINUTES) * MINUTE);
 
-  device.browser.reply = () => ({ shown: true });
+  device.browser.page = { supported: true, blocked: '' };
   at(t, d.nextAt);
   await runScheduledQuiz();
   d = await getDiagnostics();
-  assert.deepEqual(d.lastShown, { at: T0 + (20 + RETRY_MINUTES) * MINUTE });
+  assert.deepEqual(d.lastShown, { at: T0 + (20 + RETRY_MINUTES) * MINUTE, method: 'card', tried: [{ method: 'popup', reason: 'popup_unsupported' }, { method: 'window', reason: 'window_unsupported' }] });
 
   device.forgetAlarms();
   assert.equal((await getDiagnostics()).alarmAt, 0, 'a missing alarm is visible');
@@ -307,25 +317,29 @@ test('"Test now" shows a quiz the way the timer does, whatever the timer, the sw
   await fill(4);
   device.browser.focused = false;
   device.browser.tab.audible = true;
-  assert.deepEqual(await testQuiz(), { ok: true });
-  assert.equal(device.browser.sent.length, 1, 'it goes to the active tab like any quiz');
-  const { message, options } = device.browser.sent[0];
+  const tested = await testQuiz();
+  assert.deepEqual([tested.ok, tested.reason, tested.method], [true, 'shown', 'card']);
+  assert.equal(device.cards().length, 1, 'it goes to the active tab like any quiz');
+  const { message, options } = device.shows()[0];
   assert.deepEqual([message.type, message.force, options], ['wv:quiz:show', true, { frameId: 0 }]);
-  assert.equal(message.payload.choices.length, 4);
+  assert.equal(message.quiz.question.choices.length, 4);
   assert.equal(alarmAt(), undefined, 'the plan is not touched');
   const state = await getQuizState();
   assert.deepEqual([state.sonrakiQuizZamani, state.lastAttempt, state.lastShown, state.lastSkip], [0, null, null, null], 'nor is the record of what the timer did');
 
   // what can still stand in the way is reported instead of failing silently
-  device.browser.reply = () => { throw new Error('Could not establish connection. Receiving end does not exist.'); };
-  assert.deepEqual(await testQuiz(), { ok: false, reason: 'page_not_supported' });
+  device.browser.page.supported = false;
+  let failed = await testQuiz();
+  assert.deepEqual([failed.ok, failed.reason, failed.tried.at(-2)], [false, 'no_display', { method: 'card', reason: 'page_not_supported' }]);
   device.browser.tab = null;
-  assert.deepEqual(await testQuiz(), { ok: false, reason: 'no_active_tab' });
+  failed = await testQuiz();
+  assert.deepEqual([failed.ok, failed.reason], [false, 'no_active_tab']);
 
   device = use(createDevice('small', { uiLanguage: 'tr' }));
   await fill(3);
-  assert.deepEqual(await testQuiz(), { ok: false, reason: 'not_enough_choices' });
-  assert.equal(device.browser.sent.length, 0);
+  failed = await testQuiz();
+  assert.deepEqual([failed.ok, failed.reason], [false, 'not_enough_choices']);
+  assert.equal(device.cards().length, 0);
 });
 
 test('an unexpected failure becomes the recorded reason instead of stopping the timer', async () => {
@@ -340,15 +354,16 @@ test('an unexpected failure becomes the recorded reason instead of stopping the 
 test('the card is told how long to wait for an answer', async () => {
   await fill();
   await showQuiz();
-  assert.equal(device.browser.sent.at(-1).message.timeoutSeconds, 30, 'thirty seconds unless set otherwise');
+  assert.equal(device.cards().at(-1).timeoutSeconds, 30, 'thirty seconds unless set otherwise');
   await testQuiz();
-  assert.equal(device.browser.sent.at(-1).message.timeoutSeconds, 30, '"Test now" shows the same card');
+  assert.equal(device.cards().at(-1).timeoutSeconds, 30, '"Test now" shows the same card');
 
   for (const [setting, expected] of [[45, 45], [12.4, 12], [1, 5], [100_000, 300], [0, 30], [-3, 30], ['abc', 30], [null, 30]]) {
     await updateSettings({ quizTimeoutSeconds: setting });
+    await clearSession(); // the quiz shown before is gone
     await showQuiz();
-    assert.equal(device.browser.sent.at(-1).message.timeoutSeconds, expected, `setting ${JSON.stringify(setting)}`);
+    assert.equal(device.cards().at(-1).timeoutSeconds, expected, `setting ${JSON.stringify(setting)}`);
     await testQuiz();
-    assert.equal(device.browser.sent.at(-1).message.timeoutSeconds, expected);
+    assert.equal(device.cards().at(-1).timeoutSeconds, expected);
   }
 });

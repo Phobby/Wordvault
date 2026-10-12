@@ -43,7 +43,7 @@ async function runQuizzes(t, count, answer = () => true) {
     at(t, device.alarmTimes()[ALARM_NAME]);
     assert.equal(device.fireAlarm(ALARM_NAME), true, `quiz ${n + 1}: an alarm is set`);
     assert.equal(await runScheduledQuiz(), 'shown', `quiz ${n + 1}`);
-    const { payload } = device.browser.sent.at(-1).message;
+    const payload = device.lastQuestion();
     asked.push(payload.id);
     times.push(Date.now());
     at(t, Date.now() + 3000);

@@ -337,12 +337,44 @@
     "message": "Doesn't count; the word comes back in a few minutes",
     "description": "Tooltip of the 'Ask later' button."
   },
+  "quizProgress": {
+    "message": "$1 / $2",
+    "description": "Quiz: number of the question on screen ($1) out of the questions this quiz asks ($2)."
+  },
+  "quizMute": {
+    "message": "Not today",
+    "description": "Quiz: button that switches the quiz off until tomorrow."
+  },
+  "quizMuteHint": {
+    "message": "No more quizzes until tomorrow",
+    "description": "Tooltip of the \"Not today\" button."
+  },
+  "quizClose": {
+    "message": "Close",
+    "description": "Quiz: button that closes the quiz."
+  },
+  "quizSummary": {
+    "message": "$1/$2 correct",
+    "description": "Quiz: summary at the end of a quiz with several questions. $1 right answers out of $2 answered questions."
+  },
+  "quizSummarySkipped": {
+    "message": "$1 put off for later",
+    "description": "Quiz summary: number of questions postponed with \"Ask later\"."
+  },
+  "quizNotificationTitle": {
+    "message": "Wordvault: time for a quiz",
+    "description": "Title of the system notification that stands in for a quiz."
+  },
+  "quizNotificationText": {
+    "message": "Click to answer a question about one of your words.",
+    "description": "Text of the system notification that stands in for a quiz."
+  },
   "optQuizTitle": {
     "message": "Flash cards",
     "description": "Options page: heading of the quiz section."
   },
   "optQuizHelp": {
-    "message": "From time to time Wordvault asks you about a saved word. Every word in the vault gets its turn; the ones you get wrong come back sooner.",
+    "message": "From time to time Wordvault asks you about saved words: in the popup of its toolbar button, in a small window, or as a card on the page. Every word in the vault gets its turn; the ones you get wrong come back sooner.",
     "description": "Options page: what the quiz is."
   },
   "optQuizEnabled": {
@@ -364,6 +396,82 @@
   "optQuizIntervalCustom": {
     "message": "Minutes between quizzes (1 to 1440)",
     "description": "Options page: accessible name of the custom frequency field."
+  },
+  "optQuizQuestions": {
+    "message": "Questions per quiz",
+    "description": "Options page: label of the setting for how many questions one quiz asks."
+  },
+  "optQuizQuestionsHelp": {
+    "message": "With more than one, the next question follows in the same place and a short summary comes at the end.",
+    "description": "Options page: explanation."
+  },
+  "quizQuestionsOne": {
+    "message": "1 question",
+    "description": "Value of the questions-per-quiz setting."
+  },
+  "quizQuestionsMany": {
+    "message": "$1 questions",
+    "description": "Value of the questions-per-quiz setting. $1 is a number greater than 1."
+  },
+  "optQuizDisplay": {
+    "message": "How the quiz appears",
+    "description": "Options page: label of the setting for the way a quiz is shown."
+  },
+  "optQuizDisplayHelp": {
+    "message": "If the way you choose is not possible at that moment, the next one is used. The panel below says which one it was and why.",
+    "description": "Options page: explanation."
+  },
+  "quizDisplayAuto": {
+    "message": "Automatic",
+    "description": "A way of showing the quiz: whichever works first."
+  },
+  "quizDisplayPopup": {
+    "message": "Toolbar popup",
+    "description": "A way of showing the quiz: the popup under the extension's toolbar button."
+  },
+  "quizDisplayWindow": {
+    "message": "Separate window",
+    "description": "A way of showing the quiz: a small window of its own."
+  },
+  "quizDisplayCard": {
+    "message": "Card on the page",
+    "description": "A way of showing the quiz: a card in the corner of the page."
+  },
+  "quizDisplayNotification": {
+    "message": "System notification",
+    "description": "A way of showing the quiz: a notification that opens the quiz when clicked."
+  },
+  "optQuizNotify": {
+    "message": "System notification as a last resort",
+    "description": "Options page: label of the notification permission row."
+  },
+  "optQuizNotifyHelp": {
+    "message": "Only when none of the ways above can show a quiz, Wordvault tells you with a notification; clicking it opens the quiz. This needs the browser's notification permission.",
+    "description": "Options page: explanation."
+  },
+  "optQuizNotifyAllow": {
+    "message": "Allow",
+    "description": "Options page: button that asks for the notification permission."
+  },
+  "optQuizNotifyRemove": {
+    "message": "Withdraw",
+    "description": "Options page: button that gives the notification permission back."
+  },
+  "optQuizNotifyAllowed": {
+    "message": "allowed",
+    "description": "Options page: state of the notification permission."
+  },
+  "optQuizNotifyDenied": {
+    "message": "the browser did not grant the permission",
+    "description": "Options page: shown when the notification permission was not granted."
+  },
+  "optQuizNotifyTry": {
+    "message": "Try it",
+    "description": "Options page: button that sends the quiz notification right now."
+  },
+  "optQuizNotifySent": {
+    "message": "sent; click it to open the quiz",
+    "description": "Options page: shown after the test notification was sent."
   },
   "quizEveryMinute": {
     "message": "Every minute",
@@ -593,12 +701,68 @@
     "message": "no word is due for review yet",
     "description": "Reason no quiz is shown."
   },
+  "quizDiagDisplay": {
+    "message": "Ways of showing it, in order",
+    "description": "Diagnostics row label."
+  },
+  "quizShownAfter": {
+    "message": "$1 (not possible before it: $2)",
+    "description": "How a quiz was shown ($1) and the ways that were tried first, with reasons ($2)."
+  },
+  "quizUnmute": {
+    "message": "Ask again today",
+    "description": "Options page: button that takes \"Not today\" back."
+  },
+  "quizTestShown": {
+    "message": "Shown: $1",
+    "description": "Options page: result of the test button. $1 is the way the quiz was shown."
+  },
+  "quizWhyMuted": {
+    "message": "switched off until tomorrow with “Not today”",
+    "description": "Reason no quiz is shown."
+  },
+  "quizWhyNoDisplay": {
+    "message": "none of the ways of showing it worked",
+    "description": "Reason no quiz is shown."
+  },
+  "quizWhyPopupUnsupported": {
+    "message": "this browser cannot open the toolbar popup by itself",
+    "description": "Reason one way of showing the quiz was not possible."
+  },
+  "quizWhyPopupRefused": {
+    "message": "the browser refused to open it",
+    "description": "Reason one way of showing the quiz was not possible."
+  },
+  "quizWhyPopupNotOpened": {
+    "message": "it did not open",
+    "description": "Reason one way of showing the quiz was not possible."
+  },
+  "quizWhyWindowUnsupported": {
+    "message": "this browser cannot open windows for extensions",
+    "description": "Reason one way of showing the quiz was not possible."
+  },
+  "quizWhyWindowRefused": {
+    "message": "the browser refused to open it",
+    "description": "Reason one way of showing the quiz was not possible."
+  },
+  "quizWhyWindowNotOpened": {
+    "message": "it did not open",
+    "description": "Reason one way of showing the quiz was not possible."
+  },
+  "quizWhyNotificationNotAllowed": {
+    "message": "not allowed",
+    "description": "Reason one way of showing the quiz was not possible."
+  },
+  "quizWhyNotificationRefused": {
+    "message": "the browser did not show it",
+    "description": "Reason one way of showing the quiz was not possible."
+  },
   "quizTest": {
     "message": "Test now",
     "description": "Options page: button that shows a quiz immediately."
   },
   "quizTestHelp": {
-    "message": "Shows a quiz right now the way the timer would, skipping the timer and every condition above.",
+    "message": "Shows a quiz right now the way the timer would, skipping the timer and every condition above. The line below says how it was shown.",
     "description": "Options page: explanation of the test button."
   },
   "quizTestFailed": {

@@ -10,7 +10,8 @@ import { WordvaultError, serializeError } from '../lib/errors.js';
 import { fetchRecording } from '../lib/pronunciation.js';
 import { getPreferences, setSiteSourceLanguage, setTargetLanguage, translate } from '../lib/translator.js';
 import { addEntry, entryId, getEntry, hasEntry, removeEntry, updateEntry } from '../lib/vault.js';
-import { ALARM_NAME, ensureScheduled, recordAnswer, runScheduledQuiz, testQuiz } from '../quiz/scheduler.js';
+import { NOTIFICATION_ID } from '../quiz/display.js';
+import { ALARM_NAME, answerQuestion, claimSession, ensureScheduled, muteToday, openFromNotification, quizPageGone, runScheduledQuiz, testQuiz, unmute } from '../quiz/scheduler.js';
 
 /** Host name of the web page a message came from ('' for extension pages). */
 function hostOf(sender) {
@@ -68,8 +69,13 @@ const handlers = {
   'wv:vault:add': save,
   'wv:vault:enrich': (payload) => enrich(payload?.id),
   'wv:vault:remove': (payload) => removeEntry(entryId(payload || {})),
-  'wv:quiz:test': () => testQuiz(),
-  'wv:quiz:answer': (payload) => recordAnswer(payload),
+  'wv:quiz:test': (payload) => testQuiz(payload),
+  // From whatever shows the quiz: a quiz page asking for its question, the outcome of a
+  // question, and "not today".
+  'wv:quiz:claim': (payload) => claimSession(payload),
+  'wv:quiz:answer': (payload) => answerQuestion(payload),
+  'wv:quiz:mute': () => muteToday(),
+  'wv:quiz:unmute': () => unmute(),
   // The options page asks for this after a quiz setting was changed; see the timer below.
   'wv:quiz:reschedule': () => ensureScheduled(),
 };
@@ -103,3 +109,28 @@ chrome.storage.onChanged.addListener((changes, area) => {
   if (area === 'local' && changes.settings) scheduleQuiz();
 });
 scheduleQuiz();
+
+// Whatever shows a quiz (the popup, the quiz window, a page with the card) keeps a connection
+// open while the quiz is there (shared/dom.js: stayConnected). When the connection breaks with
+// a question still open, the place is gone: the popup lost the focus, the window or tab was closed.
+const QUIZ_CONNECTION = 'wv:quiz:';
+chrome.runtime.onConnect.addListener((port) => {
+  if (!port.name.startsWith(QUIZ_CONNECTION) || port.sender?.id !== chrome.runtime.id) return;
+  port.onDisconnect.addListener(() => {
+    quizPageGone(port.name.slice(QUIZ_CONNECTION.length)).catch(() => {});
+  });
+});
+
+// The notification that stands in for a quiz when nothing else can show one. The API only
+// exists once the user has granted the (optional) permission, which can happen while this
+// script is running.
+let listeningForNotifications = false;
+function listenForNotifications() {
+  if (listeningForNotifications || !chrome.notifications) return;
+  listeningForNotifications = true;
+  chrome.notifications.onClicked.addListener((id) => {
+    if (id === NOTIFICATION_ID) openFromNotification().catch(() => {});
+  });
+}
+listenForNotifications();
+chrome.permissions.onAdded.addListener(listenForNotifications);

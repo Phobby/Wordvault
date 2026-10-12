@@ -12,11 +12,13 @@ kaydet, sonra kısa quizlerle tekrar et. Her şey tarayıcında çalışır; Wor
 > Cihazlar arası senkronizasyon (`SPEC-SYNC.md`) yedi aşamada ekleniyor; şu an 1. aşama hazır:
 > veri modeli, birleştirme ve silme kayıtları. Henüz hiçbir yere veri gönderilmiyor.
 >
-> Flash card sistemi (`SPEC-QUIZ.md`) altı aşamada ekleniyor; şu an hazır olanlar: zamanlayıcı,
-> "Neden quiz çıkmıyor?" tanı paneli, "Şimdi test et", öğrenme algoritması, soru seçimi, şık üretimi,
-> quiz kartı (süre ölçümü, "Bilmiyorum", "Sonra sor", zaman aşımı) ve Flash card ayarları (aç/kapat,
-> sıklık, en az kelime, cevap süresi, vadesi gelmemişleri sorma). Günlük soru sınırı, sessiz saatler,
-> kelime durumlarının kasada gösterimi ve "Şimdi çalış" modu sonraki aşamalarda.
+> Flash card sistemi (`SPEC-QUIZ.md`, `SPEC-QUIZ-POPUP.md`) aşamalı ekleniyor; şu an hazır olanlar:
+> zamanlayıcı, "Neden quiz çıkmıyor?" tanı paneli, "Şimdi test et", öğrenme algoritması, soru seçimi,
+> şık üretimi, quiz arayüzü (süre ölçümü, "Bilmiyorum", "Sonra sor", zaman aşımı, seri mod, "Bugün
+> sorma"), quiz'in eklenti açılır penceresinde, ayrı pencerede ya da sayfa içi kartta gösterilmesi ve
+> Flash card ayarları (aç/kapat, sıklık, soru sayısı, görünüm, en az kelime, cevap süresi, vadesi
+> gelmemişleri sorma). Günlük soru sınırı, sessiz saatler, kelime durumlarının kasada gösterimi ve
+> "Şimdi çalış" modu sonraki aşamalarda.
 
 ## Derleme
 
@@ -53,8 +55,9 @@ eklentiyle bağlantısını kaybeder.
 ## Proje yapısı
 
 ```
-SPEC.md, SPEC-SYNC.md,  İstenen davranışın tanımı (eklenti, senkronizasyon, flash card)
-SPEC-QUIZ.md
+SPEC.md, SPEC-SYNC.md,  İstenen davranışın tanımı (eklenti, senkronizasyon, flash card, quiz'in
+SPEC-QUIZ.md,           zamanlayıcısı ve görünümü)
+SPEC-QUIZ-POPUP.md
 manifest.firefox.json   Firefox manifesti (background.scripts, gecko ayarları)
 manifest.chrome.json    Chrome manifesti (background.service_worker)
 build.js                dist/ klasörlerini üretir
@@ -64,12 +67,13 @@ src/
   background/           Arka plan betiği: mesaj yönlendirme, tüm ağ istekleri
   shared/               Hem sayfaya eklenen betiklerin hem eklenti sayfalarının kullandığı arayüz
                         parçaları (klasik betik, ortak WV ad alanı)
-    dom.js              Öğe üretici, mesajlaşma, Shadow DOM yüzeyi
+    dom.js              Öğe üretici, mesajlaşma, Shadow DOM yüzeyi, arka planla açık bağlantı
     styles.js           Renkler, düğmeler ve çeviri penceresinin CSS'i
     language-list.js    Dil adları ve aranabilir dil listesi
     speech.js           Telaffuz: tarayıcı sesi (speechSynthesis) ya da ses kaydı (Web Audio)
     stopwatch.js        Cevap süresi: yalnızca sayfa kullanıcının önündeyken işleyen kronometre
-    quiz-card.js        Quiz kartı (web sayfalarında ve ayarlardaki "Şimdi test et"te)
+    quiz-card.js        Quiz arayüzü: tek bileşen; sayfa içi kart, açılır pencere ve ayrı pencere
+                        aynı kodu kullanır
   content/              Web sayfalarına eklenen betikler
     selection.js        Seçim, bağlam cümlesi ve dil yardımcıları
     popup.js            Çeviri penceresi
@@ -88,6 +92,10 @@ src/
   providers/            Çeviri sağlayıcıları (ortak arayüz: providers/index.js)
   quiz/                 Flash card
     scheduler.js        Zamanlayıcı (chrome.alarms), quiz'in gösterilmesi, cevabın kaydı, tanı bilgisi
+    display.js          Gösterme yolları (açılır pencere, ayrı pencere, sayfa içi kart, bildirim) ve
+                        birinden diğerine düşme
+    session.js          Ekrandaki quiz: art arda sorular, sayaçlar, özet
+    quiz.html, page.js  Açılır pencerede ve ayrı pencerede quiz'i gösteren sayfa
     learning.js         Öğrenme algoritması: cevabın kalitesi, sonraki tekrar, zorluk, durum (TUNING)
     selection.js        Sıradaki kelimenin seçimi (SELECTION)
     question.js         Soru ve şık üretimi
@@ -148,13 +156,61 @@ Arka plan betiği her an durdurulabildiği için zamanlayıcının hiçbir şeyi
   zamanlayıcı susmaz, bir sıklık sonra kaldığı yerden devam eder.
 - Ayar değişince zamanlayıcı hemen yeniden kurulur: sıklık değiştiyse yeni sıklık o andan itibaren
   sayılır, quiz kapatıldıysa plan da alarm da silinir.
-- Zamanı gelince quiz yalnızca öndeki pencerenin aktif sekmesine, o sekmenin ana çerçevesine gönderilir.
-  Sayfa "şu an uygun değil" derse (video oynuyor, tam ekran, yazı yazılıyor, çeviri penceresi açık)
-  quiz atlanmaz, 3 dakika sonra (sıklık daha kısaysa o kadar sonra) yeniden denenir.
+- Zamanı gelince önce öndeki tarayıcı penceresine ve aktif sekmesine bakılır. Tarayıcı önde değilse,
+  sekme ses çalıyorsa ya da sayfa "şu an uygun değil" derse (video oynuyor, tam ekran, yazı yazılıyor,
+  çeviri penceresi açık) quiz hiçbir yolla gösterilmez; atlanmaz, 3 dakika sonra (sıklık daha kısaysa
+  o kadar sonra) yeniden denenir.
 - Quiz'i ekrana getiren tek yol `quiz/scheduler.js` içindeki `showQuiz()` fonksiyonudur. Zamanlayıcı da
   **Şimdi test et** de onu çağırır; test yalnızca zamanlayıcıyı ve koşulları (anahtar, kelime sayısı,
-  vade, sayfanın durumu) atlar ve zamanlayıcının planına ve kayıtlarına dokunmaz. Ayarlar sayfası da
-  diğer sayfalar gibi quiz gösterebilir (`content/quiz.js` orada da yüklüdür).
+  vade, "Bugün sorma", sayfanın durumu) atlar ve zamanlayıcının planına ve kayıtlarına dokunmaz.
+- Aynı anda tek quiz olur: ekranda bir quiz varken zamanı gelen quiz bekler.
+
+#### Quiz nasıl gösterilir
+
+`quiz/display.js` dört yolu sırayla dener; biri çalışmazsa sıradakine düşer ve neden çalışmadığı
+kaydedilir:
+
+| | Yol | Nasıl | Ne zaman çalışmaz |
+| --- | --- | --- | --- |
+| A | Eklenti açılır penceresi | `action.openPopup()`; araç çubuğu düğmesi o açılış için `quiz/quiz.html` sayfasını gösterir, sonra yeniden kasaya döner | Tarayıcı kendiliğinden açmaya izin vermiyorsa (149'dan eski Firefox kullanıcı hareketi ister), tarayıcı penceresi önde değilse |
+| B | Ayrı pencere | `windows.create({ type: 'popup' })`, 360×480, kullanıcının bulunduğu tarayıcı penceresinin sağ üstünde | Tarayıcı pencere açamıyorsa |
+| C | Sayfa içi kart | Aktif sekmeye mesaj; kart sayfanın sağ üstünde, kapalı bir Shadow DOM içinde | Sayfada eklenti betiği çalışmıyorsa (tarayıcı sayfaları, yeni sekme, eklenti mağazası, Chrome'da eklentiden önce açılmış sekmeler) |
+| D | Sistem bildirimi | `notifications.create()`; bildirime tıklanınca quiz ayrı pencerede açılır | Bildirim izni verilmemişse (isteğe bağlı izin) |
+
+**Quiz nasıl görünsün** ayarı (`quizDisplay`): Otomatik (A, B, C, D sırası), Eklenti açılır penceresi,
+Ayrı pencere, Sayfa içi kart. Seçilen yol başa alınır, diğerleri otomatik sırayla arkasından gelir;
+bildirim her zaman son çaredir.
+
+Bir açılır pencerenin ya da pencerenin gerçekten açıldığı, sayfasının arka plandan sorusunu istemesiyle
+anlaşılır (`wv:quiz:claim`). 2,5 saniye içinde istemezse o yol "açılmadı" sayılır ve sıradaki denenir;
+geç kalan sayfaya quiz verilmez.
+
+Tarayıcılarda denenip görülenler (Chromium 141, Firefox 157, Zen 1.23; macOS):
+
+- `action.openPopup()` zamanlayıcıdan, kullanıcı hareketi olmadan çalışıyor (Chrome 127+, Firefox 149+).
+  Açılır pencere klavye odağını alır ve kullanıcı başka bir yere tıkladığında kapanır.
+- `windows.create` içinde `focused: false` işe yaramıyor: Firefox bu değeri yok sayıyor (pencere odağı
+  yine alıyor), Chrome macOS'te pencereyi tarayıcı penceresinin *arkasında* açıyor, yani görünmüyor.
+  Bu yüzden quiz penceresi odaklı açılır. Chrome ekranın dışına taşan konumu reddediyor; o durumda
+  pencere konumsuz açılır.
+- Sayfa içi kart odağı almaz; bunu isteyen "Sayfa içi kart"ı seçer.
+- Kapanan bir açılır pencere ya da pencere Chrome'da son mesajını gönderemiyor. Bu yüzden quiz'i
+  gösteren her yer arka plan betiğine açık bir bağlantı tutar (`WV.stayConnected`); bağlantı koparsa
+  (odak kaybı, pencerenin ya da sekmenin kapanması) açık kalan soru "kapatıldı" sayılır.
+
+#### Seri mod ve "Bugün sorma"
+
+**Quiz geldiğinde soru sayısı** (`quizQuestionsPerQuiz`: 1, 3, 5, 10; varsayılan 1) birden büyükse
+cevaptan sonra aynı yerde sıradaki soru gelir ve sonda kısa bir özet gösterilir ("3/5 doğru"). Bir
+quiz aynı kelimeyi iki kez sormaz; sorulacak başka kelime kalmazsa erken biter. "Sonra sor" yalnızca
+o soruyu geçer; zaman aşımı ve kapatma quiz'in tamamını bitirir (özet gösterilmez).
+
+Quiz'de her zaman **Kapat** ve **Bugün sorma** düğmeleri vardır. "Bugün sorma" ekrandaki quiz'i kapatır
+ve yerel saatle gece yarısına kadar yenisini göstermez (`quizState.mutedUntil`); tanı panelindeki
+**Bugün yine sor** düğmesi ya da quiz'i kapatıp açmak bunu geri alır. "Şimdi test et" bundan etkilenmez.
+
+Ekrandaki quiz `chrome.storage.local` içinde `quizSession` olarak durur (sorulan kelimeler, doğru
+sayısı, hangi yolla gösterildiği); arka plan betiği iki soru arasında durdurulsa da quiz sürer.
 
 Ayarlar sayfasındaki **Flash card** bölümü:
 
@@ -162,6 +218,9 @@ Ayarlar sayfasındaki **Flash card** bölümü:
 | --- | --- | --- |
 | Flash card sor (ana anahtar) | `quizEnabled` | açık |
 | Soru sıklığı: 5, 10, 15, 20, 30 dakika, 1, 2, 4 saat ya da özel süre (1–1440 dakika) | `quizIntervalMinutes` | 20 dakika |
+| Quiz geldiğinde soru sayısı: 1, 3, 5, 10 | `quizQuestionsPerQuiz` | 1 |
+| Quiz nasıl görünsün: Otomatik, Eklenti açılır penceresi, Ayrı pencere, Sayfa içi kart | `quizDisplay` | Otomatik |
+| Son çare: sistem bildirimi (izin ver / geri al / dene) | tarayıcının `notifications` izni | izin yok |
 | Vadesi gelmemiş kelimeleri de sor | `quizAllowNotDue` | açık |
 | Başlamak için gereken kelime | `quizMinCards` | 10 |
 | Cevap süresi (5–300 saniye) | `quizTimeoutSeconds` | 30 saniye |
@@ -171,8 +230,10 @@ Eklenti geliştirme için yüklendiğinde (`about:debugging` ya da "Load unpacke
 
 **Neden quiz çıkmıyor?** paneli gerçek zamanlayıcının durumunu gösterir ("Şimdi test et" buraya iz
 bırakmaz): quiz açık mı, kasada kaç kelime var, kaçı sorulabilir, kaçının vadesi gelmiş, sıklık,
-sıradaki quiz'in zamanı, alarmın kurulu olup olmadığı, son gösterilen quiz, son atlanan quiz ve nedeni
-(`quizState.lastShown`, `lastSkip`), son sorunun nasıl bittiği.
+gösterme yollarının sırası, sıradaki quiz'in zamanı, alarmın kurulu olup olmadığı, son quiz'in ne zaman
+ve hangi yolla gösterildiği (ondan önce denenip olmayan yollar nedenleriyle birlikte), son atlanan quiz
+ve nedeni (`quizState.lastShown`, `lastSkip`), son sorunun nasıl bittiği. "Şimdi test et"in altındaki
+satır, testin hangi yolla gösterildiğini yazar.
 
 Quiz için kasada en az 10 kelime (ayarlanır) ve hedef dilde en az 4 farklı anlam gerekir.
 
@@ -180,24 +241,26 @@ Quiz için kasada en az 10 kelime (ayarlanır) ve hedef dilde en az 4 farklı an
 
 1. Kasada en az 10 kelime olsun. Ayarlar → **Flash card** → **Soru sıklığı** → **Dakikada bir (deneme
    için)**. Panelde "Sıradaki quiz" bir dakika sonrasını, "Zamanlayıcı (alarm)" aynı saati göstermeli.
-2. Sıradan bir web sayfası açık ve önde olsun, bir şeye dokunmadan bekle. Bir dakika sonra quiz
-   kendiliğinden çıkar; cevapla. Bir dakika sonra başka bir kelimeyle yeniden çıkar. Üç kez üst üste
-   izle: her seferinde farklı bir kelime sorulmalı.
+2. Tarayıcı önde olsun, bir şeye dokunmadan bekle. Bir dakika sonra quiz kendiliğinden çıkar
+   (Otomatik ayarda araç çubuğundaki eklenti düğmesinin altında); cevapla. Bir dakika sonra başka bir
+   kelimeyle yeniden çıkar. Üç kez üst üste izle: her seferinde farklı bir kelime sorulmalı.
 3. Arka plan betiğinin konsolunda (Chrome: `chrome://extensions` → Wordvault → **Service worker**;
    Firefox: `about:debugging` → Bu Firefox → Wordvault → **İncele**) zamanlayıcının durumu:
 
 ```js
-chrome.storage.local.get('quizState').then(({ quizState: s }) => console.log({ sıradaki: new Date(s.sonrakiQuizZamani).toLocaleTimeString(), sonGösterilen: s.lastShown && new Date(s.lastShown.at).toLocaleTimeString(), sonAtlanan: s.lastSkip, sonSorulanlar: s.recent.map((id) => id.split('|')[2]) }))
+chrome.storage.local.get('quizState').then(({ quizState: s }) => console.log({ sıradaki: new Date(s.sonrakiQuizZamani).toLocaleTimeString(), sonGösterilen: s.lastShown && new Date(s.lastShown.at).toLocaleTimeString(), yol: s.lastShown?.method, olmayanYollar: s.lastShown?.tried, sonAtlanan: s.lastSkip, sonSorulanlar: s.recent.map((id) => id.split('|')[2]) }))
 chrome.alarms.getAll().then((alarms) => console.table(alarms.map((a) => ({ ad: a.name, zaman: new Date(a.scheduledTime).toLocaleTimeString(), tekrarDakika: a.periodInMinutes }))))
 ```
 
    `sonSorulanlar` her quizden sonra bir kelime uzar ve aynı kelime art arda görünmez; alarmın zamanı
    her quizden sonra bir dakika ileri gider.
 
-#### Quiz kartı
+#### Quiz arayüzü
 
-Kart sayfanın sağ üstünde, kapalı bir Shadow DOM içinde çıkar (`shared/quiz-card.js`) ve bir soru şu
-beş yoldan biriyle biter; arka plan betiğine tek bir sonuç gider (`wv:quiz:answer`):
+Quiz tek bir bileşendir (`shared/quiz-card.js`): sayfa içi kart onu kapalı bir Shadow DOM içine,
+açılır pencere ve ayrı pencere `quiz/quiz.html` sayfasına çizer. Bir soru şu beş yoldan biriyle biter;
+arka plan betiğine tek bir sonuç gider (`wv:quiz:answer`) ve cevabı sırada ne olduğunu söyler
+(sıradaki soru, özet ya da hiçbiri):
 
 | Sonuç | Ne zaman | Kelimeye etkisi |
 | --- | --- | --- |
@@ -205,7 +268,7 @@ beş yoldan biriyle biter; arka plan betiğine tek bir sonuç gider (`wv:quiz:an
 | `unknown` | "Bilmiyorum" | Yanlış sayılır; doğru cevap gösterilir |
 | `later` | "Sonra sor" | Sayılmaz; kelime 10 dakika sonra yeniden sorulur |
 | `timeout` | Süresinde cevaplanmadı (varsayılan 30 sn, `quizTimeoutSeconds`) | Sayılmaz ("atlandı"); aynı |
-| `closed` | Kart kapatıldı | Sayılmaz; aynı |
+| `closed` | "Kapat", "Bugün sorma" ya da quiz'i gösteren yerin kapanması | Sayılmaz; aynı |
 
 Cevaptan sonra sonuç 2 saniye (yanlışta ve "Bilmiyorum"da doğru şık işaretli olarak 3,5 saniye) ekranda
 kalır, sonra kart kendiliğinden kapanır.
@@ -332,13 +395,15 @@ iki manifestteki `host_permissions` listesine de ekle.
 | --- | --- |
 | `storage` | Ayarları ve kasayı (ileride çeviri önbelleğini) `chrome.storage.local` içinde, yalnızca bu tarayıcıda saklamak için. |
 | `alarms` | Quiz'in zamanlayıcısı için. Arka plan betiği uyurken zamanı gelince onu uyandırır. |
+| `notifications` (isteğe bağlı) | Kurulumda istenmez. Yalnızca ayarlardan **İzin ver**'e basılırsa tarayıcı sorar; quiz başka hiçbir yolla gösterilemediğinde bildirimle haber vermek için. Ayarlardan geri alınabilir. |
 | `unlimitedStorage` | Kasa büyüdükçe `storage.local`'ın 10 MB sınırına takılmamak için. Kasadaki kelimeler asla otomatik silinmez. |
 | İçerik betiği: `<all_urls>` | Çift tıklama herhangi bir sayfada çalışmalı. Betik, kullanıcı bir kelimeye çift tıklayana kadar sayfadan hiçbir şey okumaz. |
 | Sunucu izni: `https://api.mymemory.translated.net/*` | Varsayılan çeviri servisi. İstekler arka plan betiğinden gider. |
 | Sunucu izni: `https://en.wiktionary.org/*` | Kasaya eklenen kelimenin türünü, tanımlarını ve örnek cümlelerini almak; Firefox/macOS'te kelimenin ses kaydını bulmak için. |
 | Sunucu izni: `https://upload.wikimedia.org/*` | Firefox/macOS'te telaffuz için ses kaydını (Wikimedia Commons) indirmek için. |
 
-Sekme açmak (`chrome.tabs.create`) ve ayarlar sayfasını açmak izin gerektirmez; `tabs` izni istenmez.
+Sekme açmak (`chrome.tabs.create`), ayarlar sayfasını açmak, eklenti açılır penceresini açmak
+(`action.openPopup`) ve quiz penceresini açmak (`windows.create`) izin gerektirmez; `tabs` izni istenmez.
 
 Firefox manifestindeki `data_collection_permissions` beyanı `websiteContent` içerir. Tarayıcıdan çıkan
 veriler şunlardır: çevrilmesini istediğin (seçtiğin) metin seçili çeviri servisine, kasaya eklediğin

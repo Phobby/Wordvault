@@ -34,24 +34,48 @@ export function createDevice(name = 'device', { uiLanguage = 'en-US', detect = (
   const detected = [];
   const i18n = {
     getUILanguage: () => uiLanguage,
+    getMessage: (key) => key,
     detectLanguage: async (text) => {
       detected.push(text);
       const language = detect(text);
       return language ? { isReliable: true, languages: [{ language, percentage: 100 }] } : { isReliable: false, languages: [] };
     },
   };
-  // The browser around the extension, as far as the quiz timer is concerned. Tests change
-  // these fields to set a scene: no tab, window in the background, a page that says "not now".
+  // The browser around the extension, as far as the quiz is concerned. Tests change these
+  // fields to set a scene: no tab, window in the background, a page that says "not now", a
+  // browser that can or cannot open popups and windows.
   const browser = {
     /** The active tab, or null. */
     tab: { id: 1, windowId: 1, active: true, audible: false },
     focused: true,
-    /** What the page answers to a message; throw to play a page extensions cannot run on. */
-    reply: () => ({ shown: true }),
+    /** Where the browser window is on the screen. */
+    bounds: { left: 100, top: 50, width: 1200, height: 800 },
+    /** The page in the active tab: `supported` false plays a page extensions cannot run on;
+     *  `blocked` is what it says about the moment ('typing', 'video_playing' ..., '' = fine). */
+    page: { supported: true, blocked: '' },
+    /** Overrides what the page answers to a message, if set. */
+    reply: null,
     /** Messages delivered to the tab. */
     sent: [],
     /** Every alarm that was ever created, in order. */
     alarmsCreated: [],
+    /** What this browser offers for showing a quiz besides the card on the page. By default
+     *  nothing, so that a quiz ends up as a card. */
+    can: { popup: false, window: false, notification: false },
+    /** How the toolbar popup behaves: `refuses` is the error openPopup() fails with ('' = it
+     *  works); `opens` false plays a popup that never loads its page. */
+    popup: { refuses: '', opens: true },
+    /** The same for windows.create(); `refusesPosition`: only a placed window is refused. */
+    window: { refuses: '', opens: true, refusesPosition: false },
+    /** Called when a quiz page has loaded (surface 'popup' or 'window'); the test plays the page. */
+    onQuizPage: null,
+    /** What the toolbar button opens right now. */
+    popupPage: 'popup/popup.html',
+    /** Calls made to the browser for showing things, in order. */
+    calls: [],
+    /** Windows that are open (created through windows.create and not removed). */
+    windows: [],
+    notifications: [],
   };
   const alarmMap = new Map();
   const alarms = {
@@ -64,14 +88,72 @@ export function createDevice(name = 'device', { uiLanguage = 'en-US', detect = (
     },
     clear: async (alarmName) => alarmMap.delete(alarmName),
   };
+  const pageLoads = (surface, info) => setTimeout(() => browser.onQuizPage?.(surface, info), 0);
   const tabs = {
     query: async () => (browser.tab ? [browser.tab] : []),
     sendMessage: async (tabId, message, options) => {
       browser.sent.push({ tabId, message, options });
-      return browser.reply(message);
+      if (browser.reply) return browser.reply(message);
+      if (!browser.page.supported) throw new Error('Could not establish connection. Receiving end does not exist.');
+      if (message.type === 'wv:quiz:probe') return { blocked: browser.page.blocked };
+      if (message.type === 'wv:quiz:show') return browser.page.blocked && !message.force ? { shown: false, reason: browser.page.blocked } : { shown: true };
+      return undefined;
     },
   };
-  const windows = { get: async (id) => ({ id, focused: browser.focused }) };
+  let nextWindowId = 100;
+  const windows = {
+    get: async (id) => ({ id, focused: browser.focused, ...browser.bounds }),
+    create: async (data) => {
+      browser.calls.push(`windows.create${data.left === undefined ? '' : ` at ${data.left},${data.top}`}`);
+      if (browser.window.refuses) throw new Error(browser.window.refuses);
+      if (browser.window.refusesPosition && data.left !== undefined) throw new Error('Invalid value for bounds. Bounds must be at least 50% within visible screen space.');
+      const created = { id: nextWindowId++, ...data };
+      browser.windows.push(created);
+      if (browser.window.opens) pageLoads('window', created);
+      return created;
+    },
+    remove: async (id) => {
+      browser.calls.push('windows.remove');
+      browser.windows = browser.windows.filter((window) => window.id !== id);
+    },
+  };
+  const action = {
+    setPopup: async ({ popup }) => {
+      browser.popupPage = popup;
+    },
+    openPopup: async (options) => {
+      browser.calls.push(`openPopup ${browser.popupPage}`);
+      if (browser.popup.refuses) throw new Error(browser.popup.refuses);
+      if (browser.popup.opens) pageLoads('popup', options);
+    },
+  };
+  const notifications = {
+    create: async (id, options) => {
+      browser.calls.push('notifications.create');
+      browser.notifications.push({ id, ...options });
+      return id;
+    },
+    clear: async () => true,
+  };
+  const api = {
+    storage: { local },
+    i18n,
+    alarms,
+    tabs,
+    runtime: { getManifest: () => ({ version: '0.0.0-test', action: { default_popup: 'popup/popup.html' } }), getURL: (path) => `test-extension://${path}` },
+    permissions: { contains: async () => browser.can.notification },
+    // What a browser cannot do is simply not there, as in a real one.
+    get action() {
+      return browser.can.popup ? action : { setPopup: action.setPopup };
+    },
+    get windows() {
+      return browser.can.window ? windows : { get: windows.get, remove: windows.remove };
+    },
+    get notifications() {
+      return browser.can.notification ? notifications : undefined;
+    },
+  };
+  const shows = () => browser.sent.filter((sent) => sent.message.type === 'wv:quiz:show');
   return {
     name,
     local,
@@ -94,7 +176,12 @@ export function createDevice(name = 'device', { uiLanguage = 'en-US', detect = (
     },
     /** A browser restart, as far as timers go: alarms are gone, storage stays. */
     forgetAlarms: () => alarmMap.clear(),
-    chrome: { storage: { local }, i18n, alarms, tabs, windows, runtime: { getManifest: () => ({ version: '0.0.0-test' }) } },
+    chrome: api,
+    /** The quizzes sent to the page as a card: what was sent where, and just the quiz of each. */
+    shows,
+    cards: () => shows().map((sent) => sent.message.quiz),
+    /** The question of the card shown last. */
+    lastQuestion: () => shows().at(-1)?.message.quiz.question,
     /** Everything in this device's storage, as a plain object. */
     dump: () => Object.fromEntries([...local.data].map(([key, value]) => [key, structuredClone(value)])),
   };

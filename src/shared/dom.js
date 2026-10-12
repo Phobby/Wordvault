@@ -74,6 +74,41 @@ globalThis.WV = globalThis.WV || {};
     return response.data;
   };
 
+  /**
+   * Keeps a connection to the background script open for as long as something is on screen
+   * here, so that the background script notices when this place goes away without a word (the
+   * tab is closed, the popup loses the focus, the window is closed): the connection breaks.
+   * A closing page cannot be relied on to send a last message; in Chrome it never arrives.
+   * @param {string} name  Tells the background script what the connection stands for.
+   * @returns {{ end(): void }}  end(): the thing is over in the ordinary way; let go.
+   */
+  WV.stayConnected = function stayConnected(name) {
+    let port = null;
+    let ended = false;
+    function connect() {
+      if (ended) return;
+      try {
+        port = chrome.runtime.connect({ name });
+      } catch {
+        return; // the extension was reloaded underneath this page
+      }
+      // The browser also breaks the connection when it stops the background script for being
+      // idle. This page is still here, so it connects again (which starts the script again).
+      port.onDisconnect.addListener(() => {
+        port = null;
+        if (!ended) setTimeout(connect, 1000);
+      });
+    }
+    connect();
+    return {
+      end() {
+        ended = true;
+        port?.disconnect();
+        port = null;
+      },
+    };
+  };
+
   /** Applies CSS to the current document without a <style> element. For extension pages. */
   WV.adoptStyles = function adoptStyles(css) {
     const sheet = new CSSStyleSheet();

@@ -209,6 +209,52 @@ const quizTimeout = h('input', {
 });
 
 /** @param {HTMLInputElement} [rejected]  A field whose content was not accepted and is put back. */
+/** How many questions a quiz can be set to ask. */
+const QUESTION_COUNTS = [1, 3, 5, 10];
+const quizQuestions = h('select', {
+  'aria-label': t('optQuizQuestions'),
+  onchange: () => saveQuiz({ quizQuestionsPerQuiz: Number(quizQuestions.value) }),
+});
+
+/** The ways a quiz can be shown (quiz/display.js) and their names. */
+const DISPLAY_NAMES = { auto: 'quizDisplayAuto', popup: 'quizDisplayPopup', window: 'quizDisplayWindow', card: 'quizDisplayCard', notification: 'quizDisplayNotification' };
+const quizDisplay = h(
+  'select',
+  { 'aria-label': t('optQuizDisplay'), onchange: () => saveQuiz({ quizDisplay: quizDisplay.value }) },
+  ['auto', 'popup', 'window', 'card'].map((value) => h('option', { value, text: t(DISPLAY_NAMES[value]) })),
+);
+
+// The system notification is the last resort, and the only thing here that needs a permission
+// of its own; it is asked for when the user wants it and not before.
+const NOTIFICATIONS = { permissions: ['notifications'] };
+const quizNotifyStatus = h('span', { class: 'unit', role: 'status' });
+const quizNotifyButton = h('button', {
+  class: 'wv-btn',
+  type: 'button',
+  onclick: async () => {
+    // Straight from the click: the browser only shows its permission prompt for a user action.
+    const allowed = quizNotifyButton.dataset.allowed === 'yes';
+    const done = await (allowed ? chrome.permissions.remove(NOTIFICATIONS) : chrome.permissions.request(NOTIFICATIONS)).catch(() => false);
+    quizNotifyStatus.textContent = !allowed && !done ? t('optQuizNotifyDenied') : '';
+    await renderQuizSettings();
+    renderQuiz();
+  },
+});
+
+/** Sends the notification right now, so that it can be seen (and clicked) without waiting for
+ *  the rare moment when nothing else can show a quiz. Only there while notifications are allowed. */
+const quizNotifyTry = h('button', {
+  class: 'wv-btn',
+  type: 'button',
+  hidden: true,
+  text: t('optQuizNotifyTry'),
+  onclick: async () => {
+    const result = await globalThis.WV.send('wv:quiz:test', { methods: ['notification'] }).catch(() => null);
+    const diagnostics = quizDiagnostics || (await getDiagnostics());
+    quizNotifyStatus.textContent = !result ? t('quizTestFailed') : result.ok ? t('optQuizNotifySent') : skipText(result, diagnostics);
+  },
+});
+
 async function renderQuizSettings(rejected) {
   const [settings, d] = await Promise.all([getSettings(), getDiagnostics()]);
   // A field that is being typed in is left alone.
@@ -225,6 +271,15 @@ async function renderQuizSettings(rejected) {
   );
   quizInterval.value = custom ? 'custom' : String(minutes);
   quizIntervalCustomRow.hidden = !custom;
+  const counts = QUESTION_COUNTS.includes(d.questionsPerQuiz) ? QUESTION_COUNTS : [...QUESTION_COUNTS, d.questionsPerQuiz].sort((a, b) => a - b);
+  quizQuestions.replaceChildren(...counts.map((count) => h('option', { value: String(count), text: count === 1 ? t('quizQuestionsOne') : t('quizQuestionsMany', [String(count)]) })));
+  quizQuestions.value = String(d.questionsPerQuiz);
+  quizDisplay.value = d.display;
+  quizNotifyButton.dataset.allowed = d.notifications ? 'yes' : 'no';
+  quizNotifyButton.textContent = t(d.notifications ? 'optQuizNotifyRemove' : 'optQuizNotifyAllow');
+  quizNotifyTry.hidden = !d.notifications;
+  if (!d.notifications && quizNotifyStatus.textContent !== t('optQuizNotifyDenied')) quizNotifyStatus.textContent = '';
+  else if (d.notifications && quizNotifyStatus.textContent === '') quizNotifyStatus.textContent = t('optQuizNotifyAllowed');
   if (free(quizIntervalCustom)) quizIntervalCustom.value = String(minutes);
   if (free(quizMinCards)) quizMinCards.value = String(d.minCards);
   if (free(quizTimeout)) quizTimeout.value = String(d.timeoutSeconds);
@@ -260,12 +315,42 @@ const QUIZ_REASONS = {
   popup_open: 'quizWhyPopupOpen',
   already_showing: 'quizWhyAlreadyShowing',
   page_not_supported: 'quizWhyPageNotSupported',
+  muted: 'quizWhyMuted',
+  no_display: 'quizWhyNoDisplay',
+  // why one particular way of showing the quiz was not possible (quiz/display.js)
+  popup_unsupported: 'quizWhyPopupUnsupported',
+  popup_refused: 'quizWhyPopupRefused',
+  popup_not_opened: 'quizWhyPopupNotOpened',
+  window_unsupported: 'quizWhyWindowUnsupported',
+  window_refused: 'quizWhyWindowRefused',
+  window_not_opened: 'quizWhyWindowNotOpened',
+  notification_not_allowed: 'quizWhyNotificationNotAllowed',
+  notification_refused: 'quizWhyNotificationRefused',
 };
 
 function reasonText(reason, diagnostics) {
   const key = QUIZ_REASONS[reason];
   if (!key) return reason; // an unexpected error: show it as it is
   return t(key, [String(diagnostics.total), String(diagnostics.minCards), languages.name(diagnostics.targetLang), String(diagnostics.meanings), String(diagnostics.neededMeanings)]);
+}
+
+/** "toolbar popup: the browser refused to open it (…); separate window: …" */
+function triedText(tried, diagnostics) {
+  return (tried || [])
+    .map(({ method, reason, detail }) => `${t(DISPLAY_NAMES[method] || method)}: ${reasonText(reason, diagnostics)}${detail ? ` (${detail})` : ''}`)
+    .join('; ');
+}
+
+/** How a quiz was shown, and which ways were tried in vain before that one. */
+function shownText(shown, diagnostics) {
+  const how = t(DISPLAY_NAMES[shown.method] || 'quizWhyShown');
+  return shown.tried?.length > 0 ? t('quizShownAfter', [how, triedText(shown.tried, diagnostics)]) : how;
+}
+
+/** Why no quiz was shown; with the ways that were tried, if it got that far. */
+function skipText(skip, diagnostics) {
+  const why = reasonText(skip.reason, diagnostics);
+  return skip.tried?.length > 0 ? `${why}: ${triedText(skip.tried, diagnostics)}` : why;
 }
 
 /** What became of a question (quiz-card.js), in words. */
@@ -292,6 +377,17 @@ function timeText(time) {
 }
 
 const quizVerdict = h('p', { class: 'verdict', role: 'status' });
+/** Takes "Not today" back; only there while it is in force. */
+const quizUnmute = h('button', {
+  class: 'wv-btn',
+  type: 'button',
+  hidden: true,
+  text: t('quizUnmute'),
+  onclick: async () => {
+    await globalThis.WV.send('wv:quiz:unmute').catch(() => {});
+    renderQuiz();
+  },
+});
 const quizFacts = h('dl', { class: 'facts' });
 const quizTestResult = h('p', { class: 'help', role: 'status' });
 let quizDiagnostics = null;
@@ -301,6 +397,7 @@ async function renderQuiz() {
   quizDiagnostics = d;
   quizVerdict.textContent = d.standingReason ? t('quizVerdictNo', [reasonText(d.standingReason, d)]) : t('quizVerdictYes', [d.nextAt ? timeText(d.nextAt) : t('quizDiagNotScheduled')]);
   quizVerdict.className = d.standingReason ? 'verdict no' : 'verdict yes';
+  quizUnmute.hidden = !d.mutedUntil;
 
   // What the timer itself is doing; "Test now" leaves none of this behind.
   // The alarm is what wakes the extension up: a plan without one would never be carried out.
@@ -311,10 +408,11 @@ async function renderQuiz() {
     ['quizDiagAskable', t('quizDiagAskableValue', [String(d.askable), languages.name(d.targetLang), String(d.meanings), String(d.neededMeanings)])],
     ['quizDiagDue', String(d.due)],
     ['quizDiagInterval', intervalLabel(d.intervalMinutes)],
+    ['quizDiagDisplay', d.displayOrder.map((method) => t(DISPLAY_NAMES[method])).join(' → ')],
     ['quizDiagNext', d.nextAt ? timeText(d.nextAt) : t('quizDiagNotScheduled')],
     ['quizDiagAlarm', alarm],
-    ['quizDiagLastShown', d.lastShown ? timeText(d.lastShown.at) : t('quizDiagNever')],
-    ['quizDiagLastSkip', d.lastSkip ? `${timeText(d.lastSkip.at)}: ${reasonText(d.lastSkip.reason, d)}` : t('quizDiagNever')],
+    ['quizDiagLastShown', d.lastShown ? `${timeText(d.lastShown.at)}: ${shownText(d.lastShown, d)}` : t('quizDiagNever')],
+    ['quizDiagLastSkip', d.lastSkip ? `${timeText(d.lastSkip.at)}: ${skipText(d.lastSkip, d)}` : t('quizDiagNever')],
     ['quizDiagLastAnswer', lastAnswerText(d.lastAnswer)],
   ];
   quizFacts.replaceChildren(...facts.flatMap(([labelKey, value]) => [h('dt', { text: t(labelKey) }), h('dd', { text: value })]));
@@ -322,8 +420,9 @@ async function renderQuiz() {
 
 /**
  * "Test now": asks the background script to show a quiz the way the timer does, with the timer
- * and the conditions left out. The quiz comes back to this page like to any other page the user
- * might be looking at (content/quiz.js is loaded here too); nothing is drawn from here.
+ * and the conditions left out. Nothing is drawn from here: the quiz appears in the toolbar
+ * popup, in its window, or as a card on this page, which can show one like any other page
+ * (content/quiz.js is loaded here too). The line under the button says which way it went and why.
  */
 async function testQuiz() {
   quizTestResult.textContent = '';
@@ -334,7 +433,8 @@ async function testQuiz() {
     quizTestResult.textContent = t('quizTestFailed');
     return;
   }
-  if (!result.ok) quizTestResult.textContent = reasonText(result.reason, quizDiagnostics || (await getDiagnostics()));
+  const diagnostics = quizDiagnostics || (await getDiagnostics());
+  quizTestResult.textContent = result.ok ? t('quizTestShown', [shownText(result, diagnostics)]) : skipText(result, diagnostics);
 }
 
 const quizSection = h(
@@ -347,6 +447,9 @@ const quizSection = h(
     { class: 'fields' },
     switchRow(quizEnabled, 'optQuizEnabled', 'optQuizEnabledHelp'),
     fieldRow('optQuizInterval', 'optQuizIntervalHelp', quizInterval, quizIntervalCustomRow),
+    fieldRow('optQuizQuestions', 'optQuizQuestionsHelp', quizQuestions),
+    fieldRow('optQuizDisplay', 'optQuizDisplayHelp', quizDisplay),
+    fieldRow('optQuizNotify', 'optQuizNotifyHelp', quizNotifyStatus, quizNotifyTry, quizNotifyButton),
     switchRow(quizAllowNotDue, 'optQuizAllowNotDue', 'optQuizAllowNotDueHelp'),
     fieldRow('optQuizMinCards', 'optQuizMinCardsHelp', quizMinCards),
     fieldRow('optQuizTimeout', 'optQuizTimeoutHelp', h('span', { class: 'inline' }, quizTimeout, h('span', { class: 'unit', text: t('optSeconds') }))),
@@ -354,7 +457,7 @@ const quizSection = h(
   h('h3', { text: t('quizDiagTitle') }),
   quizVerdict,
   quizFacts,
-  h('div', { class: 'buttons' }, h('button', { class: 'wv-btn', type: 'button', text: t('quizTest'), onclick: testQuiz })),
+  h('div', { class: 'buttons' }, h('button', { class: 'wv-btn', type: 'button', 'data-action': 'test', text: t('quizTest'), onclick: testQuiz }), quizUnmute),
   h('p', { class: 'help', text: t('quizTestHelp') }),
   quizTestResult,
 );
@@ -414,8 +517,6 @@ chrome.management
 chrome.storage.onChanged.addListener((changes, area) => {
   if (area !== 'local') return;
   if (changes.settings) render();
-  // What "Test now" last said may no longer be true once the vault has changed.
-  if (Object.keys(changes).some((key) => key.startsWith('vault:'))) quizTestResult.textContent = '';
   renderQuiz();
   // The timer writes its plan first and sets the alarm right after; look again once it has.
   clearTimeout(settleTimer);

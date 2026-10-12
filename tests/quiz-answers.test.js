@@ -7,6 +7,7 @@ import { updateSettings } from '../src/lib/settings.js';
 import { addEntry, getEntry, removeEntry } from '../src/lib/vault.js';
 import { TUNING } from '../src/quiz/learning.js';
 import { getDiagnostics, getQuizState, recordAnswer, showQuiz, testQuiz } from '../src/quiz/scheduler.js';
+import { clearSession } from '../src/quiz/session.js';
 import { applyDocument, readLocalDocument } from '../src/sync/local.js';
 import { mergeDocuments, serializeDocument } from '../src/sync/merge.js';
 import { normalizeDocument } from '../src/sync/model.js';
@@ -106,20 +107,21 @@ test('quizzes ask different words in a row and remember what they asked', async 
   const asked = [];
   for (let round = 0; round < 40; round++) {
     assert.equal((await showQuiz()).reason, 'shown');
-    asked.push(device.browser.sent.at(-1).message.payload.id);
+    asked.push(device.lastQuestion().id);
+    await clearSession(); // the quiz goes away without a word, so that the next one can come
   }
   for (let index = 1; index < asked.length; index++) {
     assert.ok(!asked.slice(Math.max(0, index - 3), index).includes(asked[index]), `question ${index} repeats one of the three before it`);
   }
   assert.deepEqual((await getQuizState()).recent, asked.slice(-5));
   // a quiz that was not shown asked nothing
-  device.browser.reply = () => ({ shown: false, reason: 'typing' });
+  device.browser.page.blocked = 'typing';
   await showQuiz();
   assert.deepEqual((await getQuizState()).recent, asked.slice(-5));
   // "Test now" follows the same rule
-  device.browser.reply = () => ({ shown: true });
-  assert.deepEqual(await testQuiz(), { ok: true });
-  const tested = device.browser.sent.at(-1).message.payload.id;
+  device.browser.page = { supported: true, blocked: '' };
+  assert.equal((await testQuiz()).ok, true);
+  const tested = device.lastQuestion().id;
   assert.ok(!asked.slice(-3).includes(tested));
   assert.equal((await getQuizState()).recent.at(-1), tested);
 });
@@ -141,8 +143,9 @@ test('words answered wrongly come up more often than words that are known', asyn
   at(t, now + 400 * DAY);
   const counts = {};
   for (let round = 0; round < 600; round++) {
+    await clearSession();
     await showQuiz();
-    const id = device.browser.sent.at(-1).message.payload.id;
+    const id = device.lastQuestion().id;
     counts[id] = (counts[id] || 0) + 1;
   }
   const hardAverage = (counts[hard[0]] + counts[hard[1]]) / 2;
@@ -157,12 +160,12 @@ test('nothing due: by default the hardest word is asked early; switched off, no 
   at(t, T0 + MINUTE); // everything was answered a minute ago; the earliest is due in nine minutes
   assert.equal((await getDiagnostics()).due, 0);
   assert.equal((await showQuiz()).reason, 'shown');
-  assert.equal(device.browser.sent.at(-1).message.payload.id, ID, 'the hardest word');
+  assert.equal(device.lastQuestion().id, ID, 'the hardest word');
 
   await updateSettings({ quizAllowNotDue: false });
-  const before = device.browser.sent.length;
+  const before = device.cards().length;
   assert.equal((await showQuiz()).reason, 'nothing_due');
-  assert.equal(device.browser.sent.length, before);
+  assert.equal(device.cards().length, before);
   assert.equal((await getDiagnostics()).standingReason, 'nothing_due');
   assert.equal((await testQuiz()).ok, true, '"Test now" still shows one');
 

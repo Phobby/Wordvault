@@ -1,81 +1,30 @@
 'use strict';
 
-// The quiz card: a saved word and four possible meanings, in the top right corner. Used on web
-// pages (content/quiz.js) and on the options page ("Test now").
+// The quiz: a saved word and four possible meanings, one question after the other, and a short
+// summary at the end if there was more than one. This is the only place the quiz is drawn; it
+// is used as a card on web pages (content/quiz.js), in the toolbar popup and in the quiz window
+// (quiz/page.js).
 //
-// A question ends in exactly one of five ways, reported once through onResult:
+// A question ends in exactly one of five ways, reported once through `report`:
 //   answer    a choice was picked (right or wrong, with the time it took)
 //   unknown   "I don't know": counts as wrong, the right answer is shown
 //   later     "Ask later"                    \
 //   timeout   nobody answered in time         } nothing is held against the word
-//   closed    the card was closed            /
+//   closed    the quiz was closed            /
+// What comes next is not decided here: the reply to the report is the next question, the
+// summary, or nothing (the quiz is over).
 
 (function (WV) {
   if (WV.quizCard) return;
-  const { h, t, icon, languages } = WV;
+  const { h, t, languages } = WV;
 
-  const ICON_CLOSE = 'M6 6l12 12M18 6L6 18';
-  /** How long the result stays on screen before the card closes itself. */
+  /** How long the result of a question stays on screen before the quiz moves on. */
   const RIGHT_MS = 2000;
   const WRONG_MS = 3500;
-
-  let surface = null;
-  let current = null; // the card on screen
-
-  /** Ends the question: stops the clocks and reports the outcome. Only the first call counts. */
-  function finish(outcome, details) {
-    if (!current || current.outcome) return false;
-    const { question, stopwatch, onResult } = current;
-    current.outcome = outcome;
-    clearTimeout(current.timeoutTimer);
-    current.countdown?.cancel();
-    current.timerBar.hidden = true;
-    stopwatch.stop();
-    onResult?.({ id: question.id, outcome, chars: question.chars, ...details });
-    return true;
-  }
-
-  function close() {
-    if (!current) return;
-    finish('closed'); // unless it already ended some other way
-    clearTimeout(current.closeTimer);
-    const { onClose } = current;
-    current = null;
-    surface.unmount();
-    onClose?.();
-  }
-
-  /** Shows which choice was right, and closes the card a moment later. */
-  function reveal(messageKey, picked) {
-    const { question, buttons, actions, feedback } = current;
-    const correct = picked === question.answer;
-    for (const button of buttons) button.disabled = true;
-    buttons[question.answer].classList.add('wv-right');
-    if (picked !== null && !correct) buttons[picked].classList.add('wv-wrong');
-    actions.hidden = true;
-    feedback.textContent = t(messageKey);
-    feedback.classList.add(correct ? 'wv-right' : 'wv-wrong');
-    feedback.hidden = false;
-    current.closeTimer = setTimeout(close, correct ? RIGHT_MS : WRONG_MS);
-  }
-
-  function answer(index) {
-    if (!current || current.outcome) return;
-    const correct = index === current.question.answer;
-    // Read before finish() stops the stopwatch: the time from the choices appearing to this click.
-    const ms = current.stopwatch.elapsed();
-    finish('answer', { correct, choice: index, ms });
-    reveal(correct ? 'quizCorrect' : 'quizWrong', index);
-  }
-
-  function unknown() {
-    if (finish('unknown')) reveal('quizUnknownFeedback', null);
-  }
-
-  /** "Ask later" and the timeout: the card just goes away. */
-  function dismiss(outcome) {
-    if (finish(outcome)) close();
-  }
+  /** How long the summary stays before the quiz closes by itself. */
+  const SUMMARY_MS = 6000;
+  /** How long closing waits for the last report to be on its way before the place goes away. */
+  const LEAVE_WAIT_MS = 1500;
 
   /** The bar that shrinks while the question waits for an answer. */
   function startCountdown(bar, ms) {
@@ -87,75 +36,240 @@
   }
 
   /**
-   * Shows a question (replacing the one on screen, if any).
+   * Draws a quiz into `root` and runs it to its end.
    *
-   * @param {import('../quiz/question.js').Question} question
-   * @param {Object} [options]
-   * @param {number} [options.timeoutSeconds]  An unanswered question goes away after this long
+   * @param {Element} root  Emptied and filled; emptied again when the quiz closes.
+   * @param {Object} quiz
+   * @param {string} quiz.sessionId
+   * @param {import('../quiz/question.js').Question} quiz.question  The first question.
+   * @param {number} [quiz.index]            Its number within the quiz (1 = first).
+   * @param {number} [quiz.total]            How many questions the quiz is meant to ask.
+   * @param {number} [quiz.timeoutSeconds]   An unanswered question ends the quiz after this long
    *   (outcome 'timeout'). 0 or missing: it stays until it is answered or closed.
-   * @param {(result: { id: string, outcome: 'answer' | 'unknown' | 'later' | 'timeout' | 'closed',
-   *   chars: number, correct?: boolean, choice?: number, ms?: number }) => void} [options.onResult]
+   * @param {Object} [hooks]
+   * @param {(result: { sessionId: string, id: string, outcome: 'answer' | 'unknown' | 'later' | 'timeout' | 'closed',
+   *   chars: number, correct?: boolean, choice?: number, ms?: number }) => Promise<{ next?: { question: object,
+   *   index: number } | null, summary?: { right: number, answered: number, skipped: number } | null } | null | void>} [hooks.report]
    *   Called once per question. `correct`, `choice` and `ms` come with 'answer' only.
-   * @param {() => void} [options.onClose]  The card has left the screen.
+   * @param {() => unknown} [hooks.mute]     "Not today" was pressed.
+   * @param {() => void} [hooks.onClose]     The quiz has left the screen.
+   * @param {boolean} [hooks.floating]       Drawn as a card over a page instead of filling `root`.
+   * @returns {{ close(): void, isOpen(): boolean }}
    */
-  function show(question, { timeoutSeconds = 0, onResult, onClose } = {}) {
-    surface ||= WV.createSurface(WV.styles.quiz);
-    close();
-    const buttons = question.choices.map((choice, index) =>
-      h('button', { class: 'wv-quiz-choice', type: 'button', dir: 'auto', lang: question.targetLang || null, text: choice, onclick: () => answer(index) }),
-    );
-    const actions = h(
-      'div',
-      { class: 'wv-quiz-actions' },
-      h('button', { class: 'wv-quiz-action', type: 'button', 'data-action': 'unknown', title: t('quizUnknownHint'), text: t('quizUnknown'), onclick: unknown }),
-      h('button', { class: 'wv-quiz-action', type: 'button', 'data-action': 'later', title: t('quizLaterHint'), text: t('quizLater'), onclick: () => dismiss('later') }),
-    );
-    const feedback = h('div', { class: 'wv-quiz-feedback', role: 'status', hidden: true });
+  function mount(root, quiz, { report, mute, onClose, floating = false } = {}) {
+    const total = Math.max(1, Number(quiz.total) || 1);
+    const timeoutMs = Number(quiz.timeoutSeconds) > 0 ? Number(quiz.timeoutSeconds) * 1000 : 0;
+    let current = null; // the question on screen
+    let advanceTimer = 0; // moves on from a result, or closes the summary
+    let closed = false;
+
+    const progress = h('span', { class: 'wv-quiz-progress' });
+    const body = h('div', { class: 'wv-quiz-body' });
     const bar = h('div', { class: 'wv-quiz-timer-bar' });
     const timerBar = h('div', { class: 'wv-quiz-timer', hidden: true }, bar);
-    surface.root.replaceChildren(
+    const card = h(
+      'div',
+      { class: floating ? 'wv-quiz wv-quiz-floating' : 'wv-quiz', role: 'dialog', 'aria-label': t('quizTitle') },
+      h('div', { class: 'wv-quiz-head' }, h('span', { class: 'wv-quiz-title', text: t('quizTitle') }), progress),
+      body,
+      // Always there, whatever the quiz is showing.
       h(
         'div',
-        { class: 'wv-quiz', role: 'dialog', 'aria-label': t('quizTitle') },
-        h(
-          'div',
-          { class: 'wv-quiz-head' },
-          h('span', { class: 'wv-quiz-title', text: t('quizTitle') }),
-          h('button', { class: 'wv-btn-icon', type: 'button', 'data-action': 'close', title: t('popupClose'), 'aria-label': t('popupClose'), onclick: close }, icon(ICON_CLOSE)),
-        ),
+        { class: 'wv-quiz-bottom' },
+        h('button', { class: 'wv-quiz-action', type: 'button', 'data-action': 'mute', title: t('quizMuteHint'), text: t('quizMute'), onclick: muteToday }),
+        h('button', { class: 'wv-quiz-action', type: 'button', 'data-action': 'close', text: t('quizClose'), onclick: close }),
+      ),
+      timerBar,
+    );
+
+    /** Ends the question: stops the clocks and reports the outcome. Only the first call counts.
+     *  @returns {Promise<object | null> | null} What the report says comes next; null if the
+     *  question had already ended. */
+    function finish(outcome, details) {
+      if (!current || current.outcome) return null;
+      const { question, stopwatch } = current;
+      current.outcome = outcome;
+      clearTimeout(current.timeoutTimer);
+      current.countdown?.cancel();
+      timerBar.hidden = true;
+      stopwatch.stop();
+      const result = { sessionId: quiz.sessionId, id: question.id, outcome, chars: question.chars, ...details };
+      // Reported right here, not a moment later: when the place showing the quiz is going away
+      // (a popup the user clicked away from), a moment later is too late.
+      let reported;
+      try {
+        reported = Promise.resolve(report?.(result));
+      } catch (error) {
+        reported = Promise.reject(error);
+      }
+      // An extension that was reloaded underneath the page cannot be reached: the quiz just ends.
+      return reported.then((following) => following || null, () => null);
+    }
+
+    /**
+     * Takes the quiz off the screen.
+     * @param {Promise<unknown>} [before]  Something that has to be on its way before the place
+     *   showing the quiz may go away with it (a popup or a window closes itself in onClose).
+     */
+    function close(before) {
+      if (closed) return;
+      const reported = finish('closed'); // unless the question already ended some other way
+      closed = true;
+      clearTimeout(advanceTimer);
+      current = null;
+      root.replaceChildren();
+      const sent = Promise.all([reported, before]).catch(() => {});
+      Promise.race([sent, new Promise((resolve) => setTimeout(resolve, LEAVE_WAIT_MS))]).then(() => onClose?.());
+    }
+
+    function muteToday() {
+      if (closed) return;
+      // The question on screen is closed first, so that it is not left hanging.
+      const reported = finish('closed');
+      close(Promise.resolve(reported).then(() => mute?.()));
+    }
+
+    /** Waits out the time the result is shown for, then does what the report said. */
+    function moveOn(following, delay) {
+      const shownAt = Date.now();
+      following.then((then) => {
+        if (closed) return;
+        advanceTimer = setTimeout(() => {
+          if (closed) return;
+          if (then?.next?.question) showQuestion(then.next.question, then.next.index);
+          else if (then?.summary) showSummary(then.summary);
+          else close();
+        }, Math.max(0, delay - (Date.now() - shownAt)));
+      });
+    }
+
+    /** Shows which choice was right. */
+    function reveal(messageKey, picked) {
+      const { question, buttons, actions, feedback } = current;
+      const correct = picked === question.answer;
+      for (const button of buttons) button.disabled = true;
+      buttons[question.answer].classList.add('wv-right');
+      if (picked !== null && !correct) buttons[picked].classList.add('wv-wrong');
+      actions.hidden = true;
+      feedback.textContent = t(messageKey);
+      feedback.classList.add(correct ? 'wv-right' : 'wv-wrong');
+      feedback.hidden = false;
+    }
+
+    function answer(index) {
+      if (!current || current.outcome) return;
+      const correct = index === current.question.answer;
+      // Read before finish() stops the stopwatch: the time from the choices appearing to this click.
+      const ms = current.stopwatch.elapsed();
+      const following = finish('answer', { correct, choice: index, ms });
+      reveal(correct ? 'quizCorrect' : 'quizWrong', index);
+      moveOn(following, correct ? RIGHT_MS : WRONG_MS);
+    }
+
+    function unknown() {
+      const following = finish('unknown');
+      if (!following) return;
+      reveal('quizUnknownFeedback', null);
+      moveOn(following, WRONG_MS);
+    }
+
+    /** "Ask later": on to the next question at once. */
+    function later() {
+      const following = finish('later');
+      if (following) moveOn(following, 0);
+    }
+
+    function showQuestion(question, index) {
+      const buttons = question.choices.map((choice, choiceIndex) =>
+        h('button', { class: 'wv-quiz-choice', type: 'button', dir: 'auto', lang: question.targetLang || null, text: choice, onclick: () => answer(choiceIndex) }),
+      );
+      const actions = h(
+        'div',
+        { class: 'wv-quiz-actions' },
+        h('button', { class: 'wv-quiz-action', type: 'button', 'data-action': 'unknown', title: t('quizUnknownHint'), text: t('quizUnknown'), onclick: unknown }),
+        h('button', { class: 'wv-quiz-action', type: 'button', 'data-action': 'later', title: t('quizLaterHint'), text: t('quizLater'), onclick: later }),
+      );
+      const feedback = h('div', { class: 'wv-quiz-feedback', role: 'status', hidden: true });
+      progress.textContent = total > 1 ? t('quizProgress', [String(index || 1), String(total)]) : '';
+      body.replaceChildren(
         h('div', { class: 'wv-quiz-word', dir: 'auto', lang: question.sourceLang || null, text: question.word }),
         h('div', { class: 'wv-quiz-prompt', text: t('quizPrompt', [languages.name(question.targetLang)]) }),
         h('div', { class: 'wv-quiz-choices' }, buttons),
         h('div', { class: 'wv-quiz-foot' }, actions, feedback),
-        timerBar,
-      ),
-    );
-    surface.mount(null);
+      );
 
-    const card = { question, buttons, actions, feedback, timerBar, stopwatch: WV.createStopwatch(), outcome: '', countdown: null, timeoutTimer: 0, closeTimer: 0, onResult, onClose };
-    current = card;
+      const asked = { question, buttons, actions, feedback, stopwatch: WV.createStopwatch(), outcome: '', countdown: null, timeoutTimer: 0 };
+      current = asked;
 
-    // The answer time starts when the choices are on screen: after the first frame with the
-    // card in it has been painted. In a tab that is not visible no frame is painted, and the
-    // stopwatch waits with it.
-    requestAnimationFrame(() =>
-      requestAnimationFrame(() => {
-        if (current === card && !card.outcome) card.stopwatch.start();
-      }),
-    );
+      // The answer time starts when the choices are on screen: after the first frame with them
+      // in it has been painted. In a tab that is not visible no frame is painted, and the
+      // stopwatch waits with it.
+      requestAnimationFrame(() =>
+        requestAnimationFrame(() => {
+          if (current === asked && !asked.outcome) asked.stopwatch.start();
+        }),
+      );
 
-    // ASSUMPTION: the timeout runs in real time, also while the tab is hidden; only the answer
-    // time is paused there. A card nobody is looking at then goes away by itself instead of
-    // waiting in a background tab while the next quiz appears somewhere else.
-    const timeoutMs = Number(timeoutSeconds) > 0 ? Number(timeoutSeconds) * 1000 : 0;
-    if (timeoutMs) {
-      timerBar.hidden = false;
-      card.countdown = startCountdown(bar, timeoutMs);
-      card.timeoutTimer = setTimeout(() => {
-        if (current === card) dismiss('timeout');
-      }, timeoutMs);
+      // ASSUMPTION: the timeout runs in real time, also while the tab is hidden; only the answer
+      // time is paused there. A quiz nobody is looking at then goes away by itself instead of
+      // waiting in a background tab while the next one appears somewhere else.
+      if (timeoutMs) {
+        timerBar.hidden = false;
+        asked.countdown = startCountdown(bar, timeoutMs);
+        asked.timeoutTimer = setTimeout(() => {
+          // Nobody is there: the rest of the quiz is not asked either.
+          if (current === asked && !asked.outcome) close(finish('timeout'));
+        }, timeoutMs);
+      }
     }
+
+    /**
+     * "3/5 correct", for a quiz that asked more than one question.
+     * ASSUMPTION: the second number is the questions that were answered; ones put off with
+     * "Ask later" are mentioned separately. The summary goes away by itself after a few seconds.
+     */
+    function showSummary(summary) {
+      current = null;
+      progress.textContent = '';
+      body.replaceChildren(
+        h(
+          'div',
+          { class: 'wv-quiz-summary', role: 'status' },
+          h('div', { class: 'wv-quiz-score', text: t('quizSummary', [String(summary.right), String(summary.answered)]) }),
+          summary.skipped > 0 && h('div', { class: 'wv-quiz-prompt', text: t('quizSummarySkipped', [String(summary.skipped)]) }),
+        ),
+      );
+      advanceTimer = setTimeout(close, SUMMARY_MS);
+    }
+
+    root.replaceChildren(card);
+    showQuestion(quiz.question, quiz.index);
+    return { close, isOpen: () => !closed };
   }
 
-  WV.quizCard = { show, close, isOpen: () => Boolean(current) };
+  // --- As a card over the page -------------------------------------------------------------------
+
+  let surface = null;
+  let floating = null; // the card on this page
+
+  /** Shows the quiz as a card in the top right corner (replacing the one on screen, if any). */
+  function show(quiz, hooks = {}) {
+    surface ||= WV.createSurface(WV.styles.quiz);
+    floating?.close();
+    const card = mount(surface.root, quiz, {
+      ...hooks,
+      floating: true,
+      onClose: () => {
+        hooks.onClose?.();
+        if (floating !== card) return; // a newer card has taken its place in the meantime
+        floating = null;
+        surface.unmount();
+      },
+    });
+    floating = card;
+    surface.mount(null);
+    return card;
+  }
+
+  WV.quizCard = { mount, show, close: () => floating?.close(), isOpen: () => Boolean(floating?.isOpen()) };
 })(globalThis.WV);

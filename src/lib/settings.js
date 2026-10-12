@@ -34,6 +34,14 @@ export const DEFAULT_SETTINGS = Object.freeze({
   quizAllowNotDue: true,
   /** A quiz nobody answers goes away after this many seconds; nothing is held against the word. */
   quizTimeoutSeconds: 30,
+  /** How many questions a quiz asks, one after the other in the same place. */
+  quizQuestionsPerQuiz: 1,
+  /**
+   * How a quiz is put on screen: 'popup' (the toolbar popup), 'window' (a small window of its
+   * own), 'card' (a card on the page), or 'auto' (in that order, whichever works first).
+   * Whatever is chosen, the other ways follow when it is not possible (quiz/display.js).
+   */
+  quizDisplay: 'auto',
 });
 
 /** @returns {Promise<typeof DEFAULT_SETTINGS>} */

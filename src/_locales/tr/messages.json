@@ -254,11 +254,35 @@
   "quizLaterHint": {
     "message": "Sayılmaz; kelime birkaç dakika sonra yeniden sorulur"
   },
+  "quizProgress": {
+    "message": "$1 / $2"
+  },
+  "quizMute": {
+    "message": "Bugün sorma"
+  },
+  "quizMuteHint": {
+    "message": "Yarına kadar quiz çıkmaz"
+  },
+  "quizClose": {
+    "message": "Kapat"
+  },
+  "quizSummary": {
+    "message": "$1/$2 doğru"
+  },
+  "quizSummarySkipped": {
+    "message": "$1 soru sonraya bırakıldı"
+  },
+  "quizNotificationTitle": {
+    "message": "Wordvault: quiz zamanı"
+  },
+  "quizNotificationText": {
+    "message": "Kelimelerinden biriyle ilgili bir soru için tıkla."
+  },
   "optQuizTitle": {
     "message": "Flash card"
   },
   "optQuizHelp": {
-    "message": "Wordvault ara sıra kasandaki bir kelimeyi sorar. Kasadaki her kelimeye sıra gelir; yanlış bildiklerin daha çabuk geri döner."
+    "message": "Wordvault ara sıra kasandaki kelimeleri sorar: araç çubuğundaki eklenti penceresinde, küçük bir pencerede ya da sayfanın üstünde bir kartla. Kasadaki her kelimeye sıra gelir; yanlış bildiklerin daha çabuk geri döner."
   },
   "optQuizEnabled": {
     "message": "Flash card sor"
@@ -274,6 +298,63 @@
   },
   "optQuizIntervalCustom": {
     "message": "İki quiz arasındaki dakika (1-1440)"
+  },
+  "optQuizQuestions": {
+    "message": "Quiz geldiğinde soru sayısı"
+  },
+  "optQuizQuestionsHelp": {
+    "message": "Birden fazlaysa cevaptan sonra aynı yerde sıradaki soru gelir, sonda kısa bir özet gösterilir."
+  },
+  "quizQuestionsOne": {
+    "message": "1 soru"
+  },
+  "quizQuestionsMany": {
+    "message": "$1 soru"
+  },
+  "optQuizDisplay": {
+    "message": "Quiz nasıl görünsün"
+  },
+  "optQuizDisplayHelp": {
+    "message": "Seçtiğin yol o an mümkün değilse sıradaki kullanılır. Hangisinin kullanıldığını ve nedenini aşağıdaki panel söyler."
+  },
+  "quizDisplayAuto": {
+    "message": "Otomatik"
+  },
+  "quizDisplayPopup": {
+    "message": "Eklenti açılır penceresi"
+  },
+  "quizDisplayWindow": {
+    "message": "Ayrı pencere"
+  },
+  "quizDisplayCard": {
+    "message": "Sayfa içi kart"
+  },
+  "quizDisplayNotification": {
+    "message": "Sistem bildirimi"
+  },
+  "optQuizNotify": {
+    "message": "Son çare: sistem bildirimi"
+  },
+  "optQuizNotifyHelp": {
+    "message": "Yalnızca yukarıdaki yolların hiçbiri quiz gösteremediğinde Wordvault bir bildirimle haber verir; tıklayınca quiz açılır. Bunun için tarayıcının bildirim izni gerekir."
+  },
+  "optQuizNotifyAllow": {
+    "message": "İzin ver"
+  },
+  "optQuizNotifyRemove": {
+    "message": "İzni geri al"
+  },
+  "optQuizNotifyAllowed": {
+    "message": "izin verildi"
+  },
+  "optQuizNotifyDenied": {
+    "message": "tarayıcı izni vermedi"
+  },
+  "optQuizNotifyTry": {
+    "message": "Dene"
+  },
+  "optQuizNotifySent": {
+    "message": "gönderildi; quiz’i açmak için bildirime tıkla"
   },
   "quizEveryMinute": {
     "message": "Dakikada bir"
@@ -446,11 +527,53 @@
   "quizWhyNothingDue": {
     "message": "tekrar zamanı gelmiş kelime yok"
   },
+  "quizDiagDisplay": {
+    "message": "Gösterme yolları (sırayla)"
+  },
+  "quizShownAfter": {
+    "message": "$1 (ondan önce olmayanlar: $2)"
+  },
+  "quizUnmute": {
+    "message": "Bugün yine sor"
+  },
+  "quizTestShown": {
+    "message": "Gösterildi: $1"
+  },
+  "quizWhyMuted": {
+    "message": "“Bugün sorma” ile yarına kadar kapatıldı"
+  },
+  "quizWhyNoDisplay": {
+    "message": "gösterme yollarının hiçbiri çalışmadı"
+  },
+  "quizWhyPopupUnsupported": {
+    "message": "bu tarayıcı eklenti penceresini kendiliğinden açamıyor"
+  },
+  "quizWhyPopupRefused": {
+    "message": "tarayıcı açmayı reddetti"
+  },
+  "quizWhyPopupNotOpened": {
+    "message": "açılmadı"
+  },
+  "quizWhyWindowUnsupported": {
+    "message": "bu tarayıcı eklentiler için pencere açamıyor"
+  },
+  "quizWhyWindowRefused": {
+    "message": "tarayıcı açmayı reddetti"
+  },
+  "quizWhyWindowNotOpened": {
+    "message": "açılmadı"
+  },
+  "quizWhyNotificationNotAllowed": {
+    "message": "izin verilmemiş"
+  },
+  "quizWhyNotificationRefused": {
+    "message": "tarayıcı göstermedi"
+  },
   "quizTest": {
     "message": "Şimdi test et"
   },
   "quizTestHelp": {
-    "message": "Quiz’i, zamanlayıcının göstereceği yoldan hemen gösterir; zamanlayıcıyı ve yukarıdaki koşulları atlar."
+    "message": "Quiz’i, zamanlayıcının göstereceği yoldan hemen gösterir; zamanlayıcıyı ve yukarıdaki koşulları atlar. Nasıl gösterildiği aşağıda yazar."
   },
   "quizTestFailed": {
     "message": "Arka plan betiği yanıt vermedi. Eklentiyi yeniden yükle."

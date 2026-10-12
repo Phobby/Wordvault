@@ -50,14 +50,32 @@
     return '';
   }
 
+  /** Shows the quiz as a card. What the card reports goes to the background script; its
+   *  reply says what comes next. */
+  function showCard(quiz) {
+    // If this page goes away with the card on it, the background script notices the
+    // connection breaking and counts the open question as closed.
+    const link = WV.stayConnected(`wv:quiz:${quiz.sessionId}`);
+    WV.quizCard.show(quiz, {
+      report: (result) => WV.send('wv:quiz:answer', result),
+      mute: () => WV.send('wv:quiz:mute'),
+      onClose: () => link.end(),
+    });
+  }
+
   chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+    // Asked before a quiz is shown in any way: a popup over a film is as unwelcome as a card.
+    if (message?.type === 'wv:quiz:probe') {
+      sendResponse({ blocked: blockedReason() });
+      return false;
+    }
     if (message?.type !== 'wv:quiz:show') return false;
     // "Test now" shows the quiz whatever the moment is like; the timer does not.
     const reason = message.force ? '' : blockedReason();
     if (reason) {
       sendResponse({ shown: false, reason });
     } else {
-      WV.quizCard.show(message.payload, { timeoutSeconds: message.timeoutSeconds, onResult: (result) => WV.send('wv:quiz:answer', result).catch(() => {}) });
+      showCard(message.quiz);
       sendResponse({ shown: true });
     }
     return false;

@@ -6,14 +6,18 @@
 // background script calls ensureScheduled() to put a missing alarm back.
 //
 // There is one way a quiz gets onto the screen, showQuiz(). The timer calls it when a quiz is
-// due; "Test now" calls it with the timer and the conditions left out.
+// due; "Test now" calls it with the timer and the conditions left out. How it is put there
+// (toolbar popup, window, card on the page, notification) is display.js; the questions of a
+// quiz that is on screen are session.js.
 
 import { getSettings } from '../lib/settings.js';
 import { resolveTargetLanguage } from '../lib/translator.js';
 import { getEntry, listEntries, updateEntry } from '../lib/vault.js';
 import { applyAnswer, expectedMs, levelOf, postpone, rateAnswer, recordSpeed, statusOf, usualMs } from './learning.js';
+import { METHODS, NOTIFICATION_ID, PREFERENCES, display, methodOrder, notificationsAllowed, sessionClaimed } from './display.js';
 import { CHOICE_COUNT, askableCards, countMeanings, questionFor } from './question.js';
 import { isDue, selectCard } from './selection.js';
+import { clearSession, isOnScreen, newSession, readSession, summaryOf, updateSession, viewOf, writeSession } from './session.js';
 
 export const ALARM_NAME = 'wv:quiz';
 const STATE_KEY = 'quizState';
@@ -30,6 +34,8 @@ const REMEMBERED_QUESTIONS = 5;
 export const INTERVAL_MINUTES = Object.freeze({ MIN: 1, MAX: 1440, DEFAULT: 20 });
 /** Limits of the "answer timeout" setting, in seconds. */
 export const TIMEOUT_SECONDS = Object.freeze({ MIN: 5, MAX: 300, DEFAULT: 30 });
+/** Limits of the "questions per quiz" setting. */
+export const QUESTIONS_PER_QUIZ = Object.freeze({ MIN: 1, MAX: 20, DEFAULT: 1 });
 
 /** Outcomes that are about this moment only; anything else waits for the regular interval. */
 const TRANSIENT = new Set([
@@ -43,6 +49,7 @@ const TRANSIENT = new Set([
   'popup_open',
   'already_showing',
   'page_not_supported',
+  'no_display',
 ]);
 /** Ways a question can end without an answer: nothing is held against the word.
  *  ASSUMPTION: closing the card counts as "ask later", not as a wrong answer. */
@@ -55,9 +62,12 @@ const UNANSWERED = new Set(['later', 'timeout', 'closed']);
  *                                       minutes; a different setting means the plan is stale.
  * @property {{ at: number, reason: string } | null} lastAttempt
  *   The last time a quiz was due and what came of it: 'shown', or the reason it was not shown.
- * @property {{ at: number } | null} lastShown   The last quiz the timer put on screen.
- * @property {{ at: number, reason: string } | null} lastSkip
+ * @property {{ at: number, method: string, tried: object[] } | null} lastShown
+ *   The last quiz the timer put on screen: in which way, and which ways were tried in vain
+ *   before it (display.js).
+ * @property {{ at: number, reason: string, tried?: object[] } | null} lastSkip
  *   The last time a quiz was due and could not be shown, and why.
+ * @property {number} mutedUntil         "Not today": no quiz before this time (0 = not muted).
  * @property {number} roundStartedAt     When the current round of questions began (selection.js).
  * @property {{ at: number, id: string, outcome: string, correct: boolean, quality: number | null } | null} lastAnswer
  * @property {string[]} recent   Ids of the words asked most recently, newest last.
@@ -69,7 +79,7 @@ const UNANSWERED = new Set(['later', 'timeout', 'closed']);
 /** @returns {Promise<QuizState>} */
 export async function getQuizState() {
   const stored = (await chrome.storage.local.get(STATE_KEY))[STATE_KEY];
-  const defaults = { sonrakiQuizZamani: 0, planInterval: 0, lastAttempt: null, lastShown: null, lastSkip: null, lastAnswer: null, roundStartedAt: 0, recent: [], speed: [] };
+  const defaults = { sonrakiQuizZamani: 0, planInterval: 0, mutedUntil: 0, lastAttempt: null, lastShown: null, lastSkip: null, lastAnswer: null, roundStartedAt: 0, recent: [], speed: [] };
   return { ...defaults, ...(stored && typeof stored === 'object' ? stored : {}) };
 }
 
@@ -118,18 +128,21 @@ export function ensureScheduled() {
     const state = await getQuizState();
     if (!settings.quizEnabled) {
       await chrome.alarms.clear(ALARM_NAME);
-      if (state.sonrakiQuizZamani || state.planInterval) await saveQuizState({ sonrakiQuizZamani: 0, planInterval: 0 });
+      // Switching the quiz off and on again also ends a "not today".
+      if (state.sonrakiQuizZamani || state.planInterval || state.mutedUntil) await saveQuizState({ sonrakiQuizZamani: 0, planInterval: 0, mutedUntil: 0 });
       return;
     }
     const interval = intervalMinutes(settings);
     const now = Date.now();
+    // "Not today": nothing before tomorrow.
+    const earliest = Math.max(now, state.mutedUntil);
     let { sonrakiQuizZamani } = state;
     // No plan yet, or one made for another frequency: the frequency that is set now counts
     // from now. (A plan further away than one interval can only come from a changed clock.)
     // ASSUMPTION: after the frequency is changed the first quiz comes one full new interval
     // later, whatever was left of the old one.
-    if (!sonrakiQuizZamani || state.planInterval !== interval || sonrakiQuizZamani > now + interval * MINUTE) {
-      sonrakiQuizZamani = now + interval * MINUTE;
+    if (!sonrakiQuizZamani || state.planInterval !== interval || sonrakiQuizZamani > earliest + interval * MINUTE) {
+      sonrakiQuizZamani = Math.max(now + interval * MINUTE, state.mutedUntil);
       await saveQuizState({ sonrakiQuizZamani, planInterval: interval });
     }
     // A time that has already passed (the browser was closed) means "at the next opportunity".
@@ -146,20 +159,36 @@ async function vaultStatus() {
   return { cards, targetLang, total: entries.length, askable: cards.length, meanings: countMeanings(cards), due: cards.filter((card) => isDue(card, now)).length };
 }
 
-/** The tab the user is looking at, or the reason there is none. `forced`: any active tab will do. */
-async function activeTab(forced) {
+/**
+ * Where the user is: the browser window in front, its active tab, and what the page in it says
+ * about the moment. Or the reason this is no moment for a quiz.
+ * `forced` ("Test now"): any active tab will do and the moment is not asked about.
+ * @returns {Promise<{ reason: string } | { window: object | null, tab: object, page: boolean }>}
+ *   `page`: the page can be talked to, so a card can be shown on it.
+ */
+async function lookAround(forced) {
   const [tab] = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
   if (!tab) return { reason: 'no_active_tab' };
-  if (forced) return { tab };
   const window = await chrome.windows.get(tab.windowId).catch(() => null);
-  if (!window?.focused) return { reason: 'window_not_focused' };
-  if (tab.audible) return { reason: 'media_playing' };
-  return { tab };
+  if (!forced) {
+    if (!window?.focused) return { reason: 'window_not_focused' };
+    if (tab.audible) return { reason: 'media_playing' };
+  }
+  // Only the page itself knows whether a video is playing or the user is typing.
+  // ASSUMPTION: a bad moment holds every way of showing the quiz back, the notification
+  // included: a popup over a film is as unwelcome as a card, and it would take the keyboard
+  // away from someone who is typing.
+  const said = await chrome.tabs.sendMessage(tab.id, { type: 'wv:quiz:probe' }, { frameId: 0 }).catch(() => null);
+  // No reply: a page extensions cannot run on (browser pages, the add-on store ...). Nothing
+  // is known about the moment then, and no card can be shown there.
+  if (said?.blocked && !forced) return { reason: said.blocked };
+  return { window, tab, page: Boolean(said) };
 }
 
 /** Why a quiz cannot be shown at all right now, or '' if nothing stands in the way so far. */
-function standingReason(settings, status) {
+function standingReason(settings, status, state, now) {
   if (!settings.quizEnabled) return 'disabled';
+  if (state.mutedUntil > now) return 'muted';
   if (status.total < settings.quizMinCards) return 'below_min_cards';
   if (status.meanings < CHOICE_COUNT) return 'not_enough_choices';
   if (status.due === 0 && !settings.quizAllowNotDue) return 'nothing_due';
@@ -169,17 +198,21 @@ function standingReason(settings, status) {
 /**
  * The next question: the word the selection picks (selection.js), with choices for it
  * (question.js). A word for which no fair set of choices exists is passed over.
+ * @param {Object} options
+ * @param {boolean} options.allowNotDue
+ * @param {string[]} [options.exclude]  Ids of words that must not be asked (again).
+ * @param {() => number} [options.random]
  * @returns {{ ok: true, question: import('./question.js').Question, roundStartedAt: number } | { ok: false, reason: string }}
  *   `roundStartedAt`: to be stored once the question has really been asked.
  */
-function nextQuestion(status, state, { allowNotDue, random }) {
+function nextQuestion(status, state, { allowNotDue, exclude = [], random }) {
   if (status.askable === 0) return { ok: false, reason: 'no_cards' };
   const now = Date.now();
   const roundStartedAt = state.roundStartedAt || now;
-  const skipped = new Set();
+  const skipped = new Set(exclude);
   for (;;) {
     const pick = selectCard(status.cards.filter((card) => !skipped.has(card.id)), { now, random, recent: state.recent, allowNotDue, roundStartedAt });
-    if (!pick) return { ok: false, reason: skipped.size > 0 || status.meanings < CHOICE_COUNT ? 'not_enough_choices' : 'nothing_due' };
+    if (!pick) return { ok: false, reason: skipped.size > exclude.length || status.meanings < CHOICE_COUNT ? 'not_enough_choices' : 'nothing_due' };
     const question = questionFor(pick.card, status.cards, random);
     if (question) return { ok: true, question, roundStartedAt: pick.newRound ? now : roundStartedAt };
     skipped.add(pick.card.id);
@@ -198,46 +231,63 @@ function cardTimeoutSeconds(settings) {
   return Number.isFinite(seconds) && seconds > 0 ? Math.min(TIMEOUT_SECONDS.MAX, Math.max(TIMEOUT_SECONDS.MIN, seconds)) : TIMEOUT_SECONDS.DEFAULT;
 }
 
+/** How many questions one quiz asks. */
+function questionsPerQuiz(settings) {
+  const count = Math.round(Number(settings.quizQuestionsPerQuiz));
+  return Number.isFinite(count) && count > 0 ? Math.min(QUESTIONS_PER_QUIZ.MAX, Math.max(QUESTIONS_PER_QUIZ.MIN, count)) : QUESTIONS_PER_QUIZ.DEFAULT;
+}
+
+const displayPreference = (settings) => (PREFERENCES.includes(settings.quizDisplay) ? settings.quizDisplay : 'auto');
+
 /**
- * Puts a quiz on the screen: picks the word, builds the question and hands it to the page the
- * user is looking at. This is the only way a quiz is shown. Never throws; whatever goes wrong
- * becomes the reason.
+ * Puts a quiz on the screen: picks the word, builds the question and shows it in the first way
+ * that works (display.js). This is the only way a quiz is shown. Never throws; whatever goes
+ * wrong becomes the reason.
  *
  * @param {Object} [options]
  * @param {boolean} [options.forced]  "Test now": the switch, the word count, the dates of the
- *   words and the state of the page (video, typing ...) are not looked at. Only the vault
- *   itself can stand in the way (fewer than four meanings), or there being no page to show it on.
+ *   words, "not today" and the state of the page (video, typing ...) are not looked at. Only
+ *   the vault itself can stand in the way (fewer than four meanings), or there being no way
+ *   to show it.
+ * @param {string[]} [options.methods]  The ways to try instead of the ones the settings say.
  * @param {() => number} [options.random]
- * @returns {Promise<{ reason: string, question: import('./question.js').Question | null }>}
- *   `reason`: 'shown', or why not.
+ * @returns {Promise<{ reason: string, method: string, tried: { method: string, reason: string, detail?: string }[] }>}
+ *   `reason`: 'shown', or why not. `method`: the way it is shown. `tried`: the ways that did
+ *   not work, in the order they were tried.
  */
-export async function showQuiz({ forced = false, random } = {}) {
+export async function showQuiz({ forced = false, methods, random } = {}) {
   let reason;
-  let question = null;
+  let method = '';
+  let tried = [];
   try {
-    const [settings, status, state] = await Promise.all([getSettings(), vaultStatus(), getQuizState()]);
-    reason = forced ? '' : standingReason(settings, status);
+    const [settings, status, state, running] = await Promise.all([getSettings(), vaultStatus(), getQuizState(), readSession()]);
+    const now = Date.now();
+    reason = forced ? '' : standingReason(settings, status, state, now);
+    // One quiz at a time. ("Test now" takes the place of whatever is there.)
+    if (!reason && !forced && isOnScreen(running, now)) reason = 'already_showing';
     if (!reason) {
       const built = nextQuestion(status, state, { allowNotDue: forced || settings.quizAllowNotDue, random });
-      const target = built.ok ? await activeTab(forced) : { reason: built.reason };
-      if (target.tab) {
-        // Only the page itself knows whether a video is playing or the user is typing.
-        const message = { type: 'wv:quiz:show', payload: built.question, timeoutSeconds: cardTimeoutSeconds(settings), force: forced };
-        const reply = await chrome.tabs.sendMessage(target.tab.id, message, { frameId: 0 }).catch(() => null);
-        // No reply: a page extensions cannot run on (browser pages, the add-on store ...).
-        reason = reply?.shown ? 'shown' : reply?.reason || 'page_not_supported';
-        if (reply?.shown) {
-          question = built.question;
-          await saveQuizState({ recent: remember(state, question.id), roundStartedAt: built.roundStartedAt });
+      const scene = built.ok ? await lookAround(forced) : { reason: built.reason };
+      reason = scene.reason || '';
+      if (!reason) {
+        // A quiz this one takes the place of may have left its window open.
+        if (running?.windowId) await chrome.windows.remove(running.windowId).catch(() => {});
+        const session = await writeSession(newSession({ question: built.question, total: questionsPerQuiz(settings), forced, timeoutSeconds: cardTimeoutSeconds(settings), now }));
+        ({ method, tried } = await display(session, scene, { methods: methods || methodOrder(displayPreference(settings)), forced }));
+        if (method) {
+          reason = 'shown';
+          await updateSession(session.id, { method });
+          await saveQuizState({ recent: remember(state, built.question.id), roundStartedAt: built.roundStartedAt });
+        } else {
+          reason = 'no_display';
+          if ((await readSession())?.id === session.id) await clearSession();
         }
-      } else {
-        reason = target.reason;
       }
     }
   } catch (error) {
     reason = `error: ${String(error?.message || error).slice(0, 120)}`;
   }
-  return { reason, question };
+  return { reason, method, tried };
 }
 
 /**
@@ -249,7 +299,7 @@ export function runScheduledQuiz() {
     const settings = await getSettings();
     if (!settings.quizEnabled) {
       const now = Date.now();
-      await saveQuizState({ sonrakiQuizZamani: 0, planInterval: 0, lastAttempt: { at: now, reason: 'disabled' } });
+      await saveQuizState({ sonrakiQuizZamani: 0, planInterval: 0, mutedUntil: 0, lastAttempt: { at: now, reason: 'disabled' } });
       await chrome.alarms.clear(ALARM_NAME);
       return 'disabled';
     }
@@ -262,12 +312,12 @@ export function runScheduledQuiz() {
       return 'not_due';
     }
 
-    const { reason } = await showQuiz();
+    const { reason, method, tried } = await showQuiz();
     const now = Date.now();
     // Blocked for the moment: not skipped, tried again shortly. Otherwise the regular interval.
     const wait = TRANSIENT.has(reason) ? Math.min(RETRY_MINUTES, interval) : interval;
     const sonrakiQuizZamani = now + wait * MINUTE;
-    const outcome = reason === 'shown' ? { lastShown: { at: now } } : { lastSkip: { at: now, reason } };
+    const outcome = reason === 'shown' ? { lastShown: { at: now, method, tried } } : { lastSkip: { at: now, reason, ...(tried.length > 0 ? { tried } : {}) } };
     await saveQuizState({ sonrakiQuizZamani, planInterval: interval, lastAttempt: { at: now, reason }, ...outcome });
     await setAlarm(sonrakiQuizZamani, interval);
     return reason;
@@ -275,14 +325,134 @@ export function runScheduledQuiz() {
 }
 
 /**
- * "Test now": the same quiz the timer would show, right away. The plan and the record of what
- * the timer did are left alone, so the panel keeps describing the real timer.
- * @returns {Promise<{ ok: true } | { ok: false, reason: string }>}
+ * "Test now": the same quiz the timer would show, right away and in the same way. The plan and
+ * the record of what the timer did are left alone, so the panel keeps describing the real timer.
+ * @param {{ methods?: string[] }} [options]  Try only these ways (the settings page uses this
+ *   to let the notification be seen, which otherwise only comes when nothing else works).
+ * @returns {Promise<{ ok: boolean, reason: string, method: string, tried: object[] }>}
  */
-export async function testQuiz() {
-  const { reason } = await showQuiz({ forced: true });
-  return reason === 'shown' ? { ok: true } : { ok: false, reason };
+export async function testQuiz(options) {
+  const methods = Array.isArray(options?.methods) ? options.methods.filter((method) => METHODS.includes(method)) : [];
+  const shown = await showQuiz({ forced: true, ...(methods.length > 0 ? { methods } : {}) });
+  return { ok: shown.reason === 'shown', ...shown };
 }
+
+/** The notification that stood in for a quiz was clicked: the quiz opens, in a window. */
+export async function openFromNotification() {
+  await chrome.notifications?.clear(NOTIFICATION_ID);
+  return showQuiz({ forced: true, methods: ['window', 'popup', 'card'] });
+}
+
+// --- The quiz on screen --------------------------------------------------------------------------
+
+/**
+ * A quiz page (the toolbar popup or the quiz window) has loaded and asks what to show.
+ * @param {{ surface: 'popup' | 'window' }} payload
+ * @returns {Promise<object | null>} What to show (session.js: viewOf), or null if there is no
+ *   quiz for this page: none is waiting, it is already shown, or the way this page belongs to
+ *   was given up on in the meantime.
+ */
+export async function claimSession(payload) {
+  const session = await readSession();
+  if (!session || !session.question || session.claimed || session.offeredTo !== payload?.surface) return null;
+  const claimed = await writeSession({ ...session, claimed: true, touchedAt: Date.now() });
+  sessionClaimed(claimed.id);
+  return viewOf(claimed);
+}
+
+/**
+ * What became of the question on screen: it is recorded (recordAnswer), and the reply says what
+ * the place showing the quiz does next.
+ *
+ * @param {Object} answer  As for recordAnswer, plus `sessionId`.
+ * @returns {Promise<{ next: { question: object, index: number } | null, summary: object | null }>}
+ *   `next`: the following question of the same quiz. `summary`: the quiz is over and asked more
+ *   than one question (session.js: summaryOf). Neither: there is nothing more to show.
+ */
+export async function answerQuestion(answer) {
+  await recordAnswer(answer);
+  const session = await readSession();
+  // An answer from a card that is no longer the current quiz is recorded and nothing more.
+  if (!session || session.id !== answer?.sessionId || session.question?.id !== answer.id) return { next: null, summary: null };
+
+  const outcome = outcomeOf(answer);
+  const counted = !UNANSWERED.has(outcome);
+  const after = {
+    ...session,
+    question: null,
+    answered: session.answered + (counted ? 1 : 0),
+    right: session.right + (outcome === 'answer' && answer.correct === true ? 1 : 0),
+    skipped: session.skipped + (outcome === 'later' ? 1 : 0),
+    touchedAt: Date.now(),
+  };
+  // ASSUMPTION: a question nobody answered in time, or closing the quiz, ends the whole quiz:
+  // there is nobody there to ask the rest. "Ask later" only skips the one question.
+  const over = outcome === 'timeout' || outcome === 'closed' || session.asked.length >= session.total;
+  if (!over) {
+    const [settings, status, state] = await Promise.all([getSettings(), vaultStatus(), getQuizState()]);
+    // ASSUMPTION: a quiz never asks the same word twice. If the vault runs out of other words
+    // (or, with "not due yet" switched off, of due ones) the quiz ends early.
+    const built = nextQuestion(status, state, { allowNotDue: session.forced || settings.quizAllowNotDue, exclude: session.asked });
+    if (built.ok) {
+      const next = await writeSession({ ...after, question: built.question, asked: [...session.asked, built.question.id] });
+      await saveQuizState({ recent: remember(state, built.question.id), roundStartedAt: built.roundStartedAt });
+      return { next: { question: next.question, index: next.asked.length }, summary: null };
+    }
+  }
+  await clearSession();
+  const finished = outcome !== 'timeout' && outcome !== 'closed';
+  return { next: null, summary: finished && session.total > 1 ? summaryOf(after) : null };
+}
+
+/**
+ * The place that showed a quiz is gone (its connection broke: the popup lost the focus, the
+ * window or the tab was closed). If its question was still open, that counts as closing it.
+ */
+export async function quizPageGone(sessionId) {
+  const session = await readSession();
+  if (!session || session.id !== sessionId) return; // that quiz ended in the ordinary way
+  if (session.question) await answerQuestion({ sessionId, id: session.question.id, outcome: 'closed' });
+  else await clearSession();
+}
+
+/** The start of the next day, local time. */
+function tomorrow(now) {
+  const date = new Date(now);
+  date.setHours(24, 0, 0, 0);
+  return date.getTime();
+}
+
+/**
+ * "Not today": the quiz on screen is over and no other comes before tomorrow.
+ * ASSUMPTION: "today" ends at midnight, local time. The first quiz of the new day comes at the
+ * time that was planned anyway, or right after midnight if that time is earlier.
+ */
+export function muteToday() {
+  return inTurn(async () => {
+    const now = Date.now();
+    const mutedUntil = tomorrow(now);
+    await clearSession();
+    const settings = await getSettings();
+    if (!settings.quizEnabled) {
+      await saveQuizState({ mutedUntil });
+      return { mutedUntil };
+    }
+    const interval = intervalMinutes(settings);
+    const sonrakiQuizZamani = Math.max(mutedUntil, (await getQuizState()).sonrakiQuizZamani);
+    await saveQuizState({ mutedUntil, sonrakiQuizZamani, planInterval: interval });
+    await setAlarm(sonrakiQuizZamani, interval);
+    return { mutedUntil };
+  });
+}
+
+/** Takes "not today" back: quizzes come again, the first one an interval from now. */
+export async function unmute() {
+  await saveQuizState({ mutedUntil: 0, sonrakiQuizZamani: 0 });
+  await ensureScheduled();
+}
+
+/** The way a question ended, as one of the five known outcomes. */
+const outcomeOf = (answer) => (['unknown', 'later', 'timeout', 'closed'].includes(answer?.outcome) ? answer.outcome : 'answer');
 
 /**
  * What became of a question: the word's statistics and its next date are updated.
@@ -305,7 +475,7 @@ export async function recordAnswer(answer) {
   if (!entry) return null;
   const state = await getQuizState();
   const now = Date.now();
-  const outcome = ['unknown', 'later', 'timeout', 'closed'].includes(answer.outcome) ? answer.outcome : 'answer';
+  const outcome = outcomeOf(answer);
 
   let result;
   let quality = null;
@@ -326,12 +496,21 @@ export async function recordAnswer(answer) {
 
 /** Everything the "Why is there no quiz?" panel shows. */
 export async function getDiagnostics() {
-  const [settings, state, status, alarm] = await Promise.all([getSettings(), getQuizState(), vaultStatus(), chrome.alarms.get(ALARM_NAME)]);
+  const [settings, state, status, alarm, notifications] = await Promise.all([getSettings(), getQuizState(), vaultStatus(), chrome.alarms.get(ALARM_NAME), notificationsAllowed()]);
+  const now = Date.now();
   return {
     enabled: settings.quizEnabled,
     intervalMinutes: intervalMinutes(settings),
     minCards: settings.quizMinCards,
     timeoutSeconds: cardTimeoutSeconds(settings),
+    questionsPerQuiz: questionsPerQuiz(settings),
+    /** The chosen way of showing a quiz, and the order in which the ways are tried. */
+    display: displayPreference(settings),
+    displayOrder: methodOrder(displayPreference(settings)),
+    /** Whether a system notification may stand in when nothing else works. */
+    notifications,
+    /** "Not today" is in force until then (0: it is not). */
+    mutedUntil: state.mutedUntil > now ? state.mutedUntil : 0,
     neededMeanings: CHOICE_COUNT,
     total: status.total,
     askable: status.askable,
@@ -340,7 +519,7 @@ export async function getDiagnostics() {
     due: status.due,
     targetLang: status.targetLang,
     /** Why no quiz can come at all ('' if one can). */
-    standingReason: standingReason(settings, status),
+    standingReason: standingReason(settings, status, state, now),
     nextAt: state.sonrakiQuizZamani,
     /** When the browser will wake the extension up for it (0: no alarm is set). */
     alarmAt: alarm ? alarm.scheduledTime : 0,
