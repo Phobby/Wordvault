@@ -937,6 +937,21 @@
   "errUnknown": {
     "message": "Çeviri sırasında bir sorun oluştu."
   },
+  "tbDamagedShow": {
+    "message": "Göster"
+  },
+  "tbDamagedAll": {
+    "message": "Tüm kelimeleri göster"
+  },
+  "optOcrShortcutWarnOption": {
+    "message": "Mac'te Option tuşlu kısayollar güvenilir değildir (Option özel karakter yazar). Bu komuta başka bir birleşim ver, örneğin Command+Shift+E."
+  },
+  "optOcrShortcutWarnNone": {
+    "message": "Kısayol atanmamış (başka bir uzantı ya da tarayıcı kullanıyor olabilir). Aşağıda anlatıldığı gibi ata, ya da taramayı sağ tık menüsünden ya da Wordvault düğmesinden başlat."
+  },
+  "optOcrShortcutOpen": {
+    "message": "Kısayol ayarlarını aç"
+  },
   "optOcrTitle": {
     "message": "Ekrandan metin tara"
   },
@@ -953,7 +968,7 @@
     "message": "Atanmamışsa ya da bir şey yapmıyorsa başka bir kısayol önüne geçiyordur: aşağıdaki adresi yeni sekmede aç ve \"Ekrandan metin tara\" için bir tuş birleşimi ver. Kısayol olmadan da tarama, sayfada sağ tık menüsünden ya da araç çubuğundaki Wordvault düğmesinden başlatılabilir."
   },
   "optOcrShortcutHelpFirefox": {
-    "message": "Değiştirmek için: about:addons, dişli düğmesi, \"Manage Extension Shortcuts\". Kısayol olmadan da tarama, sayfada sağ tık menüsünden ya da araç çubuğundaki Wordvault düğmesinden başlatılabilir."
+    "message": "Değiştirmek için: about:addons adresini aç (aşağıda), dişli düğmesine, sonra \"Manage Extension Shortcuts\"a tıkla. Kısayol olmadan da tarama, sayfada sağ tık menüsünden ya da araç çubuğundaki Wordvault düğmesinden başlatılabilir."
   },
   "optOcrShortcutAddress": {
     "message": "Tarayıcının kısayol ayarlarının adresi"
@@ -1050,6 +1065,22 @@
     "message": "Metin okunuyor… %$PERCENT$",
     "placeholders": {
       "percent": {
+        "content": "$1"
+      }
+    }
+  },
+  "noteDamaged": {
+    "message": "$PROVIDER$ bu çeviriyi bazı harfleri eksik gönderdi (harf yerine \"?\"). Kaydetmeden önce kontrol et.",
+    "placeholders": {
+      "provider": {
+        "content": "$1"
+      }
+    }
+  },
+  "tbDamaged": {
+    "message": "$COUNT$ kayıtlı çeviride harf kaybolmuş görünüyor (harf yerine \"?\"). Hiçbir şey değiştirilmedi.",
+    "placeholders": {
+      "count": {
         "content": "$1"
       }
     }

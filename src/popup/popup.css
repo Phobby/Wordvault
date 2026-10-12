@@ -214,3 +214,6 @@ body {
 .languages { flex: 1 1 auto; min-height: 0; padding: 4px 12px 12px; }
 /* Adopted stylesheets come after this file in the cascade, hence the extra class. */
 .languages .wv-ll-list { max-height: 380px; }
+
+/* Words whose translation seems to have lost letters on the way */
+.notice { margin: 0 12px 6px; padding: 6px 9px; border-radius: 8px; background: var(--wv-tint); font-size: 12.5px; }

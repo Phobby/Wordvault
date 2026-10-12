@@ -1247,6 +1247,26 @@
     "message": "Something went wrong while translating.",
     "description": "Error: fallback for anything unexpected."
   },
+  "tbDamagedShow": {
+    "message": "Show them",
+    "description": "Toolbar popup: link that lists only the words whose translation seems to have lost letters."
+  },
+  "tbDamagedAll": {
+    "message": "Show all words",
+    "description": "Toolbar popup: link that goes back to the whole list."
+  },
+  "optOcrShortcutWarnOption": {
+    "message": "On a Mac, shortcuts with the Option key are unreliable (Option types special characters). Give this command a different combination, for example Command+Shift+E.",
+    "description": "Options (macOS): shown when the scan shortcut uses the Option key."
+  },
+  "optOcrShortcutWarnNone": {
+    "message": "No shortcut is assigned (another extension or the browser may be using it). Assign one as described below, or start the scan from the right-click menu or the Wordvault button.",
+    "description": "Options: shown when the scan command has no shortcut."
+  },
+  "optOcrShortcutOpen": {
+    "message": "Open shortcut settings",
+    "description": "Options (Firefox): button that opens the browser's page for extension shortcuts."
+  },
   "optOcrTitle": {
     "message": "Scan text on screen",
     "description": "Options: title of the section about reading text from a screenshot (OCR)."
@@ -1268,7 +1288,7 @@
     "description": "Options (Chrome): what to do when the shortcut does not work."
   },
   "optOcrShortcutHelpFirefox": {
-    "message": "To change it: about:addons, the gear button, \"Manage Extension Shortcuts\". Without a shortcut the scan can be started from the right-click menu of a page, or from the Wordvault button in the toolbar.",
+    "message": "To change it: open about:addons (address below), click the gear button, then \"Manage Extension Shortcuts\". Without a shortcut the scan can be started from the right-click menu of a page, or from the Wordvault button in the toolbar.",
     "description": "Options (Firefox): where the shortcut is changed."
   },
   "optOcrShortcutAddress": {
@@ -1394,6 +1414,24 @@
     "description": "Screen scan: shown while the screenshot is being read.",
     "placeholders": {
       "percent": {
+        "content": "$1"
+      }
+    }
+  },
+  "noteDamaged": {
+    "message": "$PROVIDER$ sent this translation with some letters missing (\"?\" where a letter should be). Check it before you save it.",
+    "description": "Translation popup: note shown when the translation service returned text that lost non-ASCII letters.",
+    "placeholders": {
+      "provider": {
+        "content": "$1"
+      }
+    }
+  },
+  "tbDamaged": {
+    "message": "$COUNT$ saved translations seem to have lost letters (\"?\" where a letter should be). Nothing was changed.",
+    "description": "Toolbar popup: notice about vault entries whose translation looks damaged.",
+    "placeholders": {
+      "count": {
         "content": "$1"
       }
     }

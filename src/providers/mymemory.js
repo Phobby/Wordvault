@@ -4,6 +4,7 @@
 import { WordvaultError } from '../lib/errors.js';
 import { fetchJson } from '../lib/http.js';
 import { sameLanguage } from '../lib/languages.js';
+import { looksDamaged } from '../lib/text-damage.js';
 
 const ENDPOINT = 'https://api.mymemory.translated.net/get';
 const AUTODETECT = 'Autodetect';
@@ -36,6 +37,33 @@ function clean(value) {
 }
 
 const fold = (value) => value.trim().toLowerCase();
+
+/** The memory likes to answer "eşitleme, eşitleme"; said once is enough. */
+function withoutRepeats(value) {
+  const parts = value.split(/\s*,\s*/);
+  const unique = parts.filter((part, index) => parts.findIndex((other) => fold(other) === fold(part)) === index);
+  return unique.length < parts.length ? unique.join(', ') : value;
+}
+
+/**
+ * MyMemory's machine translation sometimes loses letters for one spelling of a word and not
+ * for another: "sync" comes back as "e? itle", "Sync" as "Eşitle" (seen 2026-10). So a damaged
+ * answer is asked for again with the first letter in the other case, and the answer's first
+ * letter is put back the way the query had it.
+ * @returns {Promise<string | null>} A clean translation, or null.
+ */
+async function askRecased(text, target) {
+  const [first] = text;
+  if (!first) return null;
+  const upper = first.toLocaleUpperCase();
+  const lower = first.toLocaleLowerCase();
+  if (upper === lower) return null; // no case to change
+  const wasLower = first === lower;
+  const again = await request((wasLower ? upper : lower) + text.slice(first.length), null, target).catch(() => null);
+  if (!again || looksDamaged(again.translation, text)) return null;
+  const [head] = again.translation;
+  return (wasLower ? head.toLocaleLowerCase() : head.toLocaleUpperCase()) + again.translation.slice(head.length);
+}
 
 async function request(text, source, target) {
   const url = new URL(ENDPOINT);
@@ -103,7 +131,13 @@ export const mymemory = {
   async translate({ text, source, target }) {
     if (!source) {
       const detected = await request(text, null, target);
-      return { translation: detected.translation, detectedSource: detected.detectedSource, alternatives: [] };
+      if (!looksDamaged(detected.translation, text)) {
+        return { translation: detected.translation, detectedSource: detected.detectedSource, alternatives: [] };
+      }
+      // Letters were lost on the service's side: ask again another way before showing that.
+      const memory = detected.detectedSource ? await request(text, detected.detectedSource, target).catch(() => null) : null;
+      const repaired = memory && !looksDamaged(memory.translation, text) ? withoutRepeats(memory.translation) : await askRecased(text, target);
+      return { translation: repaired || detected.translation, detectedSource: detected.detectedSource, alternatives: [], damaged: !repaired };
     }
 
     // With an explicit language pair MyMemory answers from its crowd-sourced translation memory
@@ -127,10 +161,19 @@ export const mymemory = {
       throw memory;
     }
 
-    const translation = machineAgrees ? machine.translation : memory.translation;
+    // Either answer may have lost letters on the service's side ("e? itle" for "eşitle"). The
+    // clean one is the headline; if neither is, the machine translation is asked for once more
+    // with the word in the other case; if that fails too, the user is told.
+    const candidates = [machineAgrees ? machine.translation : null, withoutRepeats(memory.translation)].filter(Boolean);
+    let translation = candidates.find((candidate) => !looksDamaged(candidate, text));
+    let damaged = false;
+    if (!translation) {
+      translation = (isShort && (await askRecased(text, target))) || candidates[0];
+      damaged = looksDamaged(translation, text);
+    }
     const alternatives = isShort
-      ? pickAlternatives([memory.translation, ...exactMatches(memory.matches, text)], translation, text)
+      ? pickAlternatives([memory.translation, ...exactMatches(memory.matches, text)].map(withoutRepeats), translation, text).filter((candidate) => !looksDamaged(candidate, text))
       : [];
-    return { translation, detectedSource: source, alternatives };
+    return { translation, detectedSource: source, alternatives, damaged };
   },
 };

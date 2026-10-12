@@ -1,6 +1,7 @@
 // Toolbar popup: the vault. Lists the saved words, shows the details of one, and links to
 // export, import and the settings.
 
+import { looksDamaged } from '../lib/text-damage.js';
 import { downloadBackup } from '../lib/backup.js';
 import { getPreferences, setTargetLanguage } from '../lib/translator.js';
 import { listEntries, removeEntry } from '../lib/vault.js';
@@ -48,6 +49,7 @@ const state = {
   language: '', // source-language filter ('' = all)
   confirmId: null, // entry whose delete button is armed
   enriching: new Set(), // ids whose dictionary data is being fetched
+  onlyDamaged: false, // list only the words whose translation seems to have lost letters
   failed: new Set(), // ids whose dictionary data could not be fetched
 };
 let confirmTimer = 0;
@@ -94,6 +96,28 @@ const languageFilter = h('select', {
   },
 });
 const filters = h('div', { class: 'filters' }, search, languageFilter);
+// Words whose saved translation seems to have lost letters on the way from the translation
+// service ("e?itle"). They are pointed out, never changed: the vault is the user's.
+const damagedText = h('span');
+const damagedToggle = h('button', {
+  class: 'wv-link',
+  type: 'button',
+  onclick: () => {
+    state.onlyDamaged = !state.onlyDamaged;
+    renderDamaged();
+    renderList();
+  },
+});
+const damagedNotice = h('div', { class: 'notice', role: 'status', hidden: true }, damagedText, ' ', damagedToggle);
+const isDamaged = (entry) => [entry.translation, ...(entry.alternatives || [])].some((value) => looksDamaged(value, entry.text));
+
+function renderDamaged() {
+  const total = state.entries.filter(isDamaged).length;
+  if (total === 0) state.onlyDamaged = false;
+  damagedNotice.hidden = total === 0;
+  damagedText.textContent = t('tbDamaged', [String(total)]);
+  damagedToggle.textContent = t(state.onlyDamaged ? 'tbDamagedAll' : 'tbDamagedShow');
+}
 const list = h('div', { class: 'list' });
 const status = h('span', { class: 'status', role: 'status' });
 const listView = h(
@@ -101,6 +125,7 @@ const listView = h(
   { class: 'view' },
   setup,
   filters,
+  damagedNotice,
   list,
   h(
     'footer',
@@ -176,6 +201,7 @@ function renderFilters() {
 }
 
 function matches(entry) {
+  if (state.onlyDamaged && !isDamaged(entry)) return false;
   if (state.language && entry.sourceLang !== state.language) return false;
   const query = fold(state.query.trim());
   if (!query) return true;
@@ -355,6 +381,7 @@ async function loadDictionary(id) {
 function rerender() {
   renderHeader();
   renderFilters();
+  renderDamaged();
   renderList();
   if (state.view === 'detail') renderDetail();
 }

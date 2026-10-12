@@ -187,5 +187,7 @@ export async function translate(request, host) {
     alternatives: result.alternatives || [],
     sourceLang: same ? targetLang : detected,
     sameLanguage: same,
+    /** Informational: the service's answer seems to have lost letters, and asking again did not help. */
+    damaged: result.damaged === true,
   });
 }

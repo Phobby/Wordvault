@@ -325,6 +325,8 @@
           ' ',
           h('span', { dir: 'auto', lang: data.targetLang, text: data.alternatives.join(', ') }),
         ),
+      // The service lost letters on its side ("e?itle"): said, not hidden; saving still works.
+      data.damaged && h('div', { class: 'wv-note', text: t('noteDamaged', [data.provider.name]) }),
       // Informational only: it never replaces the result above.
       data.sameLanguage &&
         h(
