@@ -281,7 +281,7 @@
     "description": "Word type."
   },
   "bkTitle": {
-    "message": "Backup",
+    "message": "Synchronisation and backup",
     "description": "Options page: heading of the export/import section."
   },
   "bkHelp": {
@@ -299,6 +299,298 @@
   "bkBadFile": {
     "message": "This file is not a Wordvault backup.",
     "description": "Shown when the chosen file cannot be imported."
+  },
+  "syncTitle": {
+    "message": "Synchronisation",
+    "description": "Options page, synchronisation: subheading."
+  },
+  "syncIntro": {
+    "message": "Keep the vault the same on all your devices. Nothing leaves this browser until you choose one of the ways below and confirm it.",
+    "description": "Options page, synchronisation: introduction."
+  },
+  "syncModeOff": {
+    "message": "Only this device",
+    "description": "Options page, synchronisation: choice."
+  },
+  "syncModeOffHelp": {
+    "message": "Nothing is connected. Exporting above is your backup.",
+    "description": "Options page, synchronisation: explanation of the choice."
+  },
+  "syncModeBrowser": {
+    "message": "Browser sync",
+    "description": "Options page, synchronisation: choice."
+  },
+  "syncModeBrowserHelp": {
+    "message": "Uses your browser's own sync. Small: about 100 KB, for lists of up to a few thousand words.",
+    "description": "Options page, synchronisation: explanation of the choice."
+  },
+  "syncModeCloud": {
+    "message": "Connect a cloud account",
+    "description": "Options page, synchronisation: choice."
+  },
+  "syncModeCloudHelp": {
+    "message": "Google Drive, OneDrive or Dropbox: one file in the app's own folder in your account.",
+    "description": "Options page, synchronisation: explanation of the choice."
+  },
+  "syncModeServer": {
+    "message": "My own server",
+    "description": "Options page, synchronisation: choice."
+  },
+  "syncModeServerHelp": {
+    "message": "WebDAV (Nextcloud, ownCloud …) or a simple HTTP endpoint you run yourself.",
+    "description": "Options page, synchronisation: explanation of the choice."
+  },
+  "syncServerType": {
+    "message": "Kind of server",
+    "description": "Options page, synchronisation: label of the choice between WebDAV and the HTTP endpoint."
+  },
+  "syncInUse": {
+    "message": "in use",
+    "description": "Options page, synchronisation: badge on the choice that is active."
+  },
+  "syncOffExplain": {
+    "message": "The vault stays in this browser only. To have it on another device as well, choose one of the ways above.",
+    "description": "Options page, synchronisation: shown while nothing is connected."
+  },
+  "syncBrowserName": {
+    "message": "Browser sync",
+    "description": "Name of a place the vault can be synchronised with."
+  },
+  "syncGdriveName": {
+    "message": "Google Drive",
+    "description": "Name of a place the vault can be synchronised with."
+  },
+  "syncOnedriveName": {
+    "message": "OneDrive",
+    "description": "Name of a place the vault can be synchronised with."
+  },
+  "syncDropboxName": {
+    "message": "Dropbox",
+    "description": "Name of a place the vault can be synchronised with."
+  },
+  "syncBrowserWhere": {
+    "message": "In your browser's sync storage, which travels with your browser account (Firefox Sync, Chrome sync) like bookmarks do.",
+    "description": "Options page, synchronisation: where the data ends up."
+  },
+  "syncGdriveWhere": {
+    "message": "In the hidden app data folder of your Google Drive. It does not show among your files; you can see and delete it in Drive under Settings → Manage apps → Wordvault.",
+    "description": "Options page, synchronisation: where the data ends up."
+  },
+  "syncOnedriveWhere": {
+    "message": "In your OneDrive, in the folder Apps → Wordvault, as the file wordvault-vault.json.gz.",
+    "description": "Options page, synchronisation: where the data ends up."
+  },
+  "syncDropboxWhere": {
+    "message": "In your Dropbox, in the folder Apps → Wordvault, as the file wordvault-vault.json.gz.",
+    "description": "Options page, synchronisation: where the data ends up."
+  },
+  "syncBrowserExplain": {
+    "message": "Your browser carries the vault to your other devices signed in to the same browser account, compressed. There is room for about 100 KB; how full it is will be shown here. When it is full, synchronisation stops and the vault stays whole on this device.",
+    "description": "Options page, synchronisation: explanation of browser sync before it is turned on."
+  },
+  "syncSetupMissing": {
+    "message": "Setup missing",
+    "description": "Options page, synchronisation: badge on a cloud provider whose developer configuration has not been filled in."
+  },
+  "syncSetupMissingText": {
+    "message": "Developer setup is missing for this provider: no client ID has been entered yet. Follow the steps in SETUP-OAUTH.md (in the repository), put the ID into src/sync/config.js and build again.",
+    "description": "Options page, synchronisation: shown when the user tries to connect a provider that is not configured."
+  },
+  "syncNotAvailable": {
+    "message": "This way of synchronising is not part of this version.",
+    "description": "Options page, synchronisation: shown for a provider that does not exist in this build."
+  },
+  "syncConnect": {
+    "message": "Connect",
+    "description": "Options page, synchronisation: button."
+  },
+  "syncTurnOn": {
+    "message": "Turn on",
+    "description": "Options page, synchronisation: button that starts browser sync."
+  },
+  "syncContinue": {
+    "message": "Continue",
+    "description": "Options page, synchronisation: button that confirms connecting."
+  },
+  "syncCancel": {
+    "message": "Cancel",
+    "description": "Options page, synchronisation: button."
+  },
+  "syncNow": {
+    "message": "Sync now",
+    "description": "Options page, synchronisation: button."
+  },
+  "syncDisconnect": {
+    "message": "Disconnect",
+    "description": "Options page, synchronisation: button."
+  },
+  "syncConfirmTitle": {
+    "message": "Before you connect $1",
+    "description": "Options page, synchronisation: heading of the confirmation. $1 is the provider name."
+  },
+  "syncConfirmWhat": {
+    "message": "Your saved words will be sent to $1: each word with its translation, its language pair, a short context sentence and your review progress. Page addresses, settings, API keys and sign-in data are never sent.",
+    "description": "Options page, synchronisation: what is sent. $1 is the provider name."
+  },
+  "syncConfirmWhere": {
+    "message": "Where it will be: $1",
+    "description": "Options page, synchronisation: where the data ends up. $1 is a sentence."
+  },
+  "syncConfirmMerge": {
+    "message": "If a Wordvault file is already there, it is merged with this vault. No word is lost on either side.",
+    "description": "Options page, synchronisation: what happens to existing data."
+  },
+  "syncConfirmReplace": {
+    "message": "The connection to $1 that is in use now is dropped. What it has stored stays where it is.",
+    "description": "Options page, synchronisation: shown when another provider is connected. $1 is its name."
+  },
+  "syncConnectedTo": {
+    "message": "Connected to",
+    "description": "Options page, synchronisation: label."
+  },
+  "syncAccount": {
+    "message": "Account",
+    "description": "Options page, synchronisation: label."
+  },
+  "syncWhere": {
+    "message": "Where the file is",
+    "description": "Options page, synchronisation: label."
+  },
+  "syncLast": {
+    "message": "Last synchronised",
+    "description": "Options page, synchronisation: label."
+  },
+  "syncNever": {
+    "message": "not yet",
+    "description": "Options page, synchronisation: value."
+  },
+  "syncState": {
+    "message": "Status",
+    "description": "Options page, synchronisation: label."
+  },
+  "syncStateIdle": {
+    "message": "up to date",
+    "description": "Options page, synchronisation: status."
+  },
+  "syncStateNotYet": {
+    "message": "not synchronised yet",
+    "description": "Options page, synchronisation: status."
+  },
+  "syncStateSyncing": {
+    "message": "synchronising…",
+    "description": "Options page, synchronisation: status."
+  },
+  "syncStatePending": {
+    "message": "changes waiting to be sent",
+    "description": "Options page, synchronisation: status."
+  },
+  "syncStateWaiting": {
+    "message": "waiting, will try again: $1",
+    "description": "Options page, synchronisation: status. $1 is the reason."
+  },
+  "syncStateError": {
+    "message": "stopped: $1",
+    "description": "Options page, synchronisation: status. $1 is the reason."
+  },
+  "syncUsage": {
+    "message": "Room used",
+    "description": "Options page, synchronisation: label of the storage meter."
+  },
+  "syncUsageValue": {
+    "message": "$1% ($2 of $3 KB)",
+    "description": "Options page, synchronisation: storage use. $1 percent, $2 used KB, $3 total KB."
+  },
+  "syncUsageWarning": {
+    "message": "Almost full. When it is full, synchronisation stops and the vault stays on this device. A cloud account or your own server has room for more.",
+    "description": "Options page, synchronisation: warning at 80% of the browser sync storage."
+  },
+  "syncDisconnectTitle": {
+    "message": "Disconnect from $1?",
+    "description": "Options page, synchronisation: heading. $1 is the provider name."
+  },
+  "syncDisconnectNote": {
+    "message": "The vault on this device stays as it is. It is no longer kept in step with your other devices.",
+    "description": "Options page, synchronisation: explanation."
+  },
+  "syncDeleteRemote": {
+    "message": "Also delete the stored file",
+    "description": "Options page, synchronisation: checkbox, off by default."
+  },
+  "syncDeleteRemoteHelp": {
+    "message": "Your other devices keep their own copies, but can no longer exchange them through it.",
+    "description": "Options page, synchronisation: explanation of the checkbox."
+  },
+  "syncDisconnected": {
+    "message": "Disconnected. What was stored there has been left in place.",
+    "description": "Options page, synchronisation: result."
+  },
+  "syncDisconnectedDeleted": {
+    "message": "Disconnected, and the stored file was deleted.",
+    "description": "Options page, synchronisation: result."
+  },
+  "syncErrNetwork": {
+    "message": "it could not be reached",
+    "description": "Options page, synchronisation: reason."
+  },
+  "syncErrOffline": {
+    "message": "this device is offline",
+    "description": "Options page, synchronisation: reason."
+  },
+  "syncErrAuth": {
+    "message": "access was withdrawn or has expired; connect again",
+    "description": "Options page, synchronisation: reason."
+  },
+  "syncErrQuota": {
+    "message": "there is no room left there; the vault stays whole on this device",
+    "description": "Options page, synchronisation: reason."
+  },
+  "syncErrConflict": {
+    "message": "another device kept writing at the same time",
+    "description": "Options page, synchronisation: reason."
+  },
+  "syncErrIncomplete": {
+    "message": "the stored copy is still arriving",
+    "description": "Options page, synchronisation: reason."
+  },
+  "syncErrBadDocument": {
+    "message": "what is stored there is not a Wordvault file; it was left untouched",
+    "description": "Options page, synchronisation: reason."
+  },
+  "syncErrNewerSchema": {
+    "message": "what is stored there was written by a newer version of Wordvault; update this one",
+    "description": "Options page, synchronisation: reason."
+  },
+  "syncErrCancelled": {
+    "message": "signing in was not completed",
+    "description": "Options page, synchronisation: reason."
+  },
+  "syncErrPermission": {
+    "message": "the browser did not give access to that address",
+    "description": "Options page, synchronisation: reason."
+  },
+  "syncErrInsecure": {
+    "message": "the address has to start with https:// (http:// is only accepted for localhost)",
+    "description": "Options page, synchronisation: reason."
+  },
+  "syncErrUrl": {
+    "message": "this is not a usable address",
+    "description": "Options page, synchronisation: reason."
+  },
+  "syncErrNotFound": {
+    "message": "nothing answers at that address",
+    "description": "Options page, synchronisation: reason."
+  },
+  "syncErrPassword": {
+    "message": "the stored file is encrypted and the password is needed",
+    "description": "Options page, synchronisation: reason."
+  },
+  "syncErrProvider": {
+    "message": "it answered with an error",
+    "description": "Options page, synchronisation: reason."
+  },
+  "syncIcloudNote": {
+    "message": "iCloud is not offered: a browser extension has no way of reaching iCloud Drive. Export the vault as JSON above and save the file into your iCloud Drive folder instead.",
+    "description": "Options page, synchronisation: note about iCloud."
   },
 
   "quizTitle": {

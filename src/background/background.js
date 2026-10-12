@@ -9,8 +9,9 @@ import { lookupWord } from '../lib/dictionary.js';
 import { WordvaultError, serializeError } from '../lib/errors.js';
 import { fetchRecording } from '../lib/pronunciation.js';
 import { getPreferences, setSiteSourceLanguage, setTargetLanguage, translate } from '../lib/translator.js';
-import { addEntry, entryId, getEntry, hasEntry, removeEntry, updateEntry } from '../lib/vault.js';
+import { ENTRY_PREFIX, TOMBSTONE_PREFIX, addEntry, entryId, getEntry, hasEntry, removeEntry, updateEntry } from '../lib/vault.js';
 import { NOTIFICATION_ID } from '../quiz/display.js';
+import { ensureSyncScheduled, onSyncAlarm, syncInBackground, vaultChanged } from '../sync/engine.js';
 import { ALARM_NAME, answerQuestion, claimSession, ensureScheduled, muteToday, openFromNotification, quizPageGone, runScheduledQuiz, testQuiz, unmute } from '../quiz/scheduler.js';
 
 /** Host name of the web page a message came from ('' for extension pages). */
@@ -78,6 +79,8 @@ const handlers = {
   'wv:quiz:unmute': () => unmute(),
   // The options page asks for this after a quiz setting was changed; see the timer below.
   'wv:quiz:reschedule': () => ensureScheduled(),
+  // "Sync now" on the options page, and the first synchronisation after connecting.
+  'wv:sync:now': () => syncInBackground('manual'),
 };
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
@@ -102,6 +105,7 @@ const scheduleQuiz = () => ensureScheduled().catch(() => {});
 
 chrome.alarms.onAlarm.addListener((alarm) => {
   if (alarm.name === ALARM_NAME) runScheduledQuiz().catch(() => {});
+  else onSyncAlarm(alarm.name).catch(() => {});
 });
 chrome.runtime.onInstalled.addListener(scheduleQuiz);
 chrome.runtime.onStartup.addListener(scheduleQuiz);
@@ -109,6 +113,30 @@ chrome.storage.onChanged.addListener((changes, area) => {
   if (area === 'local' && changes.settings) scheduleQuiz();
 });
 scheduleQuiz();
+
+// --- Synchronisation ---------------------------------------------------------------------------
+// The engine (sync/engine.js) is started from here and nowhere else: when the browser starts,
+// on its own periodic alarm, a moment after the vault changes, and when the options page asks.
+// While synchronisation is switched off none of this does anything, and no alarm is set.
+
+const scheduleSync = () => ensureSyncScheduled().catch(() => {});
+
+chrome.runtime.onInstalled.addListener(scheduleSync);
+chrome.runtime.onStartup.addListener(() => {
+  scheduleSync();
+  syncInBackground('startup').catch(() => {});
+});
+chrome.storage.onChanged.addListener((changes, area) => {
+  if (area !== 'local') return;
+  if (changes.syncConfig) scheduleSync();
+  if (Object.keys(changes).some((key) => key.startsWith(ENTRY_PREFIX) || key.startsWith(TOMBSTONE_PREFIX))) vaultChanged().catch(() => {});
+});
+// Back online while this script happens to be awake: send what was waiting. (When it is
+// asleep, the retry alarm does the same a little later.)
+globalThis.addEventListener?.('online', () => {
+  syncInBackground('retry').catch(() => {});
+});
+scheduleSync();
 
 // Whatever shows a quiz (the popup, the quiz window, a page with the card) keeps a connection
 // open while the quiz is there (shared/dom.js: stayConnected). When the connection breaks with

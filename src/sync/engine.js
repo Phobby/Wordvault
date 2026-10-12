@@ -106,7 +106,8 @@ async function run({ reason, sleep }) {
         await sleep(SYNC.BACKOFF_MS * 2 ** (attempt - 1));
       }
     }
-    return await saveSyncStatus({ state: 'idle', lastSyncAt: Date.now(), error: null, syncedHash: result.hash, pending: false, failures: 0, lastChanges: result.changes });
+    const usage = provider.usage ? await provider.usage(session).catch(() => null) : null;
+    return await saveSyncStatus({ state: 'idle', lastSyncAt: Date.now(), error: null, syncedHash: result.hash, pending: false, failures: 0, lastChanges: result.changes, usage });
   } catch (error) {
     const { code, detail } = serializeError(error);
     return saveSyncStatus({

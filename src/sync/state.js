@@ -30,12 +30,14 @@ export const MODES = Object.freeze(['off', 'browser', 'cloud', 'server']);
  * @property {number} failures            Attempts in a row that did not get through.
  * @property {{ added: number, updated: number, removed: number } | null} lastChanges
  *   What the last synchronisation changed on this device.
+ * @property {{ used: number, total: number } | null} usage
+ *   How full the provider's storage is, where that is known and matters (browser sync).
  */
 
 /** @returns {SyncConfig} */
 export const defaultConfig = () => ({ mode: 'off', providerId: '', connection: null, connectedAt: 0 });
 /** @returns {SyncStatus} */
-export const defaultStatus = () => ({ state: 'idle', lastSyncAt: 0, lastAttemptAt: 0, error: null, syncedHash: '', pending: false, failures: 0, lastChanges: null });
+export const defaultStatus = () => ({ state: 'idle', lastSyncAt: 0, lastAttemptAt: 0, error: null, syncedHash: '', pending: false, failures: 0, lastChanges: null, usage: null });
 
 /** @returns {Promise<SyncConfig>} */
 export async function getSyncConfig() {

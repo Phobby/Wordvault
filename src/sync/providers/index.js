@@ -25,6 +25,7 @@
  * @property {string} id
  * @property {'browser' | 'cloud' | 'server'} kind   Which of the settings page's choices it belongs to.
  * @property {string} nameKey                        _locales message key of its name.
+ * @property {string} whereKey                       _locales message key of a sentence saying where the document ends up.
  * @property {(input?: object) => Promise<object>} connect
  *   Asks the user for access where needed and returns the connection to store. Rejects with a
  *   WordvaultError; nothing is stored then.
@@ -39,14 +40,18 @@
  *   Removes the extra files read() reported.
  * @property {(session: SyncSession) => Promise<{ name?: string, email?: string } | null>} accountInfo
  *   Who the connected account belongs to, where that can be told without further permissions.
+ * @property {(session: SyncSession) => Promise<{ used: number, total: number }>} [usage]
+ *   How much of the room there is has been used, for providers where room is scarce.
  *
  * Error codes providers use (lib/errors.js): network, timeout (try again later); sync_auth (access
  * was withdrawn or expired for good: the user has to connect again); sync_quota (no room left);
  * sync_conflict (see write); sync_config (the provider is not set up); sync_provider (anything else).
  */
 
+import { browser } from './browser.js';
+
 /** @type {Map<string, SyncProvider>} */
-const providers = new Map();
+const providers = new Map([[browser.id, browser]]);
 
 /** Adds a provider (the built-in ones below, and the in-memory one the tests use). */
 export function registerSyncProvider(provider) {

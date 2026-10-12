@@ -9,9 +9,10 @@ kaydet, sonra kısa quizlerle tekrar et. Her şey tarayıcında çalışır; Wor
 > Sırada: sağ tık menüsü, çeviri penceresinde kelime türü etiketi, önbellek ve 7 günlük temizlik,
 > quiz, altyazılar, ayarlar sayfasının kalanı (sağlayıcı ve API anahtarı) ve gizlilik politikası.
 >
-> Cihazlar arası senkronizasyon (`SPEC-SYNC.md`) yedi aşamada ekleniyor; şu an ilk iki aşama hazır:
-> veri modeli, birleştirme, silme kayıtları, sağlayıcı arayüzü ve eşitleme motoru. Motor henüz
-> hiçbir sağlayıcıya ve arayüze bağlı değil; hiçbir yere veri gönderilmiyor.
+> Cihazlar arası senkronizasyon (`SPEC-SYNC.md`) yedi aşamada ekleniyor; şu an ilk üç aşama hazır:
+> veri modeli, birleştirme, silme kayıtları, sağlayıcı arayüzü, eşitleme motoru, ayarlar sayfasındaki
+> "Senkronizasyon ve yedekleme" bölümü ve tarayıcı senkronu (`storage.sync`). Varsayılan "Sadece bu
+> cihaz"tır: kullanıcı bir yol seçip onaylamadıkça hiçbir yere veri gönderilmez.
 >
 > Flash card sistemi (`SPEC-QUIZ.md`, `SPEC-QUIZ-POPUP.md`) aşamalı ekleniyor; şu an hazır olanlar:
 > zamanlayıcı, "Neden quiz çıkmıyor?" tanı paneli, "Şimdi test et", öğrenme algoritması, soru seçimi,
@@ -82,7 +83,7 @@ src/
     triggers.js         Pencereyi açan tetikleyiciler (çift tıklama)
   popup/                Araç çubuğu simgesinin açtığı kasa: liste, arama, detay, dışa aktarma
   options/              Ayarlar sayfası: hedef dil, çift tıklama, Flash card ayarları ve tanı paneli,
-                        yedekleme (dışa/içe aktarma)
+                        yedekleme (dışa/içe aktarma) ve senkronizasyon (options/sync.js)
   lib/                  Arka plan ve eklenti sayfalarının paylaştığı ES modülleri
     translator.js       Hedef/kaynak dil kararı ve sağlayıcı çağrısı
     settings.js         Ayarlar ve site bazlı kaynak dil
@@ -104,7 +105,9 @@ src/
     engine.js           Eşitleme motoru: oku, birleştir, yaz, yerele uygula; kilit, yeniden deneme, alarmlar
     codec.js            Belgenin saklanan biçimi (gzip'lenmiş JSON)
     state.js            Senkron ayarı ve durumu (yalnızca storage.local)
+    config.js           Geliştirici yapılandırması: OAuth client ID'leri (yer tutucu), dosya adı
     providers/          Sağlayıcılar (ortak arayüz: providers/index.js)
+      browser.js        Tarayıcı senkronu (chrome.storage.sync, parçalı)
     model.js            Eşitlenen belgenin biçimi; kasa kaydı <-> eşitleme kaydı dönüşümü
     merge.js            İki belgeyi birleştirme, silme kayıtlarının temizliği
     local.js            Bu cihazın kasasını belge olarak okuma ve belgeyi kasaya uygulama
@@ -373,6 +376,43 @@ bütün çakışmaları kazanır, saati geride olan bir cihazın sildiği kelime
 
 Belgenin `v` alanı biçim sürümüdür. Daha yeni bir sürümle yazılmış belge bütünüyle reddedilir (üzerine
 yazılmaz); aynı sürümde tanınmayan alanlar kayıtla birlikte korunur.
+
+### Senkronizasyon
+
+Ayarlar → **Senkronizasyon ve yedekleme** bölümünde, JSON dışa/içe aktarmanın altında dört yol vardır:
+
+| Yol | Veri nereye gider | Durum |
+| --- | --- | --- |
+| Sadece bu cihaz (varsayılan) | Hiçbir yere | Hazır |
+| Tarayıcı senkronu | Tarayıcının kendi senkron deposuna (`chrome.storage.sync`); Firefox Sync ya da Chrome senkronu taşır | Hazır |
+| Bulut hesabı bağla | Google Drive, OneDrive ya da Dropbox'ta uygulamaya özel klasördeki tek dosyaya | Sonraki aşamalar; kartlar görünür, client ID girilene kadar "Yapılandırma eksik" der |
+| Kendi sunucum | Kullanıcının girdiği WebDAV ya da HTTP adresine | Sonraki aşama |
+
+Bir yol seçmek tek başına hiçbir şey göndermez: önce neyin nereye gideceğini söyleyen onay metni
+gösterilir, istek ancak **Devam et**'ten sonra yapılır. Bağlıyken bölümde bağlı olunan yer, dosyanın
+nerede olduğu, son başarılı eşitleme, durum (güncel / eşitleniyor / bekliyor / durdu ve nedeni),
+**Şimdi eşitle** ve **Bağlantıyı kes** görünür. Bağlantıyı keserken "buluttaki dosyayı da sil" sorulur
+(varsayılan: silme); yerel kasa her durumda olduğu gibi kalır.
+
+**Eşitleme motoru** (`sync/engine.js`) arka plan betiğinde çalışır: uzak kopyayı okur, yerel kasayla
+birleştirir, sonuç uzaktakinden farklıysa yazar, sonra yerel kasayı sonuca uydurur. Tetikleyiciler:
+kasa değişince 10 saniyelik bekleme, tarayıcı açılışı, 15 dakikada bir alarm, **Şimdi eşitle**. Aynı
+anda tek eşitleme çalışır. Yazarken uzak kopya değişmişse yeniden okur, birleştirir, yazar (en fazla 5
+deneme, üstel bekleme). Hatalar üçe ayrılır: ulaşılamadı (sessizce 1, 2, 4 … dakika sonra yeniden
+dener), yetki bitti ("yeniden bağlan" der, kendiliğinden denemez), yer kalmadı (bildirir, yerelde devam
+eder). Okunamayan ya da Wordvault'a ait olmayan uzak dosyanın üzerine asla yazılmaz. Hiçbir hata yerel
+kasayı silmez ya da bozmaz. Ayar ve durum yalnızca `chrome.storage.local` içindedir (`syncConfig`,
+`syncStatus`); oturum bilgileri oradan hiçbir yere gitmez.
+
+**Tarayıcı senkronu** yaklaşık 100 KB'lık bir depodur. Belge gzip'lenip base64'e çevrilir ve 7000
+karakterlik parçalara bölünür: `wv_meta` (`{ v, n, rev, at }`) ve `wv_0 … wv_<n-1>`. Bir sürümün bütün
+parçaları tek çağrıda yazılır, kısalan sürümün artan parçaları silinir. Doluluk bölümde gösterilir,
+%80'de uyarılır; sığmayan sürüm hiç yazılmaz, senkron durur ve kasa bu cihazda eksiksiz kalır.
+
+**iCloud sunulmuyor.** Apple'ın web için verdiği tek yol CloudKit JS'tir ve uygulamanın kendi CloudKit
+kapsayıcısına erişir (Apple Developer Program üyeliği, Xcode ile oluşturulmuş kapsayıcı, CloudKit
+Dashboard'dan API anahtarı gerekir); kullanıcının iCloud Drive'ına erişim vermez. Bunun yerine bölümde
+"JSON'u dışa aktarıp iCloud Drive klasörüne kaydedebilirsin" notu durur.
 
 ### Telaffuz
 

@@ -212,7 +212,7 @@
     "message": "deyim"
   },
   "bkTitle": {
-    "message": "Yedekleme"
+    "message": "Senkronizasyon ve yedekleme"
   },
   "bkHelp": {
     "message": "Kasanı JSON dosyası olarak indir ya da başka bir cihazda dışa aktardığın dosyadaki kelimeleri ekle. İçe aktarma, zaten var olan kelimelerin üzerine yazmaz."
@@ -225,6 +225,225 @@
   },
   "bkBadFile": {
     "message": "Bu dosya bir Wordvault yedeği değil."
+  },
+  "syncTitle": {
+    "message": "Senkronizasyon"
+  },
+  "syncIntro": {
+    "message": "Kasayı bütün cihazlarında aynı tut. Aşağıdaki yollardan birini seçip onaylayana kadar bu tarayıcıdan hiçbir şey çıkmaz."
+  },
+  "syncModeOff": {
+    "message": "Sadece bu cihaz"
+  },
+  "syncModeOffHelp": {
+    "message": "Hiçbir şey bağlanmaz. Yedeğin, yukarıdaki dışa aktarmadır."
+  },
+  "syncModeBrowser": {
+    "message": "Tarayıcı senkronu"
+  },
+  "syncModeBrowserHelp": {
+    "message": "Tarayıcının kendi senkronunu kullanır. Küçüktür: yaklaşık 100 KB, en fazla birkaç bin kelimelik listeler içindir."
+  },
+  "syncModeCloud": {
+    "message": "Bulut hesabı bağla"
+  },
+  "syncModeCloudHelp": {
+    "message": "Google Drive, OneDrive ya da Dropbox: hesabında, uygulamaya özel klasörde tek bir dosya."
+  },
+  "syncModeServer": {
+    "message": "Kendi sunucum"
+  },
+  "syncModeServerHelp": {
+    "message": "WebDAV (Nextcloud, ownCloud …) ya da kendi çalıştırdığın basit bir HTTP uç noktası."
+  },
+  "syncServerType": {
+    "message": "Sunucu türü"
+  },
+  "syncInUse": {
+    "message": "kullanımda"
+  },
+  "syncOffExplain": {
+    "message": "Kasa yalnızca bu tarayıcıda durur. Başka bir cihazda da olsun istiyorsan yukarıdaki yollardan birini seç."
+  },
+  "syncBrowserName": {
+    "message": "Tarayıcı senkronu"
+  },
+  "syncGdriveName": {
+    "message": "Google Drive"
+  },
+  "syncOnedriveName": {
+    "message": "OneDrive"
+  },
+  "syncDropboxName": {
+    "message": "Dropbox"
+  },
+  "syncBrowserWhere": {
+    "message": "Tarayıcının senkron deposunda; yer imleri gibi tarayıcı hesabınla (Firefox Sync, Chrome senkronu) taşınır."
+  },
+  "syncGdriveWhere": {
+    "message": "Google Drive'ının gizli uygulama verisi klasöründe. Dosyalarının arasında görünmez; Drive'da Ayarlar → Uygulamaları yönet → Wordvault altından görüp silebilirsin."
+  },
+  "syncOnedriveWhere": {
+    "message": "OneDrive'ında Uygulamalar → Wordvault klasöründe, wordvault-vault.json.gz dosyası olarak."
+  },
+  "syncDropboxWhere": {
+    "message": "Dropbox'ında Uygulamalar → Wordvault klasöründe, wordvault-vault.json.gz dosyası olarak."
+  },
+  "syncBrowserExplain": {
+    "message": "Tarayıcın kasayı, aynı tarayıcı hesabıyla oturum açtığın diğer cihazlarına sıkıştırılmış olarak taşır. Yaklaşık 100 KB yer vardır; doluluk burada gösterilir. Dolunca senkron durur, kasa bu cihazda eksiksiz kalır."
+  },
+  "syncSetupMissing": {
+    "message": "Yapılandırma eksik"
+  },
+  "syncSetupMissingText": {
+    "message": "Bu sağlayıcı için geliştirici yapılandırması eksik: henüz bir client ID girilmemiş. Depodaki SETUP-OAUTH.md dosyasındaki adımları izle, kimliği src/sync/config.js içine yaz ve yeniden derle."
+  },
+  "syncNotAvailable": {
+    "message": "Bu eşitleme yolu bu sürümde yok."
+  },
+  "syncConnect": {
+    "message": "Bağlan"
+  },
+  "syncTurnOn": {
+    "message": "Aç"
+  },
+  "syncContinue": {
+    "message": "Devam et"
+  },
+  "syncCancel": {
+    "message": "Vazgeç"
+  },
+  "syncNow": {
+    "message": "Şimdi eşitle"
+  },
+  "syncDisconnect": {
+    "message": "Bağlantıyı kes"
+  },
+  "syncConfirmTitle": {
+    "message": "$1 bağlanmadan önce"
+  },
+  "syncConfirmWhat": {
+    "message": "Kayıtlı kelimelerin $1 hedefine gönderilecek: her kelime çevirisi, dil çifti, kısa bağlam cümlesi ve tekrar ilerlemesiyle birlikte. Sayfa adresleri, ayarlar, API anahtarları ve oturum bilgileri asla gönderilmez."
+  },
+  "syncConfirmWhere": {
+    "message": "Nerede duracak: $1"
+  },
+  "syncConfirmMerge": {
+    "message": "Orada zaten bir Wordvault dosyası varsa bu kasayla birleştirilir. İki tarafta da hiçbir kelime kaybolmaz."
+  },
+  "syncConfirmReplace": {
+    "message": "Şu an kullanılan $1 bağlantısı bırakılır. Orada saklanan dosya yerinde kalır."
+  },
+  "syncConnectedTo": {
+    "message": "Bağlı olduğu yer"
+  },
+  "syncAccount": {
+    "message": "Hesap"
+  },
+  "syncWhere": {
+    "message": "Dosya nerede"
+  },
+  "syncLast": {
+    "message": "Son eşitleme"
+  },
+  "syncNever": {
+    "message": "henüz yok"
+  },
+  "syncState": {
+    "message": "Durum"
+  },
+  "syncStateIdle": {
+    "message": "güncel"
+  },
+  "syncStateNotYet": {
+    "message": "henüz eşitlenmedi"
+  },
+  "syncStateSyncing": {
+    "message": "eşitleniyor…"
+  },
+  "syncStatePending": {
+    "message": "gönderilmeyi bekleyen değişiklik var"
+  },
+  "syncStateWaiting": {
+    "message": "bekliyor, yeniden denenecek: $1"
+  },
+  "syncStateError": {
+    "message": "durdu: $1"
+  },
+  "syncUsage": {
+    "message": "Kullanılan yer"
+  },
+  "syncUsageValue": {
+    "message": "%$1 ($3 KB'ın $2 KB'ı)"
+  },
+  "syncUsageWarning": {
+    "message": "Neredeyse doldu. Dolunca senkron durur ve kasa bu cihazda kalır. Bulut hesabında ya da kendi sunucunda daha fazla yer var."
+  },
+  "syncDisconnectTitle": {
+    "message": "$1 bağlantısı kesilsin mi?"
+  },
+  "syncDisconnectNote": {
+    "message": "Bu cihazdaki kasa olduğu gibi kalır. Artık diğer cihazlarınla eşitlenmez."
+  },
+  "syncDeleteRemote": {
+    "message": "Buluttaki dosyayı da sil"
+  },
+  "syncDeleteRemoteHelp": {
+    "message": "Diğer cihazların kendi kopyalarını korur ama artık bu dosya üzerinden eşitleyemez."
+  },
+  "syncDisconnected": {
+    "message": "Bağlantı kesildi. Orada saklanan dosya yerinde bırakıldı."
+  },
+  "syncDisconnectedDeleted": {
+    "message": "Bağlantı kesildi ve saklanan dosya silindi."
+  },
+  "syncErrNetwork": {
+    "message": "ulaşılamadı"
+  },
+  "syncErrOffline": {
+    "message": "bu cihaz çevrimdışı"
+  },
+  "syncErrAuth": {
+    "message": "erişim geri alınmış ya da süresi dolmuş; yeniden bağlan"
+  },
+  "syncErrQuota": {
+    "message": "orada yer kalmadı; kasa bu cihazda eksiksiz duruyor"
+  },
+  "syncErrConflict": {
+    "message": "başka bir cihaz aynı anda yazmayı sürdürdü"
+  },
+  "syncErrIncomplete": {
+    "message": "saklanan kopya henüz tam gelmedi"
+  },
+  "syncErrBadDocument": {
+    "message": "orada saklanan şey bir Wordvault dosyası değil; ona dokunulmadı"
+  },
+  "syncErrNewerSchema": {
+    "message": "orada saklanan dosyayı Wordvault'un daha yeni bir sürümü yazmış; bu sürümü güncelle"
+  },
+  "syncErrCancelled": {
+    "message": "oturum açma tamamlanmadı"
+  },
+  "syncErrPermission": {
+    "message": "tarayıcı o adrese erişim izni vermedi"
+  },
+  "syncErrInsecure": {
+    "message": "adres https:// ile başlamalı (http:// yalnızca localhost için kabul edilir)"
+  },
+  "syncErrUrl": {
+    "message": "bu, kullanılabilir bir adres değil"
+  },
+  "syncErrNotFound": {
+    "message": "o adreste yanıt veren bir şey yok"
+  },
+  "syncErrPassword": {
+    "message": "saklanan dosya şifreli; parola gerekiyor"
+  },
+  "syncErrProvider": {
+    "message": "hata döndürdü"
+  },
+  "syncIcloudNote": {
+    "message": "iCloud sunulmuyor: tarayıcı eklentilerinin iCloud Drive'a erişme yolu yok. Bunun yerine kasayı yukarıdan JSON olarak dışa aktarıp dosyayı iCloud Drive klasörüne kaydedebilirsin."
   },
 
   "quizTitle": {

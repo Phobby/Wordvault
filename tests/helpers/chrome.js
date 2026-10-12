@@ -24,12 +24,52 @@ function storageArea() {
 }
 
 /**
+ * The browser's sync storage, with the limits real browsers enforce. Devices signed in to the
+ * same browser account share one (pass the same area to createDevice).
+ */
+export function syncStorageArea({ quotaBytes = 102_400, quotaBytesPerItem = 8192 } = {}) {
+  const area = storageArea();
+  const sizeOf = (key, value) => key.length + JSON.stringify(value).length;
+  const used = () => [...area.data].reduce((sum, [key, value]) => sum + sizeOf(key, value), 0);
+  const plainSet = area.set;
+  return Object.assign(area, {
+    QUOTA_BYTES: quotaBytes,
+    QUOTA_BYTES_PER_ITEM: quotaBytesPerItem,
+    /** Calls made, to check that writes are batched. */
+    calls: [],
+    /** Set to an Error to make the next write fail with it. */
+    failNextWrite: null,
+    getBytesInUse: async () => used(),
+    async set(items) {
+      area.calls.push(`set ${Object.keys(items).length}`);
+      if (area.failNextWrite) {
+        const error = area.failNextWrite;
+        area.failNextWrite = null;
+        throw error;
+      }
+      for (const [key, value] of Object.entries(items)) {
+        if (sizeOf(key, value) > quotaBytesPerItem) throw new Error('QUOTA_BYTES_PER_ITEM quota exceeded');
+      }
+      const after = used() - Object.keys(items).reduce((sum, key) => sum + (area.data.has(key) ? sizeOf(key, area.data.get(key)) : 0), 0) + Object.entries(items).reduce((sum, [key, value]) => sum + sizeOf(key, value), 0);
+      if (after > quotaBytes) throw new Error('QUOTA_BYTES quota exceeded');
+      await plainSet(items);
+    },
+    async remove(keys) {
+      area.calls.push(`remove ${[].concat(keys).length}`);
+      for (const key of [].concat(keys)) area.data.delete(key);
+    },
+  });
+}
+
+/**
  * @param {string} [name]
- * @param {{ uiLanguage?: string, detect?: (text: string) => string | null }} [options]
+ * @param {{ uiLanguage?: string, detect?: (text: string) => string | null, sync?: object }} [options]
+ *   `sync`: the browser sync storage this device is signed in to (syncStorageArea()); a
+ *   storage of its own if left out.
  *   `detect` plays the browser's language detector: it returns a language code, or null for
  *   "cannot tell". Every text it is asked about is recorded in `detected`.
  */
-export function createDevice(name = 'device', { uiLanguage = 'en-US', detect = () => null } = {}) {
+export function createDevice(name = 'device', { uiLanguage = 'en-US', detect = () => null, sync = syncStorageArea() } = {}) {
   const local = storageArea();
   const detected = [];
   const i18n = {
@@ -136,7 +176,7 @@ export function createDevice(name = 'device', { uiLanguage = 'en-US', detect = (
     clear: async () => true,
   };
   const api = {
-    storage: { local },
+    storage: { local, sync },
     i18n,
     alarms,
     tabs,
@@ -157,6 +197,7 @@ export function createDevice(name = 'device', { uiLanguage = 'en-US', detect = (
   return {
     name,
     local,
+    sync,
     detected,
     browser,
     /** Name -> time of every alarm that is set. */

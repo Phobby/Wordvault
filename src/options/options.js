@@ -5,6 +5,7 @@ import { downloadBackup, restoreBackup } from '../lib/backup.js';
 import { getSettings, updateSettings } from '../lib/settings.js';
 import { getPreferences, setTargetLanguage } from '../lib/translator.js';
 import { INTERVAL_MINUTES, TIMEOUT_SECONDS, getDiagnostics } from '../quiz/scheduler.js';
+import { createSyncControls } from './sync.js';
 
 const { h, t, languages, speech } = globalThis.WV;
 
@@ -117,6 +118,9 @@ const backupSection = h(
   ),
   backupStatus,
 );
+// Below exporting and importing by hand: keeping the vault in step by itself (options/sync.js).
+const syncControls = createSyncControls({ onSaved: flashSaved });
+backupSection.append(syncControls.element);
 
 // --- Flash cards: settings -----------------------------------------------------------------------
 
@@ -499,6 +503,7 @@ function render() {
   renderSwitches();
   renderQuizSettings();
 }
+syncControls.render();
 
 let settleTimer = 0;
 render();
@@ -517,6 +522,8 @@ chrome.management
 chrome.storage.onChanged.addListener((changes, area) => {
   if (area !== 'local') return;
   if (changes.settings) render();
+  // What synchronisation is set to do, or how it is going, changed (the engine writes its status).
+  if (changes.syncConfig || changes.syncStatus) syncControls.render();
   renderQuiz();
   // The timer writes its plan first and sets the alarm right after; look again once it has.
   clearTimeout(settleTimer);
