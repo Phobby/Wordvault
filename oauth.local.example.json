@@ -1,0 +1,5 @@
+{
+  "gdrive": "YOUR_GOOGLE_CLIENT_ID",
+  "onedrive": "YOUR_MICROSOFT_CLIENT_ID",
+  "dropbox": "YOUR_DROPBOX_APP_KEY"
+}

@@ -64,6 +64,32 @@ function check(manifests) {
   if (problems.length) throw new Error(`Build check failed:\n  - ${problems.join('\n  - ')}`);
 }
 
+/**
+ * Client IDs of the cloud providers that are kept out of the repository: `oauth.local.json`
+ * next to this file (ignored by git) may name them, and they are then written into the built
+ * copy of sync/config.js in place of the placeholders. The source file is never changed.
+ *   { "gdrive": "….apps.googleusercontent.com", "onedrive": "…", "dropbox": "…" }
+ */
+const LOCAL_OAUTH = path.join(ROOT, 'oauth.local.json');
+
+function injectClientIds(out) {
+  if (!fs.existsSync(LOCAL_OAUTH)) return [];
+  const ids = JSON.parse(fs.readFileSync(LOCAL_OAUTH, 'utf8'));
+  const file = path.join(out, 'sync/config.js');
+  let source = fs.readFileSync(file, 'utf8');
+  const used = [];
+  for (const [provider, id] of Object.entries(ids)) {
+    if (typeof id !== 'string' || id.trim() === '' || id.startsWith('YOUR_')) continue;
+    if (!/^[\w.@-]+$/.test(id.trim())) throw new Error(`oauth.local.json: the value for "${provider}" does not look like a client ID`);
+    const line = new RegExp(`(\\b${provider}: ')[^']*(')`);
+    if (!line.test(source)) throw new Error(`oauth.local.json: sync/config.js has no provider "${provider}"`);
+    source = source.replace(line, `$1${id.trim()}$2`);
+    used.push(provider);
+  }
+  fs.writeFileSync(file, source);
+  return used;
+}
+
 function build(targets) {
   const manifests = Object.fromEntries(targets.map((target) => [target, readManifest(target)]));
   check(manifests);
@@ -72,7 +98,8 @@ function build(targets) {
     fs.rmSync(out, { recursive: true, force: true });
     fs.cpSync(SRC, out, { recursive: true, filter: (file) => !path.basename(file).startsWith('.') });
     fs.writeFileSync(path.join(out, 'manifest.json'), `${JSON.stringify(manifests[target], null, 2)}\n`);
-    console.log(`built dist/${target} (v${manifests[target].version})`);
+    const ids = injectClientIds(out);
+    console.log(`built dist/${target} (v${manifests[target].version})${ids.length ? `, client IDs from oauth.local.json: ${ids.join(', ')}` : ''}`);
   }
 }
 
@@ -90,6 +117,7 @@ function watch(targets) {
   };
   fs.watch(SRC, { recursive: true }, rebuild);
   for (const target of targets) fs.watch(manifestPath(target), rebuild);
+  if (fs.existsSync(LOCAL_OAUTH)) fs.watch(LOCAL_OAUTH, rebuild);
   console.log('watching src/ and manifests for changes…');
 }
 

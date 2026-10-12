@@ -13,6 +13,21 @@ Kurulumu yapılmamış sağlayıcının kartı ayarlar sayfasında "Yapılandır
 - Client ID gizli değildir; eklentinin her kopyasında bulunur.
 - İstenen izinler en dar olanlardır: her sağlayıcıda yalnızca uygulamaya özel klasör.
 
+## Client ID'yi nereye yazmalı
+
+İki yol var:
+
+- **Depoya girmeden (önerilen):** depo kökündeki `oauth.local.example.json` dosyasını
+  `oauth.local.json` adıyla kopyala ve kimlikleri oraya yaz. Bu dosya `.gitignore` içindedir, commit
+  edilmez. `node build.js` kimlikleri yalnızca `dist/` içindeki derlenmiş kopyaya yazar; `src/` içindeki
+  dosya yer tutucularla kalır.
+- **Doğrudan kaynakta:** `src/sync/config.js` içindeki yer tutucuyu değiştir. Kimlik o zaman depoya girer.
+
+Aşağıda "`src/sync/config.js` içine yaz" denen her yerde ikisinden biri kastedilir. Client ID bir sır
+değildir (eklentinin dağıtılan her kopyasında okunabilir); onu korumak değil, depoyu kişisel
+tanımlayıcılardan uzak tutmak içindir. Asıl koruma, sağlayıcıdaki kayıtta yalnızca eklentinin
+yönlendirme adreslerine izin verilmesi ve pakette client secret bulunmamasıdır.
+
 ## 1. Eklentinin kimliği ve yönlendirme adresleri
 
 Sağlayıcı, kullanıcıyı oturum açtıktan sonra eklentiye geri gönderir. Bu adres eklentinin kimliğinden

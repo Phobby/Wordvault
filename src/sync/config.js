@@ -5,6 +5,10 @@
 // how, provider by provider. The client IDs that come out of it go here. They are not secrets
 // (every installed copy of the extension contains them); there is no client secret anywhere.
 //
+// The IDs can be written here, or, to keep them out of the repository, into `oauth.local.json`
+// next to build.js (ignored by git; see oauth.local.example.json): the build then puts them into
+// the built copy of this file and leaves this one alone.
+//
 // While an ID is still the placeholder, the settings page shows that provider as "setup missing"
 // and says so when it is chosen. Everything else works without any of this.
 
