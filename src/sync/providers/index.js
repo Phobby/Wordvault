@@ -48,6 +48,9 @@
  *   then. Throws a WordvaultError if the address the user entered cannot be used.
  * @property {{ key: string, type: 'url' | 'text' | 'password', labelKey: string, placeholder?: string }[]} [fields]
  *   What the user has to enter to connect (servers), rendered by the settings page.
+ * @property {string} [helpKey]   _locales message key of a line explaining those fields.
+ * @property {(connection: object) => string} [location]
+ *   The address the document is kept at, for the status line (servers).
  *
  * Error codes providers use (lib/errors.js): network, timeout (try again later); sync_auth (access
  * was withdrawn or expired for good: the user has to connect again); sync_quota (no room left);
@@ -57,10 +60,12 @@
 import { browser } from './browser.js';
 import { dropbox } from './dropbox.js';
 import { gdrive } from './gdrive.js';
+import { http } from './http.js';
 import { onedrive } from './onedrive.js';
+import { webdav } from './webdav.js';
 
 /** @type {Map<string, SyncProvider>} */
-const providers = new Map([browser, gdrive, onedrive, dropbox].map((provider) => [provider.id, provider]));
+const providers = new Map([browser, gdrive, onedrive, dropbox, webdav, http].map((provider) => [provider.id, provider]));
 
 /** Adds a provider (the built-in ones below, and the in-memory one the tests use). */
 export function registerSyncProvider(provider) {

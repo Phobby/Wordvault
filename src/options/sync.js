@@ -55,10 +55,16 @@ const ERRORS = {
   sync_password: 'syncErrPassword',
 };
 
-/** "what went wrong (the provider's own words)" */
-function errorText(error) {
+/**
+ * "what went wrong (the provider's own words)"
+ * @param {{ code?: string, detail?: string }} error
+ * @param {string} [kind]  The kind of provider it happened with; a server that says no is not
+ *   an account whose access "ran out".
+ */
+function errorText(error, kind) {
   const code = error?.code || 'internal';
-  const known = ERRORS[code] ? t(ERRORS[code]) : t('syncErrProvider');
+  const key = code === 'sync_auth' && kind === 'server' ? 'syncErrServerAuth' : ERRORS[code];
+  const known = key ? t(key) : t('syncErrProvider');
   // The detail is the provider's or the browser's own message: shown as it is, it is what
   // someone looking for the cause will search for.
   return error?.detail && !['sync_config', 'offline'].includes(code) ? `${known} (${String(error.detail).slice(0, 200)})` : known;
@@ -75,11 +81,18 @@ const nameOf = (providerId) => {
   const key = getSyncProvider(providerId)?.nameKey || CLOUD_PROVIDERS.find((provider) => provider.id === providerId)?.nameKey;
   return key ? t(key) : providerId;
 };
-/** Where the document ends up with a provider, in a sentence. */
-const whereOf = (providerId) => {
+/** Where the document ends up with a provider, in a sentence; with the address, where one is known. */
+const whereOf = (providerId, connection) => {
   const provider = getSyncProvider(providerId);
   const key = provider?.whereKey || CLOUD_PROVIDERS.find((cloud) => cloud.id === providerId)?.whereKey;
-  return key ? t(key) : '';
+  const sentence = key ? t(key) : '';
+  let address = '';
+  try {
+    address = connection && provider?.location ? provider.location(connection) : '';
+  } catch {
+    // The sentence alone will do.
+  }
+  return address ? `${sentence} ${address}` : sentence;
 };
 
 /**
@@ -118,14 +131,14 @@ export function createSyncControls({ onSaved }) {
   const noticeLine = () => notice && h('p', { class: notice.bad ? 'sync-notice bad' : 'sync-notice', role: notice.bad ? 'alert' : 'status', text: notice.text });
 
   /** Runs something the user started; whatever goes wrong is said on the page, never swallowed. */
-  async function attempt(action) {
+  async function attempt(action, kind) {
     busy = true;
     say('');
     await render();
     try {
       await action();
     } catch (error) {
-      say(errorText(error), true);
+      say(errorText(error, kind), true);
     }
     busy = false;
     await render();
@@ -149,9 +162,17 @@ export function createSyncControls({ onSaved }) {
     }
     const allowed = origins.length > 0 ? chrome.permissions.request({ origins }) : Promise.resolve(true);
     return attempt(async () => {
-      if (!provider) throw { code: 'sync_unknown_provider' };
-      if (!(await allowed)) throw { code: 'sync_permission', detail: origins.join(', ') };
-      const connection = await provider.connect(input);
+      let connection;
+      try {
+        if (!provider) throw { code: 'sync_unknown_provider' };
+        if (!(await allowed)) throw { code: 'sync_permission', detail: origins.join(', ') };
+        connection = await provider.connect(input);
+      } catch (error) {
+        // Not connected: back to where the choice was made (the form keeps what was typed),
+        // with the reason shown there.
+        step = null;
+        throw error;
+      }
       // A connection that was there before is dropped; what it stored remotely is left alone.
       await setSyncConfig({ mode: provider.kind, providerId, connection, connectedAt: Date.now(), account: null });
       await resetSyncStatus();
@@ -160,13 +181,13 @@ export function createSyncControls({ onSaved }) {
       onSaved();
       // The first synchronisation: find the remote copy or create it, and merge.
       const status = await globalThis.WV.send('wv:sync:now');
-      if (status?.state === 'error' || status?.state === 'waiting') say(errorText(status.error), true);
+      if (status?.state === 'error' || status?.state === 'waiting') say(errorText(status.error, provider.kind), true);
       // Whose account it is, where the provider tells (asked after the first write: with some
       // providers the application's folder only exists from then on).
       const current = await getSyncConfig();
       const account = await provider.accountInfo({ connection: current.connection || connection, update: (patch) => updateConnection(providerId, patch) }).catch(() => null);
       if (account && current.providerId === providerId) await setSyncConfig({ ...(await getSyncConfig()), account });
-    });
+    }, provider?.kind);
   }
 
   function disconnect(deleteRemote) {
@@ -192,7 +213,7 @@ export function createSyncControls({ onSaved }) {
   const syncNow = () =>
     attempt(async () => {
       const status = await globalThis.WV.send('wv:sync:now');
-      if (status?.state === 'error' || status?.state === 'waiting') say(errorText(status.error), true);
+      if (status?.state === 'error' || status?.state === 'waiting') say(errorText(status.error, (await getSyncConfig()).mode), true);
     });
 
   // --- Panels ------------------------------------------------------------------------------------
@@ -205,7 +226,7 @@ export function createSyncControls({ onSaved }) {
       { class: 'sync-box', 'data-panel': 'confirm' },
       h('strong', { text: t('syncConfirmTitle', [name]) }),
       h('p', { class: 'help', text: t('syncConfirmWhat', [name]) }),
-      h('p', { class: 'help', text: t('syncConfirmWhere', [whereOf(step.providerId)]) }),
+      h('p', { class: 'help', text: t('syncConfirmWhere', [`${whereOf(step.providerId)}${step.input?.url ? ` ${step.input.url}` : ''}`]) }),
       h('p', { class: 'help', text: t('syncConfirmMerge') }),
       config.mode !== 'off' && h('p', { class: 'help', text: t('syncConfirmReplace', [nameOf(config.providerId)]) }),
       h(
@@ -235,10 +256,10 @@ export function createSyncControls({ onSaved }) {
   }
 
   /** How it is going, in one line. */
-  function stateText(status) {
+  function stateText(status, kind) {
     if (status.state === 'syncing') return t('syncStateSyncing');
-    if (status.state === 'waiting') return t('syncStateWaiting', [errorText(status.error)]);
-    if (status.state === 'error') return t('syncStateError', [errorText(status.error)]);
+    if (status.state === 'waiting') return t('syncStateWaiting', [errorText(status.error, kind)]);
+    if (status.state === 'error') return t('syncStateError', [errorText(status.error, kind)]);
     if (status.pending) return t('syncStatePending');
     return status.lastSyncAt ? t('syncStateIdle') : t('syncStateNotYet');
   }
@@ -265,9 +286,9 @@ export function createSyncControls({ onSaved }) {
     const facts = [
       [t('syncConnectedTo'), nameOf(config.providerId)],
       account && [t('syncAccount'), account],
-      [t('syncWhere'), whereOf(config.providerId)],
+      [t('syncWhere'), whereOf(config.providerId, config.connection)],
       [t('syncLast'), status.lastSyncAt ? timeText(status.lastSyncAt) : t('syncNever')],
-      [t('syncState'), stateText(status)],
+      [t('syncState'), stateText(status, config.mode)],
     ].filter(Boolean);
     return h(
       'div',
@@ -352,6 +373,9 @@ export function createSyncControls({ onSaved }) {
       {
         class: 'sync-box',
         'data-panel': 'server',
+        // The address is checked here, with a reason given in words; the browser's own check
+        // would only say "enter a URL".
+        novalidate: true,
         onsubmit: (event) => {
           event.preventDefault();
           const input = Object.fromEntries(provider.fields.map((field) => [field.key, String(values[field.key] || '').trim()]));

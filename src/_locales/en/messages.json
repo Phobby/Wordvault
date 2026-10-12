@@ -384,6 +384,50 @@
     "message": "In your Dropbox, in the folder Apps → Wordvault, as the file wordvault-vault.json.gz.",
     "description": "Options page, synchronisation: where the data ends up."
   },
+  "syncWebdavName": {
+    "message": "WebDAV (Nextcloud, ownCloud …)",
+    "description": "Name of a place the vault can be synchronised with."
+  },
+  "syncHttpName": {
+    "message": "Simple HTTP endpoint",
+    "description": "Name of a place the vault can be synchronised with."
+  },
+  "syncWebdavWhere": {
+    "message": "On your server, as the file wordvault-vault.json.gz in the folder you named:",
+    "description": "Options page, synchronisation: where the data ends up; the address follows."
+  },
+  "syncHttpWhere": {
+    "message": "On your server, behind the address you entered:",
+    "description": "Options page, synchronisation: where the data ends up; the address follows."
+  },
+  "syncWebdavHelp": {
+    "message": "The address of a folder on your WebDAV server, your user name there and an app password (in Nextcloud: Settings → Security → Devices & sessions). The folder is created if it is missing.",
+    "description": "Options page, synchronisation: explanation of the WebDAV form."
+  },
+  "syncHttpHelp": {
+    "message": "The address of a server that speaks Wordvault's small protocol (GET and PUT at /vault; see docs/self-hosted.md, which comes with a ready-made example server) and the key it expects.",
+    "description": "Options page, synchronisation: explanation of the HTTP endpoint form."
+  },
+  "syncFieldFolderUrl": {
+    "message": "Folder address",
+    "description": "Options page, synchronisation: form field."
+  },
+  "syncFieldUrl": {
+    "message": "Server address",
+    "description": "Options page, synchronisation: form field."
+  },
+  "syncFieldUser": {
+    "message": "User name",
+    "description": "Options page, synchronisation: form field."
+  },
+  "syncFieldPassword": {
+    "message": "App password",
+    "description": "Options page, synchronisation: form field."
+  },
+  "syncFieldKey": {
+    "message": "Key",
+    "description": "Options page, synchronisation: form field: the bearer key of the HTTP endpoint."
+  },
   "syncBrowserExplain": {
     "message": "Your browser carries the vault to your other devices signed in to the same browser account, compressed. There is room for about 100 KB; how full it is will be shown here. When it is full, synchronisation stops and the vault stays whole on this device.",
     "description": "Options page, synchronisation: explanation of browser sync before it is turned on."
@@ -539,6 +583,10 @@
   "syncErrAuth": {
     "message": "access was withdrawn or has expired; connect again",
     "description": "Options page, synchronisation: reason."
+  },
+  "syncErrServerAuth": {
+    "message": "the server did not accept the user name, password or key",
+    "description": "Options page, synchronisation: reason, for a server of the user's own."
   },
   "syncErrQuota": {
     "message": "there is no room left there; the vault stays whole on this device",

@@ -289,6 +289,39 @@
   "syncDropboxWhere": {
     "message": "Dropbox'ında Uygulamalar → Wordvault klasöründe, wordvault-vault.json.gz dosyası olarak."
   },
+  "syncWebdavName": {
+    "message": "WebDAV (Nextcloud, ownCloud …)"
+  },
+  "syncHttpName": {
+    "message": "Basit HTTP uç noktası"
+  },
+  "syncWebdavWhere": {
+    "message": "Sunucunda, belirttiğin klasörde wordvault-vault.json.gz dosyası olarak:"
+  },
+  "syncHttpWhere": {
+    "message": "Sunucunda, girdiğin adresin arkasında:"
+  },
+  "syncWebdavHelp": {
+    "message": "WebDAV sunucundaki bir klasörün adresi, oradaki kullanıcı adın ve bir uygulama parolası (Nextcloud'da: Ayarlar → Güvenlik → Cihazlar ve oturumlar). Klasör yoksa oluşturulur."
+  },
+  "syncHttpHelp": {
+    "message": "Wordvault'un küçük protokolünü konuşan bir sunucunun adresi (/vault üzerinde GET ve PUT; bkz. docs/self-hosted.md, hazır bir örnek sunucuyla birlikte gelir) ve beklediği anahtar."
+  },
+  "syncFieldFolderUrl": {
+    "message": "Klasör adresi"
+  },
+  "syncFieldUrl": {
+    "message": "Sunucu adresi"
+  },
+  "syncFieldUser": {
+    "message": "Kullanıcı adı"
+  },
+  "syncFieldPassword": {
+    "message": "Uygulama parolası"
+  },
+  "syncFieldKey": {
+    "message": "Anahtar"
+  },
   "syncBrowserExplain": {
     "message": "Tarayıcın kasayı, aynı tarayıcı hesabıyla oturum açtığın diğer cihazlarına sıkıştırılmış olarak taşır. Yaklaşık 100 KB yer vardır; doluluk burada gösterilir. Dolunca senkron durur, kasa bu cihazda eksiksiz kalır."
   },
@@ -405,6 +438,9 @@
   },
   "syncErrAuth": {
     "message": "erişim geri alınmış ya da süresi dolmuş; yeniden bağlan"
+  },
+  "syncErrServerAuth": {
+    "message": "sunucu kullanıcı adını, parolayı ya da anahtarı kabul etmedi"
   },
   "syncErrQuota": {
     "message": "orada yer kalmadı; kasa bu cihazda eksiksiz duruyor"

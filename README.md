@@ -9,10 +9,10 @@ kaydet, sonra kısa quizlerle tekrar et. Her şey tarayıcında çalışır; Wor
 > Sırada: sağ tık menüsü, çeviri penceresinde kelime türü etiketi, önbellek ve 7 günlük temizlik,
 > quiz, altyazılar, ayarlar sayfasının kalanı (sağlayıcı ve API anahtarı) ve gizlilik politikası.
 >
-> Cihazlar arası senkronizasyon (`SPEC-SYNC.md`) yedi aşamada ekleniyor; şu an ilk beş aşama hazır:
+> Cihazlar arası senkronizasyon (`SPEC-SYNC.md`) yedi aşamada ekleniyor; şu an ilk altı aşama hazır:
 > veri modeli, birleştirme, silme kayıtları, sağlayıcı arayüzü, eşitleme motoru, ayarlar sayfasındaki
-> "Senkronizasyon ve yedekleme" bölümü, tarayıcı senkronu (`storage.sync`), Google Drive, OneDrive ve
-> Dropbox. Varsayılan
+> "Senkronizasyon ve yedekleme" bölümü, tarayıcı senkronu (`storage.sync`), Google Drive, OneDrive,
+> Dropbox ve kendi sunucu modu (WebDAV, basit HTTP uç noktası; `docs/self-hosted.md`). Varsayılan
 > "Sadece bu cihaz"tır: kullanıcı bir yol seçip onaylamadıkça hiçbir yere veri gönderilmez. Bulut
 > sağlayıcıları için bir kez geliştirici kurulumu gerekir: `SETUP-OAUTH.md`.
 >
@@ -66,6 +66,9 @@ manifest.firefox.json   Firefox manifesti (background.scripts, gecko ayarları)
 manifest.chrome.json    Chrome manifesti (background.service_worker)
 build.js                dist/ klasörlerini üretir
 tools/make-icons.js     src/icons altındaki PNG'leri üretir (yalnızca tasarım değişince)
+tools/self-hosted-server.js  "Kendi sunucum" için tek dosyalık örnek sunucu (bkz. docs/self-hosted.md)
+docs/self-hosted.md     Kendi sunucu modu: WebDAV, HTTP uç noktasının protokolü, örnek sunucu
+SETUP-OAUTH.md          Bulut sağlayıcıları için bir kez yapılan geliştirici kurulumu
 tests/                  node:test testleri (tarayıcı API'leri bellek içi bir taklitle sağlanır)
 src/
   background/           Arka plan betiği: mesaj yönlendirme, tüm ağ istekleri
@@ -115,6 +118,9 @@ src/
       gdrive.js         Google Drive (appDataFolder, yalnızca drive.appdata izni)
       onedrive.js       OneDrive (Microsoft Graph, approot, Files.ReadWrite.AppFolder)
       dropbox.js        Dropbox (App folder, files.content.read/write)
+      webdav.js         Kendi sunucu: WebDAV (PROPFIND, GET, PUT + If-Match)
+      http.js           Kendi sunucu: basit HTTP uç noktası (GET/PUT /vault)
+      server.js         Kullanıcının girdiği adresin denetimi (yalnızca https; localhost hariç)
     model.js            Eşitlenen belgenin biçimi; kasa kaydı <-> eşitleme kaydı dönüşümü
     merge.js            İki belgeyi birleştirme, silme kayıtlarının temizliği
     local.js            Bu cihazın kasasını belge olarak okuma ve belgeyi kasaya uygulama
@@ -393,7 +399,7 @@ Ayarlar → **Senkronizasyon ve yedekleme** bölümünde, JSON dışa/içe aktar
 | Sadece bu cihaz (varsayılan) | Hiçbir yere | Hazır |
 | Tarayıcı senkronu | Tarayıcının kendi senkron deposuna (`chrome.storage.sync`); Firefox Sync ya da Chrome senkronu taşır | Hazır |
 | Bulut hesabı bağla | Google Drive, OneDrive ya da Dropbox'ta uygulamaya özel klasördeki tek dosyaya | Hazır. Kartlar her zaman görünür; client ID girilene kadar "Yapılandırma eksik" der ve "Bağlan" neyin eksik olduğunu söyler (`SETUP-OAUTH.md`) |
-| Kendi sunucum | Kullanıcının girdiği WebDAV ya da HTTP adresine | Sonraki aşama |
+| Kendi sunucum | Kullanıcının girdiği WebDAV ya da HTTP adresine | Hazır; kurulum gerektirmez (`docs/self-hosted.md`) |
 
 Bir yol seçmek tek başına hiçbir şey göndermez: önce neyin nereye gideceğini söyleyen onay metni
 gösterilir, istek ancak **Devam et**'ten sonra yapılır. Bağlıyken bölümde bağlı olunan yer, dosyanın
@@ -438,7 +444,16 @@ folder" erişimi); izinler `files.content.read` ve `files.content.write`. Oturum
 secret'sız; yenileme token'ının süresi dolmaz. Yazma koşulludur (dosya yoksa `add`, varsa okunan `rev`
 ile `update`).
 
-Üç sağlayıcıda da hesap dışına hiçbir şey gitmez: istekler tarayıcıdan doğrudan sağlayıcıya yapılır.
+**Kendi sunucum** iki türdür (`docs/self-hosted.md`). *WebDAV* (Nextcloud, ownCloud …): klasör adresi,
+kullanıcı adı ve uygulama parolası; `PROPFIND` ile bağlanır (klasör yoksa `MKCOL`), `GET`/`PUT` ile okur
+yazar, yazma `If-Match` (dosya yokken `If-None-Match: *`) ile koşulludur. *Basit HTTP uç noktası*: adres
+ve anahtar; `GET /vault` (200 + gövde + `ETag`, yoksa 404) ve `PUT /vault` (`If-Match` ile, çakışmada
+412). Depodaki `tools/self-hosted-server.js` bu protokolü uygulayan tek dosyalık bir Node sunucusudur.
+Yalnızca `https` adres kabul edilir (`localhost` ve `127.0.0.1` hariç); adres içine yazılmış parola
+reddedilir. Tarayıcıdan o adres için izin bağlanırken istenir. Kimlik bilgileri yalnızca
+`storage.local` içindedir. Bağlantı kurulamazsa form, yazılanlarla ve nedeniyle birlikte geri gelir.
+
+Bulut sağlayıcılarında da hesap dışına hiçbir şey gitmez: istekler tarayıcıdan doğrudan sağlayıcıya yapılır.
 Google API Services User Data Policy (Limited Use), Microsoft API Terms of Use ve Dropbox Developer
 Terms'e göre veri yalnızca kullanıcının istediği eşitleme için kullanılır, başka yere aktarılmaz.
 
