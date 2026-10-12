@@ -53,10 +53,18 @@ function check(manifests) {
   }
   // Both browsers run the same code, so everything except the background declaration and the
   // browser-specific keys has to stay in sync between the two manifests.
-  const shared = ['permissions', 'optional_permissions', 'host_permissions', 'optional_host_permissions', 'content_scripts', 'commands'];
+  // Exceptions: what only Chrome needs. Its service worker cannot run text recognition, so that
+  // happens in an offscreen document; and Chrome does not put content scripts into tabs that
+  // were already open, so they are injected on demand.
+  const CHROME_ONLY_PERMISSIONS = ['offscreen', 'scripting'];
+  const shared = ['permissions', 'optional_permissions', 'host_permissions', 'optional_host_permissions', 'content_scripts', 'content_security_policy'];
   if (manifests.firefox && manifests.chrome) {
+    const comparable = (target, key) => {
+      const value = manifests[target][key];
+      return JSON.stringify(key === 'permissions' && target === 'chrome' ? value.filter((name) => !CHROME_ONLY_PERMISSIONS.includes(name)) : value);
+    };
     for (const key of shared) {
-      if (JSON.stringify(manifests.firefox[key]) !== JSON.stringify(manifests.chrome[key])) {
+      if (comparable('firefox', key) !== comparable('chrome', key)) {
         problems.push(`"${key}" differs between manifest.firefox.json and manifest.chrome.json`);
       }
     }

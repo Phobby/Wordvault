@@ -1,10 +1,10 @@
-// Screen text scanning, stage 1: the area the user drags, the mapping between the page and the
-// screenshot, the stand-in engine, and the grouping of what an engine finds.
+// Screen text scanning: the area the user drags, the mapping between the page and the
+// screenshot, the grouping of what an engine finds, and the test-only stand-in engine.
 
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { mockEngine } from '../src/features/screen-ocr/engines/mock.js';
+import { mockEngine } from './helpers/mock-engine.js';
 import { createMapping, placeOnPage, wholeViewport } from '../src/features/screen-ocr/geometry.js';
 import { captureErrorCode } from '../src/features/screen-ocr/scan.js';
 import { loadScripts } from './helpers/hover.js';

@@ -15,6 +15,8 @@ değişince burası da güncellenir; `PRIVACY.md` ile çelişmemelidir.
 Wordvault, gezinirken dil öğrenmek içindir.
 
 - Bir kelimeye çift tıkla: çevirisi sayfanın üstünde açılır, telaffuzunu dinleyebilirsin.
+- Ekrandan metin tara: videoyu durdur, bir alan seç; videonun ve resimlerin içindeki yazı cihazında
+  okunur, kelimeye tıklayınca çevirisi açılır.
 - "Kasaya ekle" ile kaydet; kelime, bağlam cümlesiyle birlikte kasanda durur.
 - Wordvault ara sıra kasandaki kelimeleri dört şıklı kısa bir quizle sorar. Yanlış bildiklerin daha
   sık, iyi bildiklerin giderek daha seyrek gelir.
@@ -23,7 +25,8 @@ Wordvault, gezinirken dil öğrenmek içindir.
   da Dropbox hesabınla, ya da kendi sunucunla (WebDAV). İstersen dosyayı parolayla şifrele.
 
 Gizlilik: Wordvault'un sunucusu yoktur. Hiçbir veri geliştiriciye gitmez; analitik ve izleme yoktur.
-Çevirisini istediğin metin çeviri servisine gider. Kasan, yalnızca sen eşitlemeyi açarsan ve yalnızca
+Çevirisini istediğin metin çeviri servisine gider. Ekran taramasında görüntü cihazında okunur, saklanmaz
+ve tarayıcıdan çıkmaz. Kasan, yalnızca sen eşitlemeyi açarsan ve yalnızca
 senin seçtiğin hesaba ya da sunucuya gönderilir; varsayılan "Sadece bu cihaz"tır.
 
 **en**

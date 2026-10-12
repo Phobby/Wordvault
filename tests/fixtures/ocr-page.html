@@ -5,17 +5,26 @@
     <title>Wordvault: ekran tarama test sayfası</title>
     <!--
       Ekrandan metin tarama (SPEC-OCR.md) için çevrimdışı test sayfası.
-      Üstteki siyah dikdörtgenler konumu kesin bilinen "kelimeler"dir (data-word): deneme motoru
-      mürekkebin yerini bulduğu için kutuların bunların tam üstüne oturması, sayfa ile ekran
-      görüntüsü arasındaki koordinat eşlemesinin doğru olduğunu gösterir. Alttaki gerçek metin gözle
-      bakmak içindir.
+      Üstteki siyah dikdörtgenler, üç nokta, ikon, küçük resim ve siyah alan metin değildir: motor
+      bunları kelime saymamalıdır. Paragraf (İngilizce ve Türkçe satır), koyu zemindeki satır,
+      karedeki tabela ve dış çizgili altyazı okunmalıdır.
     -->
     <style>
       html, body { margin: 0; background: #fff; color: #000; }
-      body { height: 2400px; font: 22px/1.5 Arial, Helvetica, sans-serif; }
+      body { height: 2600px; font: 22px/1.5 Arial, Helvetica, sans-serif; }
       .w { position: absolute; background: #000; height: 20px; }
       #text { position: absolute; left: 60px; top: 380px; width: 700px; }
       #dark { position: absolute; left: 60px; top: 560px; width: 700px; padding: 16px; background: #111; color: #fff; }
+      /* Things that are not text: a "more" button's dots, an icon, a thumbnail. */
+      .dot { position: absolute; left: 820px; width: 5px; height: 5px; border-radius: 50%; background: #333; }
+      #icon { position: absolute; left: 800px; top: 150px; width: 28px; height: 28px; border: 3px solid #333; border-radius: 6px; }
+      #thumb { position: absolute; left: 620px; top: 200px; width: 160px; height: 90px; background: linear-gradient(135deg, #c33, #36c 60%, #2a4); }
+      /* A film frame with a caption: white text with a dark outline over a busy picture. */
+      #frame { position: absolute; left: 60px; top: 680px; width: 700px; height: 220px;
+               background: repeating-linear-gradient(115deg, #7a9 0 38px, #c96 38px 90px, #456 90px 150px, #eda 150px 170px); }
+      #caption { position: absolute; left: 0; right: 0; bottom: 18px; text-align: center; color: #fff; font: 700 30px Arial, Helvetica, sans-serif;
+                 text-shadow: -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 2px 2px 0 #000, 0 2px 0 #000, 2px 0 0 #000, 0 -2px 0 #000, -2px 0 0 #000; }
+      #sign { position: absolute; left: 40px; top: 30px; padding: 6px 14px; background: #fff; color: #b00; font: 700 26px Arial, Helvetica, sans-serif; transform: rotate(-3deg); }
     </style>
   </head>
   <body>
@@ -32,7 +41,13 @@
     <!-- outside the area the test selects -->
     <div class="w" data-word style="left: 620px; top: 100px; width: 100px"></div>
 
-    <div id="text">The quick brown <span id="fox">fox</span> jumps over the lazy dog. Hızlı kahverengi tilki tembel köpeğin üzerinden atlar.</div>
+    <div id="text">The quick brown <span id="fox">fox</span> jumps over the lazy dog every morning.<br>Hızlı kahverengi tilki tembel köpeğin üzerinden atlar.</div>
+    <div class="dot" style="top: 80px"></div><div class="dot" style="top: 90px"></div><div class="dot" style="top: 100px"></div>
+    <div id="icon"></div>
+    <div id="thumb"></div>
+    <div id="frame"><div id="sign">BAKERY OPEN</div><div id="caption">we should leave before sunrise tomorrow</div></div>
+    <!-- what a protected video looks like in a screenshot -->
+    <div id="black" style="position: absolute; left: 800px; top: 380px; width: 180px; height: 140px; background: #000"></div>
     <div id="dark">Light text on a dark background, like a subtitle.</div>
   </body>
 </html>

@@ -397,7 +397,8 @@ function openImport() {
 
 /** Starts a screen text scan on the tab this popup was opened over, and gets out of its way. */
 async function scanScreen() {
-  await WV.send('wv:ocr:begin').catch(() => {});
+  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true }).catch(() => []);
+  await WV.send('wv:ocr:begin', { tabId: tab?.id }).catch(() => {});
   window.close();
 }
 

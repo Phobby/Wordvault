@@ -25,10 +25,10 @@
     "page": "options/options.html",
     "open_in_tab": true
   },
-  "permissions": ["storage", "unlimitedStorage", "alarms", "identity", "activeTab", "contextMenus"],
+  "permissions": ["storage", "unlimitedStorage", "alarms", "identity", "activeTab", "contextMenus", "offscreen", "scripting"],
   "commands": {
     "scan-screen": {
-      "suggested_key": { "default": "Alt+Shift+S" },
+      "suggested_key": { "default": "Ctrl+Shift+E", "mac": "Command+Shift+E" },
       "description": "__MSG_cmdScanScreen__"
     }
   },
@@ -39,6 +39,9 @@
     "https://en.wiktionary.org/*",
     "https://upload.wikimedia.org/*"
   ],
+  "content_security_policy": {
+    "extension_pages": "script-src 'self' 'wasm-unsafe-eval'; object-src 'self'"
+  },
   "background": {
     "service_worker": "background/background.js",
     "type": "module"
@@ -80,6 +83,7 @@
     {
       "matches": ["<all_urls>"],
       "js": [
+        "core/hover/word-source.js",
         "features/screen-ocr/content/area.js",
         "features/screen-ocr/content/selector.js",
         "features/screen-ocr/content/layer.js",

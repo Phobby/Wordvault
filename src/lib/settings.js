@@ -44,6 +44,12 @@ export const DEFAULT_SETTINGS = Object.freeze({
   quizDisplay: 'auto',
   /** Screen text scanning: start the next selection with the area that was scanned last. */
   ocrRememberArea: false,
+  /** Screen text scanning: languages the text is read with: 'auto', or a language tag ('en', 'tr'). */
+  ocrLanguages: 'auto',
+  /** Screen text scanning: words the engine is less sure of than this (0-100) are not shown. */
+  ocrMinConfidence: 60,
+  /** Screen text scanning, for troubleshooting: draw the box of every word that was found. */
+  ocrShowBoxes: false,
 });
 
 /** @returns {Promise<typeof DEFAULT_SETTINGS>} */

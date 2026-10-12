@@ -105,12 +105,20 @@ src/
     selectors.js        Sitelerin oynatıcılarında kullanılan bütün seçiciler (tek yer)
     adapters/youtube.js YouTube altyazıları, bir kelime kaynağı olarak
   features/screen-ocr/  Ekrandan metin tarama
-    background.js       Başlatma yolları (kısayol, sağ tık menüsü, araç çubuğu menüsü, kasa düğmesi)
-    scan.js             Ekran görüntüsünü alır, alanı kırpar, motora verir, sonucu sayfaya yerleştirir
+    background.js       Başlatma yolları (kısayol, sağ tık menüsü, araç çubuğu menüsü, kasa düğmesi);
+                        Chrome'da betiği olmayan sekmeye içerik betiklerini ekler
+    scan.js             Ekran görüntüsünü alır ve okutur (Chrome: offscreen belge, Firefox: arka plan sayfası)
+    offscreen.html/.js  Chrome'un offscreen belgesi: görüntüyü okur, yalnızca kelimeleri geri verir
+    pipeline.js         Kırp, büyüt, ön işle, oku, ele, sayfaya yerleştir; 60 sn boşta kalınca motoru kapatır
+    preprocess.js       Ön işleme profilleri (düz, ters, yerel ters, altyazı), büyütme, siyah kare algılama
+    filters.js          Yanlış kutuları eleme (güven, simge, boyut, biçim, çok kısa kelime), okumaları birleştirme
     geometry.js         Sayfanın CSS pikseli <-> ekran görüntüsünün pikseli; kelime/satır/blok gruplama
-    engines/mock.js     Deneme motoru: metni okumaz, mürekkebin yerini bulur (gerçek motorlar 2. aşamada)
+    languages.js        Dil kodu eşleme (BCP-47 <-> Tesseract), "otomatik"in anlamı
+    engines/            Motor arayüzü (index.js) ve Tesseract.js motoru; üründe deneme motoru yoktur
     content/            Sayfadaki kısım (yalnızca üst çerçeve): area.js (alanın kuralları),
-                        selector.js (alan seçimi), layer.js (metin katmanı), screen-ocr.js (akış)
+                        selector.js (alan seçimi), layer.js (metin katmanı), screen-ocr.js (akış, kelime kaynağı)
+  vendor/tesseract/     Tesseract.js 7.0.0, çekirdeği ve İngilizce/Türkçe dil verisi; değiştirilmemiş
+                        resmi dosyalar, sürümleri ve SHA-256 toplamları README.md içinde
   popup/                Araç çubuğu simgesinin açtığı kasa: liste, arama, detay, dışa aktarma
   options/              Ayarlar sayfası: hedef dil, çift tıklama, Flash card ayarları ve tanı paneli,
                         yedekleme (dışa/içe aktarma) ve senkronizasyon (options/sync.js)
@@ -182,29 +190,73 @@ Henüz yok (SPEC-CAPTIONS.md'nin sonraki aşamaları): otomatik duraklatma, teti
 otomatik altyazılarda kararlı vuruş, "Satırı çevir", ayarlar ve tanı paneli, kısayollar, satır geçmişi,
 YouTube dışındaki siteler.
 
-### Ekrandan metin tarama (OCR) — 1. aşama
+### Ekrandan metin tarama (OCR)
 
-Başlatma: kısayol (varsayılan **Alt+Shift+S**; Chrome'da `chrome://extensions/shortcuts`, Firefox/Zen'de
-`about:addons` → dişli → **Manage Extension Shortcuts** ile değiştirilir), sayfada sağ tık →
-**Ekrandan metin tara**, araç çubuğu simgesine sağ tık → aynı madde, ya da kasa penceresindeki tarama
-düğmesi.
+Ekranda görünen yazıyı, videoların ve resimlerin **piksellerindeki** yazı dahil, cihazda okur
+(Tesseract.js). Videoyu durdur, taramayı başlat, bir alan sürükle (ya da `Enter` ile tüm ekranı tara),
+okunan kelimeye tıkla: mevcut çeviri penceresi açılır, "Kasaya ekle" kelimeyi okunan satırla birlikte
+saklar.
 
-Sayfa kararır, imleç artı olur; sürükleyerek bir alan seçilir, alan kenar ve köşelerinden ayarlanır,
-içinden tutulup taşınır. **Tara** ya da `Enter` alanı tarar; alan yokken `Enter` ya da çift tıklama
-görünen ekranın tamamını tarar; `Esc` iptal eder. Seçim arayüzü kaldırılıp tarayıcı sayfayı onsuz
-çizdikten sonra (iki kare) `tabs.captureVisibleTab` ile sekmenin görüntüsü alınır. Görüntü arka plan
-betiğinde kırpılır ve motora verilir; sayfaya yalnızca kutular ve metin döner. Görüntü hiçbir yere
-yazılmaz ve iş bitince belleği bırakılır.
+**Başlatma:** kısayol (Chrome'da varsayılan **Cmd+Shift+E** / **Ctrl+Shift+E**, Firefox/Zen'de
+**Alt+Shift+S**), sayfada sağ tık → **Ekrandan metin tara**, araç çubuğu simgesine sağ tık → aynı
+madde, ya da kasa penceresindeki tarama düğmesi. Kısayol Chrome'da `chrome://extensions/shortcuts`,
+Firefox/Zen'de `about:addons` → dişli → **Manage Extension Shortcuts** ile değiştirilir; ayarlar
+sayfası geçerli kısayolu ve bu adresi gösterir. Chrome önerilen kısayolu yalnızca **ilk kurulumda**
+atar: eklenti zaten kuruluysa yeni varsayılan kendiliğinden gelmez, o sayfadan elle atanır.
 
-Koordinat eşleme `devicePixelRatio`'ya güvenmez: oran, dönen görüntünün gerçek boyutundan ölçülür
-(`geometry.js`), yatay ve dikey ayrı. Böylece ekran yoğunluğu, tarayıcı yakınlaştırması ve çimdik
-yakınlaştırma aynı hesapla doğru çıkar. Yüklü eklentiyle ölçüldü: Chromium'da 1x, 1.5x, 2x ekran ve
-%80, %125, %150 yakınlaştırma, Firefox'ta 1x ve 2x; kutular kelimelerin üstüne en çok bir ekran pikseli
-farkla oturuyor.
+**Alan seçimi:** sayfa kararır, imleç artı olur; sürükleyerek bir alan seçilir, alan kenar ve
+köşelerinden ayarlanır, içinden tutulup taşınır. **Tara** ya da `Enter` alanı tarar; alan yokken
+`Enter` ya da çift tıklama görünen ekranın tamamını tarar; `Esc` iptal eder.
 
-Bu aşamada motor bir **deneme motorudur** (`engines/mock.js`): metni okumaz, yalnızca yazının yerini
-bulur; kutular kırmızı çerçeveyle çizilir ki hizaları gözle görülebilsin. Gerçek OCR (Tesseract.js),
-üzerine gelince çeviri, düzeltme, ayarlar ve kıyaslama SPEC-OCR.md'nin sonraki aşamalarıdır.
+**Ekran görüntüsü:** seçim arayüzü kaldırılıp tarayıcı sayfayı onsuz çizdikten sonra (iki kare)
+`tabs.captureVisibleTab` ile alınır (`activeTab`: yalnızca kullanıcı başlattığında, yalnızca o sekme).
+Görüntü eklentinin kendi bağlamında işlenir: Chrome'da service worker Worker başlatamadığı için bir
+**offscreen belgede**, Firefox'ta **arka plan sayfasında**. Sayfaya yalnızca kelimeler ve kutuları
+döner. Görüntü hiçbir yere yazılmaz, ağa gönderilmez; iş bitince belleği bırakılır, motor 60 sn boşta
+kalınca kapatılır.
+
+**Koordinat eşleme** `devicePixelRatio`'ya güvenmez: oran, dönen görüntünün gerçek boyutundan ölçülür
+(`geometry.js`), yatay ve dikey ayrı. Ekran yoğunluğu, tarayıcı yakınlaştırması ve çimdik yakınlaştırma
+aynı hesapla doğru çıkar.
+
+**Ön işleme** (`preprocess.js`): alan, metin okunacak boyuta gelsin diye 1-3 kat büyütülür (yoğun
+ekranda daha az, büyük alanda daha az), griye çevrilir, kontrastı açılır. Sonra aynı görüntü birkaç
+kez okunur: olduğu gibi (açık zeminde koyu yazı), koyu bölgeleri varsa yerel olarak ters çevrilmiş
+(koyu şeritte açık yazı), tamamı koyuysa ters çevrilmiş, ve **altyazı profiliyle** (yalnızca beyaza
+yakın, renksiz pikseller: hareketli görüntü üstündeki dış çizgili beyaz yazı). İki okuma aynı yerde
+satır bulduysa, motorun daha emin olduğu satır gösterilir (`filters.js`, `mergeReadings`).
+
+**Yanlış kutuları eleme** (`filters.js`): güven eşiğinin altındakiler (varsayılan 60, ayarlanabilir),
+harf ya da rakam içermeyenler (üç nokta, ok, madde imi), 6 CSS pikselinden alçak kutular, kelime
+biçiminde olmayan kutular (harf sayısına göre fazla geniş ya da dikey çubuk), tek başına duran tek
+harfler ve satırında yalnız kalan, yüksek güvenle okunmamış iki harfliler atılır.
+
+**Metin katmanı:** kelimeler görüntünün üstünde görünmez ama seçilebilir metin olarak durur; imleç
+üzerine gelince vurgulanır, tıklanınca çeviri penceresi açılır. Tarama sonucu `WordSource` sözleşmesini
+(`core/hover/word-source.js`) uygular: pencere, kasa ve bağlam altyazıdaki yolun aynısını kullanır.
+Ayarlardaki **OCR kutularını göster** her kelimenin çevresine çerçeve çizer (hata ayıklama).
+
+**Diller:** paketle İngilizce ve Türkçe verisi gelir. "Otomatik" ikisiyle birlikte okur; ayarlardan tek
+dil seçilebilir. Başka dillerin verisini indirme henüz yok.
+
+**Hatalar sayfada söylenir:** taranamayan sayfa, art arda çok tarama, siyah gelen görüntü ("Bu içerik
+ekran görüntüsüne izin vermiyor olabilir": korumalı video), metin bulunamadı, motor hatası. Eklentinin
+hiç çalışamadığı sayfalarda (`chrome://`, mağazalar) araç çubuğu simgesinde kısa süre "!" görünür.
+
+**Chrome'da açık sekmeler:** Chrome, eklenti kurulduğunda ya da yeniden yüklendiğinde zaten açık olan
+sekmelere içerik betiği eklemez (Firefox ekler). Tarama böyle bir sekmede başlatılırsa betikler o an
+`chrome.scripting` ile eklenir.
+
+Ölçülen (yüklü eklenti, başsız tarayıcı, test sayfası `tests/fixtures/ocr-page.html`): Chromium 1x ve
+2x, Firefox 1x ve 2x; paragraf (İngilizce + Türkçe), koyu şeritteki satır, karedeki tabela ve dış
+çizgili altyazı okunuyor; çubuklar, üç nokta, ikon, küçük resim ve siyah alan kutu olmuyor. Gerçek
+YouTube oynatıcısında duraklatılmış karede altyazının 11 kelimesinden 10'u okundu (iki tarayıcıda da);
+görüntünün kendisinden kare başına bir iki sahte kısa kelime çıkabiliyor. Süre: alan taraması 1,5-4,5 sn
+(Chrome'da ilk tarama offscreen belge ve WebAssembly derlemesi yüzünden yavaş), tüm ekran 3-7 sn.
+
+Henüz yok (SPEC-OCR.md): üzerine gelince kendiliğinden açılan pencere (şimdilik tıklama), kelime
+düzeltme, "Satırı/Bloğu çevir", sürükleyerek ifade seçimi, videoyu otomatik duraklatma, başka dillerin
+verisini indirme ve silme, tanı paneli, PaddleOCR denemesi ve kıyaslama aracı.
 
 ### Hedef ve kaynak dil
 
@@ -575,6 +627,8 @@ iki manifestteki `host_permissions` listesine de ekle.
 | `storage` | Ayarları ve kasayı (ileride çeviri önbelleğini) `chrome.storage.local` içinde, yalnızca bu tarayıcıda saklamak için. |
 | `alarms` | Quiz'in zamanlayıcısı için. Arka plan betiği uyurken zamanı gelince onu uyandırır. |
 | `activeTab` | Ekrandan metin tarama için: kullanıcı kısayola bastığında ya da menüden seçtiğinde, yalnızca o sekmenin ekran görüntüsünü almak (`tabs.captureVisibleTab`). Sürekli bir izin değildir; kullanıcı taramayı başlatmadıkça hiçbir sekmenin görüntüsü alınamaz. |
+| `offscreen` (yalnızca Chrome) | Metin tanımayı (WebAssembly, Worker) çalıştıracak görünmez bir eklenti sayfası açmak için: Chrome'un service worker'ı Worker başlatamaz. Firefox'ta arka plan sayfası bu işi kendi yapar, izin orada yoktur. |
+| `scripting` (yalnızca Chrome) | Kullanıcı taramayı, eklenti yüklenmeden önce açılmış bir sekmede başlatırsa içerik betiklerini o sekmeye eklemek için (Chrome bunu kendiliğinden yapmaz). Yalnızca `activeTab` ile, yani kullanıcının taramayı başlattığı sekmede çalışır. |
 | `contextMenus` | Sağ tık menüsüne ve araç çubuğu simgesinin menüsüne "Ekrandan metin tara" maddesini eklemek için. Sayfa içeriğine erişim vermez. |
 | `identity` | Bulut hesabına bağlanırken sağlayıcının oturum penceresini açmak (`identity.launchWebAuthFlow`) için. Tarayıcı hesabının e-postası istenmez (`identity.email` yok). |
 | İsteğe bağlı adres izni: `https://*/*`, `http://localhost/*`, `http://127.0.0.1/*` | Kurulumda verilmez. Bir bulut hesabı ya da kendi sunucun bağlanırken tarayıcı yalnızca o adres için sorar (Google Drive: `www.googleapis.com`, `oauth2.googleapis.com`; OneDrive: `graph.microsoft.com`, `login.microsoftonline.com`; Dropbox: `api.dropboxapi.com`, `content.dropboxapi.com`). Desen geniştir çünkü kullanıcının gireceği sunucu adresi önceden bilinemez; verilen izin yalnızca istenen adrestir. |
@@ -590,6 +644,12 @@ iki manifestteki `host_permissions` listesine de ekle.
 Sekme açmak (`chrome.tabs.create`), ayarlar sayfasını açmak, eklenti açılır penceresini açmak
 (`action.openPopup`) ve quiz penceresini açmak (`windows.create`) izin gerektirmez; `tabs` izni istenmez.
 Klavye kısayolu (`commands`) bir izin değildir.
+
+Manifestteki `content_security_policy` (`script-src 'self' 'wasm-unsafe-eval'`) eklenti sayfalarında
+WebAssembly derlemeye izin verir; metin tanıma motoru (Tesseract'ın çekirdeği) WebAssembly'dir. Uzak kod
+yüklenmez: motorun bütün dosyaları pakettedir (`src/vendor/tesseract`). `web-ext lint` bu dosyalar için üç
+`DANGEROUS_EVAL` uyarısı verir: kütüphanenin içindeki `regenerator-runtime` yedek yolunda `Function`
+kurucusu geçer; bu yol çalışmaz ve CSP zaten engeller. Dosyalar değiştirilmediği için uyarı kalır.
 
 Chrome'daki `key` alanı bir izin değildir: yalnızca bir açık anahtardır ve geliştirici modunda yüklenen
 eklentinin kimliğini sabitler (OAuth yönlendirme adresi kimlikten türer; bkz. `SETUP-OAUTH.md`).

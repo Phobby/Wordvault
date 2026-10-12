@@ -1,4 +1,4 @@
-// A stand-in for a text recognition engine. It cannot read: it finds where the ink is (rows of
+// TEST ONLY. A stand-in for a text recognition engine. It cannot read: it finds where the ink is (rows of
 // it, and runs within a row) and calls each run a word with a made-up text. That is enough to
 // build and check everything around an engine (capture, cropping, the mapping of boxes back
 // onto the page, the text layer) before a real one is in place. It has the shape every engine

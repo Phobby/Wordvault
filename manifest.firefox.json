@@ -38,6 +38,9 @@
     "https://en.wiktionary.org/*",
     "https://upload.wikimedia.org/*"
   ],
+  "content_security_policy": {
+    "extension_pages": "script-src 'self' 'wasm-unsafe-eval'; object-src 'self'"
+  },
   "background": {
     "scripts": ["background/background.js"],
     "type": "module"
@@ -79,6 +82,7 @@
     {
       "matches": ["<all_urls>"],
       "js": [
+        "core/hover/word-source.js",
         "features/screen-ocr/content/area.js",
         "features/screen-ocr/content/selector.js",
         "features/screen-ocr/content/layer.js",

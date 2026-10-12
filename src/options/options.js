@@ -1,6 +1,7 @@
 // Options page. It edits the same stored settings every other part of the extension reads
 // (lib/settings.js); nothing is kept here.
 
+import { createOcrSection } from './ocr.js';
 import { downloadBackup, restoreBackup } from '../lib/backup.js';
 import { getSettings, updateSettings } from '../lib/settings.js';
 import { getPreferences, setTargetLanguage } from '../lib/translator.js';
@@ -468,6 +469,8 @@ const quizSection = h(
 
 // --- Page ----------------------------------------------------------------------------------------
 
+const ocrSection = createOcrSection({ flashSaved, switchRow, fieldRow });
+
 document.getElementById('app').append(
   h(
     'header',
@@ -489,6 +492,7 @@ document.getElementById('app').append(
   // would write a `false` out as text, hence the empty string.)
   speech.usesRecordings ? h('section', { class: 'card' }, switchRow(ttsFallback, 'optTtsFallback', 'optTtsFallbackHelp')) : '',
   quizSection,
+  ocrSection.element,
   backupSection,
 );
 
@@ -502,6 +506,7 @@ function render() {
   renderTarget();
   renderSwitches();
   renderQuizSettings();
+  ocrSection.render();
 }
 syncControls.render();
 

@@ -1247,6 +1247,82 @@
     "message": "Something went wrong while translating.",
     "description": "Error: fallback for anything unexpected."
   },
+  "optOcrTitle": {
+    "message": "Scan text on screen",
+    "description": "Options: title of the section about reading text from a screenshot (OCR)."
+  },
+  "optOcrHelp": {
+    "message": "Reads the text in what is on screen, including text inside videos and pictures: pause the video, start the scan, drag an area. Click a word to translate it. The picture is read on this device, is not stored and never leaves the browser.",
+    "description": "Options: what the screen scan does."
+  },
+  "optOcrShortcut": {
+    "message": "Keyboard shortcut",
+    "description": "Options: label of the current shortcut that starts a screen scan."
+  },
+  "optOcrShortcutNone": {
+    "message": "Not assigned",
+    "description": "Options: shown instead of the shortcut when the browser has none assigned (for example because another extension uses it)."
+  },
+  "optOcrShortcutHelpChrome": {
+    "message": "If it is not assigned or does nothing, another shortcut is in its way: open the address below in a new tab and give \"Scan text on screen\" a key combination. Without a shortcut the scan can be started from the right-click menu of a page, or from the Wordvault button in the toolbar.",
+    "description": "Options (Chrome): what to do when the shortcut does not work."
+  },
+  "optOcrShortcutHelpFirefox": {
+    "message": "To change it: about:addons, the gear button, \"Manage Extension Shortcuts\". Without a shortcut the scan can be started from the right-click menu of a page, or from the Wordvault button in the toolbar.",
+    "description": "Options (Firefox): where the shortcut is changed."
+  },
+  "optOcrShortcutAddress": {
+    "message": "Address of the browser's shortcut settings",
+    "description": "Options: accessible name of the read-only field holding chrome://extensions/shortcuts."
+  },
+  "optOcrCopy": {
+    "message": "Copy",
+    "description": "Options: button that copies the address of the shortcut settings."
+  },
+  "optOcrCopied": {
+    "message": "Copied",
+    "description": "Options: shown briefly on the copy button."
+  },
+  "optOcrLang": {
+    "message": "Language of the text",
+    "description": "Options: which language data the screen scan reads with."
+  },
+  "optOcrLangHelp": {
+    "message": "Automatic reads with English and Turkish together. Choosing one is a little faster and a little more accurate for text in that language.",
+    "description": "Options: help for the scan language."
+  },
+  "optOcrLangAuto": {
+    "message": "Automatic (English + Turkish)",
+    "description": "Options: scan language choice."
+  },
+  "optOcrConfidence": {
+    "message": "Confidence threshold",
+    "description": "Options: words the engine is less sure of than this number (0-95) are not shown."
+  },
+  "optOcrConfidenceHelp": {
+    "message": "Words the engine is less sure of than this (0 to 95) are left out. Lower it if words are missing, raise it if icons and shapes turn up as words.",
+    "description": "Options: help for the confidence threshold."
+  },
+  "optOcrShowBoxes": {
+    "message": "Show OCR boxes",
+    "description": "Options: troubleshooting switch that draws a frame around every word the scan found."
+  },
+  "optOcrShowBoxesHelp": {
+    "message": "For troubleshooting: draws a frame around every word that was found. When off, a word is only highlighted while the pointer is on it.",
+    "description": "Options: help for the boxes switch."
+  },
+  "optOcrRemember": {
+    "message": "Remember the last area",
+    "description": "Options: start the next scan with the area that was scanned last."
+  },
+  "optOcrRememberHelp": {
+    "message": "The next scan starts with the area you scanned last; adjust it or press Enter.",
+    "description": "Options: help for remembering the area."
+  },
+  "optOcrEngine": {
+    "message": "Engine: Tesseract.js 7.0.0, running on this device. Language data included: English, Turkish.",
+    "description": "Options: which recognition engine is used."
+  },
   "cmdScanScreen": {
     "message": "Scan text on screen",
     "description": "Keyboard shortcut (shown in the browser's shortcut settings): start choosing an area of the page whose text is read from a screenshot."
@@ -1271,10 +1347,6 @@
     "message": "Close the scanned text",
     "description": "Screen scan: tooltip of the button that removes the text layer."
   },
-  "ocrReading": {
-    "message": "Reading the text…",
-    "description": "Screen scan: shown while the screenshot is being read."
-  },
   "ocrErrForbidden": {
     "message": "This page cannot be scanned. Start the scan with the shortcut or the menu; browser pages and add-on stores do not allow it at all.",
     "description": "Screen scan error: the browser does not let extensions work on this page."
@@ -1291,6 +1363,14 @@
     "message": "No text was found in this area.",
     "description": "Screen scan error: the engine found nothing."
   },
+  "ocrErrBlank": {
+    "message": "This content may not allow screenshots: the picture came back black (protected video does that).",
+    "description": "Screen scan error: the screenshot of the chosen area is black, as with DRM-protected video."
+  },
+  "ocrErrEngine": {
+    "message": "The text could not be read. Try again; if it keeps happening, reload the extension.",
+    "description": "Screen scan error: the recognition engine failed."
+  },
   "ocrResult": {
     "message": "$COUNT$ words found",
     "description": "Screen scan: shown next to the scanned area when it has been read.",
@@ -1300,11 +1380,20 @@
       }
     }
   },
-  "ocrMockResult": {
-    "message": "$COUNT$ boxes found (test engine: positions only, no text yet)",
-    "description": "Screen scan: result of the stand-in engine, which finds where text is but cannot read it.",
+  "ocrLoadingData": {
+    "message": "Loading language data… $PERCENT$%",
+    "description": "Screen scan: shown while the recognition engine and its language data are being loaded.",
     "placeholders": {
-      "count": {
+      "percent": {
+        "content": "$1"
+      }
+    }
+  },
+  "ocrReadingPercent": {
+    "message": "Reading the text… $PERCENT$%",
+    "description": "Screen scan: shown while the screenshot is being read.",
+    "placeholders": {
+      "percent": {
         "content": "$1"
       }
     }

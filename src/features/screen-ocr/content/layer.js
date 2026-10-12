@@ -23,10 +23,11 @@
       font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
       border-radius: 2px; user-select: text; -webkit-user-select: text;
     }
-    .wv-ocr-word:hover { background: rgba(255, 204, 0, 0.4); }
+    .wv-ocr-word { cursor: pointer; }
+    .wv-ocr-word:hover, .wv-ocr-word.wv-active { background: rgba(255, 204, 0, 0.45); }
     .wv-ocr-word::selection { background: rgba(79, 70, 229, 0.35); color: transparent; }
-    /* The stand-in engine cannot read; its boxes are drawn so that their place can be checked. */
-    .wv-ocr-outlined .wv-ocr-word { outline: 1px solid rgba(255, 60, 60, 0.9); }
+    /* Troubleshooting ("show OCR boxes" in the settings): where every word was found. */
+    .wv-ocr-boxes .wv-ocr-word { outline: 1px solid rgba(255, 60, 60, 0.9); }
     .wv-ocr-tools {
       position: absolute; display: flex; align-items: center; gap: 6px; padding: 3px 4px 3px 10px;
       background: var(--wv-bg); color: var(--wv-fg); border: 1px solid var(--wv-border);
@@ -100,13 +101,16 @@
   /**
    * Shows that the area is being read.
    * @param {{ x: number, y: number, width: number, height: number }} area  CSS px of the viewport.
+   * @param {string} text  What is going on, localized.
    */
-  function showBusy(area) {
-    open(area);
-    ui.words.replaceChildren();
-    ui.layer.classList.remove('wv-ocr-outlined');
+  function showBusy(area, text) {
+    if (!current || current.area !== area) {
+      open(area);
+      ui.words.replaceChildren();
+      ui.layer.classList.remove('wv-ocr-boxes');
+    }
     ui.status.className = 'wv-ocr-status';
-    ui.status.replaceChildren(h('span', { class: 'wv-spinner' }), t('ocrReading'));
+    ui.status.replaceChildren(h('span', { class: 'wv-spinner' }), text);
     placeTools(area);
   }
 
@@ -114,12 +118,25 @@
    * Shows what was read.
    * @param {Object} result  As returned by the background script: area, words (with `rect` in
    *                         CSS px of the viewport), info.
+   * @param {Object} [options]
+   * @param {boolean} [options.showBoxes]  Draw the box of every word (troubleshooting).
+   * @param {(word: Object, element: Element) => void} [options.onWord]  A word was clicked.
    */
-  function showResult(result) {
+  function showResult(result, { showBoxes = false, onWord = () => {} } = {}) {
     open(result.area);
-    ui.layer.classList.toggle('wv-ocr-outlined', result.info.engine === 'mock');
+    ui.layer.classList.toggle('wv-ocr-boxes', showBoxes);
     const nodes = result.words.map((word) => {
-      const node = h('span', { class: 'wv-ocr-word', 'data-word': String(word.id), dir: 'auto', text: word.text });
+      const node = h('span', {
+        class: 'wv-ocr-word',
+        'data-word': String(word.id),
+        dir: 'auto',
+        text: word.text,
+        onclick: (event) => {
+          // A click that ends a drag has selected text; that is not a lookup of one word.
+          if (!event.isTrusted || String(ui.surface.root.getRootNode().getSelection?.() || '').trim().length > word.text.length) return;
+          onWord(word, node);
+        },
+      });
       place(node, word.rect);
       // Glyphs are about as tall as the box; the width is then stretched to match exactly.
       node.style.fontSize = `${Math.max(4, word.rect.height * 0.9)}px`;
@@ -138,7 +155,7 @@
       }
     }
     ui.status.className = 'wv-ocr-status';
-    ui.status.textContent = result.info.engine === 'mock' ? t('ocrMockResult', [String(result.words.length)]) : t('ocrResult', [String(result.words.length)]);
+    ui.status.textContent = t('ocrResult', [String(result.words.length)]);
     placeTools(result.area);
   }
 
@@ -162,7 +179,33 @@
     onClose?.();
   }
 
+  /** Marks the word the bubble is open for (null: none). */
+  function setActive(element) {
+    for (const node of ui?.words.children || []) node.classList.toggle('wv-active', node === element);
+  }
+
+  /** Where a set of words is on screen right now (the layer moves with the page). */
+  function rectOf(wordIds) {
+    const rects = [...(ui?.words.children || [])].filter((node) => wordIds.includes(Number(node.dataset.word))).map((node) => node.getBoundingClientRect());
+    if (rects.length === 0) return null;
+    const left = Math.min(...rects.map((rect) => rect.left));
+    const top = Math.min(...rects.map((rect) => rect.top));
+    return new DOMRect(left, top, Math.max(...rects.map((rect) => rect.right)) - left, Math.max(...rects.map((rect) => rect.bottom)) - top);
+  }
+
+  /** The word of the layer at a point of the screen, or null. */
+  function wordIdAt(x, y) {
+    for (const node of ui?.words.children || []) {
+      const rect = node.getBoundingClientRect();
+      if (x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom) return Number(node.dataset.word);
+    }
+    return null;
+  }
+
   WV.ocrLayer = {
+    setActive,
+    rectOf,
+    wordIdAt,
     showBusy,
     showResult,
     showError,

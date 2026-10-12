@@ -35,9 +35,12 @@ kasaya eklersen onunla birlikte saklanır; altyazı akışı kaydedilmez ya da i
 ### Ekrandan metin tarama (yalnızca sen başlattığında)
 
 Taramayı kısayolla ya da menüden başlattığında, o sekmenin o anki ekran görüntüsü alınır ve seçtiğin
-alan **bu tarayıcının içinde** okunur. Görüntü cihazından çıkmaz, hiçbir yere kaydedilmez ve okuma
-bitince bellekten atılır. Eklentinin sekmelerin görüntüsünü kendiliğinden alma izni yoktur
-(`activeTab`: yalnızca senin başlattığın anda, yalnızca o sekme). Bulut OCR kullanılmaz.
+alan **bu tarayıcının içinde** okunur (Tesseract.js; motor ve dil verisi eklentinin içindedir, ağdan
+hiçbir şey indirilmez). Görüntü ve ondan okunan metin cihazından çıkmaz, hiçbir yere kaydedilmez;
+okuma bitince görüntü bellekten atılır. Eklentinin sekmelerin görüntüsünü kendiliğinden alma izni
+yoktur (`activeTab`: yalnızca senin başlattığın anda, yalnızca o sekme). Bulut OCR kullanılmaz.
+Okunan bir kelimeye tıklarsan yalnızca **o kelime** çeviri servisine gider; kasaya eklersen kelime,
+okunan satırıyla birlikte kasada saklanır.
 
 ### Sözlük ve telaffuz (kelimeyi kasaya eklediğinde ya da dinlediğinde)
 

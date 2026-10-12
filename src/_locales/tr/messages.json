@@ -937,6 +937,63 @@
   "errUnknown": {
     "message": "Çeviri sırasında bir sorun oluştu."
   },
+  "optOcrTitle": {
+    "message": "Ekrandan metin tara"
+  },
+  "optOcrHelp": {
+    "message": "Ekranda görünen yazıyı okur; videoların ve resimlerin içindeki yazı dahil: videoyu durdur, taramayı başlat, bir alan sürükle. Çevirmek için kelimeye tıkla. Görüntü bu cihazda okunur, saklanmaz ve tarayıcıdan çıkmaz."
+  },
+  "optOcrShortcut": {
+    "message": "Klavye kısayolu"
+  },
+  "optOcrShortcutNone": {
+    "message": "Atanmamış"
+  },
+  "optOcrShortcutHelpChrome": {
+    "message": "Atanmamışsa ya da bir şey yapmıyorsa başka bir kısayol önüne geçiyordur: aşağıdaki adresi yeni sekmede aç ve \"Ekrandan metin tara\" için bir tuş birleşimi ver. Kısayol olmadan da tarama, sayfada sağ tık menüsünden ya da araç çubuğundaki Wordvault düğmesinden başlatılabilir."
+  },
+  "optOcrShortcutHelpFirefox": {
+    "message": "Değiştirmek için: about:addons, dişli düğmesi, \"Manage Extension Shortcuts\". Kısayol olmadan da tarama, sayfada sağ tık menüsünden ya da araç çubuğundaki Wordvault düğmesinden başlatılabilir."
+  },
+  "optOcrShortcutAddress": {
+    "message": "Tarayıcının kısayol ayarlarının adresi"
+  },
+  "optOcrCopy": {
+    "message": "Kopyala"
+  },
+  "optOcrCopied": {
+    "message": "Kopyalandı"
+  },
+  "optOcrLang": {
+    "message": "Metnin dili"
+  },
+  "optOcrLangHelp": {
+    "message": "Otomatik, İngilizce ve Türkçeyi birlikte kullanır. Tek dil seçmek, o dildeki metinde biraz daha hızlı ve isabetlidir."
+  },
+  "optOcrLangAuto": {
+    "message": "Otomatik (İngilizce + Türkçe)"
+  },
+  "optOcrConfidence": {
+    "message": "Güven eşiği"
+  },
+  "optOcrConfidenceHelp": {
+    "message": "Motorun bundan (0-95) daha az emin olduğu kelimeler gösterilmez. Kelimeler eksik kalıyorsa düşür, ikonlar ve şekiller kelime gibi çıkıyorsa yükselt."
+  },
+  "optOcrShowBoxes": {
+    "message": "OCR kutularını göster"
+  },
+  "optOcrShowBoxesHelp": {
+    "message": "Hata ayıklama için: bulunan her kelimenin çevresine çerçeve çizer. Kapalıyken kelime yalnızca imleç üzerindeyken vurgulanır."
+  },
+  "optOcrRemember": {
+    "message": "Son alanı hatırla"
+  },
+  "optOcrRememberHelp": {
+    "message": "Sonraki tarama en son taradığın alanla başlar; ayarla ya da Enter'a bas."
+  },
+  "optOcrEngine": {
+    "message": "Motor: Tesseract.js 7.0.0, bu cihazda çalışır. Paketteki dil verisi: İngilizce, Türkçe."
+  },
   "cmdScanScreen": {
     "message": "Ekrandan metin tara"
   },
@@ -955,9 +1012,6 @@
   "ocrClose": {
     "message": "Taranan metni kapat"
   },
-  "ocrReading": {
-    "message": "Metin okunuyor…"
-  },
   "ocrErrForbidden": {
     "message": "Bu sayfa taranamıyor. Taramayı kısayolla ya da menüden başlat; tarayıcı sayfaları ve eklenti mağazaları ise hiç izin vermez."
   },
@@ -970,6 +1024,12 @@
   "ocrErrNoText": {
     "message": "Bu alanda metin bulunamadı."
   },
+  "ocrErrBlank": {
+    "message": "Bu içerik ekran görüntüsüne izin vermiyor olabilir: görüntü simsiyah geldi (korumalı videolarda böyle olur)."
+  },
+  "ocrErrEngine": {
+    "message": "Metin okunamadı. Yeniden dene; sürerse eklentiyi yeniden yükle."
+  },
   "ocrResult": {
     "message": "$COUNT$ kelime bulundu",
     "placeholders": {
@@ -978,10 +1038,18 @@
       }
     }
   },
-  "ocrMockResult": {
-    "message": "$COUNT$ kutu bulundu (deneme motoru: yalnızca konum, henüz metin yok)",
+  "ocrLoadingData": {
+    "message": "Dil verisi yükleniyor… %$PERCENT$",
     "placeholders": {
-      "count": {
+      "percent": {
+        "content": "$1"
+      }
+    }
+  },
+  "ocrReadingPercent": {
+    "message": "Metin okunuyor… %$PERCENT$",
+    "placeholders": {
+      "percent": {
         "content": "$1"
       }
     }
