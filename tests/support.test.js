@@ -7,15 +7,17 @@ import { test } from 'node:test';
 
 import { SUPPORT_URL, supportUrl } from '../src/config.js';
 
-test('out of the box there is no support page, so the support UI is hidden', () => {
-  assert.match(SUPPORT_URL, /YOUR_/);
-  assert.equal(supportUrl(), '');
+test('the configured address is either none (UI hidden) or an https address', () => {
+  const shown = supportUrl();
+  if (shown === '') return; // empty or the placeholder: nothing is shown
+  assert.equal(new URL(SUPPORT_URL).protocol, 'https:');
+  assert.equal(shown, new URL(SUPPORT_URL).href);
 });
 
 test('an https address is used as it is; anything else is no address', () => {
   assert.equal(supportUrl('https://buymeacoffee.com/someone'), 'https://buymeacoffee.com/someone');
   assert.equal(supportUrl('  https://ko-fi.com/someone  '), 'https://ko-fi.com/someone', 'another service is one line');
-  for (const value of ['', '   ', null, undefined, 'https://buymeacoffee.com/YOUR_PAGE', 'http://buymeacoffee.com/someone', 'javascript:alert(1)', 'buymeacoffee.com/someone', 'data:text/html,x']) {
+  for (const value of ['', '   ', null, 'https://buymeacoffee.com/YOUR_PAGE', 'http://buymeacoffee.com/someone', 'javascript:alert(1)', 'buymeacoffee.com/someone', 'data:text/html,x']) {
     assert.equal(supportUrl(value), '', String(value));
   }
 });

@@ -7,7 +7,7 @@
  * support UI stays hidden: the card on the settings page, the link in the toolbar popup and
  * the card on the welcome page.
  */
-export const SUPPORT_URL = 'https://buymeacoffee.com/YOUR_PAGE';
+export const SUPPORT_URL = 'https://buymeacoffee.com/phoby';
 
 /** @returns {string} The address to link to, or '' when there is none to show. */
 export function supportUrl(value = SUPPORT_URL) {
