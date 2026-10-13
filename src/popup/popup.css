@@ -240,3 +240,17 @@ body {
 .learned-summary { padding: 8px 12px 0; font-size: 12.5px; font-weight: 600; color: var(--wv-ok); }
 .row-learned { grid-column: 1 / -1; font-size: 11.5px; color: var(--wv-ok); }
 .row-badge { grid-column: 1 / -1; justify-self: start; padding: 0 6px; border-radius: 999px; background: color-mix(in srgb, var(--wv-ok) 16%, transparent); color: var(--wv-ok); font-size: 10.5px; font-weight: 650; line-height: 16px; }
+
+/* Streak and rank (quiz/progress-panel.js) */
+#app { position: relative; }
+.progress-panel { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 8px 14px; padding: 8px 12px; border-bottom: 1px solid var(--wv-border); }
+.progress-panel[hidden] { display: none; }
+.progress-streak { display: flex; align-items: center; gap: 8px; }
+.progress-streak .wv-flame { width: 22px; height: 22px; }
+.progress-streak .wv-streak-count { display: none; }
+.progress-streak-text { display: grid; line-height: 1.25; }
+.progress-streak-text strong { font-size: 13px; }
+.progress-streak-text .help { font-size: 11.5px; color: var(--wv-muted); }
+.progress-freeze { grid-column: 1 / -1; display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 6px 10px; border-radius: 8px; background: var(--wv-tint); font-size: 12.5px; }
+
+.count { white-space: nowrap; }

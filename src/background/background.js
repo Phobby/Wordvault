@@ -16,6 +16,8 @@ import { CLEANUP_ALARM, cleanupCache, ensureCacheCleanup } from '../lib/translat
 import { cancelTranslation, checkProvider, clearTranslationCaches, getPreferences, setSiteSourceLanguage, setTargetLanguage, translate, translationCacheStats } from '../lib/translator.js';
 import { ENTRY_PREFIX, TOMBSTONE_PREFIX, addEntry, entryId, getEntry, hasEntry, removeEntry, updateEntry } from '../lib/vault.js';
 import { NOTIFICATION_ID } from '../quiz/display.js';
+import { ackRank, freezeYesterday, getProgress } from '../quiz/progress-state.js';
+import { REMINDER_ALARM, REMINDER_NOTIFICATION, ensureReminder, runReminder } from '../quiz/reminder.js';
 import { DAYS_KEY } from '../quiz/streak.js';
 import { ensureSyncScheduled, onSyncAlarm, syncInBackground, turnOffEncryption, unlockEncryption, vaultChanged } from '../sync/engine.js';
 import { ALARM_NAME, answerQuestion, claimSession, ensureScheduled, muteToday, openFromNotification, quizPageGone, runScheduledQuiz, testQuiz, unmute } from '../quiz/scheduler.js';
@@ -99,6 +101,10 @@ const handlers = {
   'wv:quiz:unmute': () => unmute(),
   // The options page asks for this after a quiz setting was changed; see the timer below.
   'wv:quiz:reschedule': () => ensureScheduled(),
+  // Streak and rank, for the toolbar popup, the settings page and the quiz card. Numbers only.
+  'wv:progress': () => getProgress(),
+  'wv:progress:ack-rank': fromOwnPage(() => ackRank()),
+  'wv:streak:freeze': fromOwnPage(() => freezeYesterday()),
   // "Sync now" on the options page, and the first synchronisation after connecting.
   'wv:sync:now': fromOwnPage(() => syncInBackground('manual')),
   // Optional encryption of the stored file: the password comes from the options page and is
@@ -159,11 +165,16 @@ registerScreenOcr();
 // of the settings is acted on at once: the frequency that is set now counts from now, and with
 // the quiz switched off there is no alarm at all.
 
-const scheduleQuiz = () => ensureScheduled().catch(() => {});
+// (The evening reminder follows the same settings and has its own alarm: quiz/reminder.js.)
+const scheduleQuiz = () => {
+  ensureScheduled().catch(() => {});
+  ensureReminder().catch(() => {});
+};
 
 chrome.alarms.onAlarm.addListener((alarm) => {
   if (alarm.name === ALARM_NAME) runScheduledQuiz().catch(() => {});
   else if (alarm.name === CLEANUP_ALARM) cleanupCache().catch(() => {});
+  else if (alarm.name === REMINDER_ALARM) runReminder().catch(() => {});
   else onSyncAlarm(alarm.name).catch(() => {});
 });
 chrome.runtime.onInstalled.addListener(scheduleQuiz);
@@ -231,7 +242,9 @@ function listenForNotifications() {
   if (listeningForNotifications || !chrome.notifications) return;
   listeningForNotifications = true;
   chrome.notifications.onClicked.addListener((id) => {
-    if (id === NOTIFICATION_ID) openFromNotification().catch(() => {});
+    // the quiz that could not be shown otherwise, or the evening reminder: either opens a quiz
+    if (id === NOTIFICATION_ID || id === REMINDER_NOTIFICATION) openFromNotification().catch(() => {});
+    if (id === REMINDER_NOTIFICATION) chrome.notifications.clear(REMINDER_NOTIFICATION);
   });
 }
 listenForNotifications();

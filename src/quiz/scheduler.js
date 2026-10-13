@@ -15,6 +15,7 @@ import { resolveTargetLanguage } from '../lib/translator.js';
 import { getEntry, listEntries, updateEntry } from '../lib/vault.js';
 import { MODES, applyAnswer, expectedMs, levelOf, postpone, rateAnswer, recordSpeed, statusOf, usualMs } from './learning.js';
 import { localDay } from './progress.js';
+import { inQuietHours } from './reminder.js';
 import { countAnswer, dailyGoal } from './streak.js';
 import { METHODS, NOTIFICATION_ID, PREFERENCES, display, methodOrder, notificationsAllowed, sessionClaimed } from './display.js';
 import { CHOICE_COUNT, askableCards, countMeanings, questionInMode } from './question.js';
@@ -195,6 +196,7 @@ async function lookAround(forced) {
 function standingReason(settings, status, state, now) {
   if (!settings.quizEnabled) return 'disabled';
   if (state.mutedUntil > now) return 'muted';
+  if (inQuietHours(now, settings.quizQuietStart, settings.quizQuietEnd)) return 'quiet_hours';
   if (status.total < settings.quizMinCards) return 'below_min_cards';
   // Four meanings are needed wherever there are choices; a quiz that only has words typed needs none.
   if (status.meanings < CHOICE_COUNT && enabledModes(settings).some((mode) => mode !== 'writing')) return 'not_enough_choices';

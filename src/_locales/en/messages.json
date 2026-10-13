@@ -2190,5 +2190,193 @@
   "tbLearnedEmptyHint": {
     "message": "A word is learned after several right answers in a row on different days. It stays in your vault and is asked only rarely.",
     "description": "Vault popup: empty \"My vocabulary\" hint."
+  },
+  "progressTitle": {
+    "message": "Streak and rank",
+    "description": "Label of the progress panel."
+  },
+  "streakNone": {
+    "message": "No streak yet",
+    "description": "Flame: no streak."
+  },
+  "streakDone": {
+    "message": "$COUNT$-day streak, today done",
+    "description": "Flame label: today's quiz is done.",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "streakWaiting": {
+    "message": "$COUNT$-day streak, today still to do",
+    "description": "Flame label: today not done yet.",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "streakDays": {
+    "message": "$COUNT$-day streak",
+    "description": "Progress panel: the streak.",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "streakDaysOne": {
+    "message": "1-day streak",
+    "description": "Progress panel: a streak of one day."
+  },
+  "streakStart": {
+    "message": "No streak yet",
+    "description": "Progress panel: no streak."
+  },
+  "streakToday": {
+    "message": "Today: $DONE$ of $GOAL$ questions",
+    "description": "Progress panel: today's goal.",
+    "placeholders": {
+      "done": {
+        "content": "$1"
+      },
+      "goal": {
+        "content": "$2"
+      }
+    }
+  },
+  "streakTodayDone": {
+    "message": "Today is done",
+    "description": "Progress panel: today's goal reached."
+  },
+  "freezeOffer": {
+    "message": "You missed yesterday. This week's freeze can keep your $COUNT$-day streak.",
+    "description": "Offer to use the freeze.",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "freezeOfferOne": {
+    "message": "You missed yesterday. This week's freeze can keep your 1-day streak.",
+    "description": "Offer to use the freeze, streak of one."
+  },
+  "freezeUse": {
+    "message": "Use freeze",
+    "description": "Button: uses the freeze."
+  },
+  "rankRookie": {
+    "message": "Rookie",
+    "description": "Rank: 0-99 learned words."
+  },
+  "rankBeginner": {
+    "message": "Beginner",
+    "description": "Rank: 100-199 learned words (the name is the user's)."
+  },
+  "rankMiddle": {
+    "message": "Middle",
+    "description": "Rank: 200-299 learned words (the name is the user's)."
+  },
+  "rankSenior": {
+    "message": "Senior",
+    "description": "Rank: 300-499 learned words."
+  },
+  "rankMafya": {
+    "message": "Mafya",
+    "description": "Rank: 500-999 learned words (the name is the user's)."
+  },
+  "rankBoss": {
+    "message": "Boss",
+    "description": "Rank: 1000-1999 learned words (the name is the user's)."
+  },
+  "rankLegend": {
+    "message": "Legend",
+    "description": "Rank: 2000 learned words and more."
+  },
+  "rankLearned": {
+    "message": "$COUNT$ learned",
+    "description": "Rank panel: learned words.",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "rankLearnedOne": {
+    "message": "1 learned",
+    "description": "Rank panel: one learned word."
+  },
+  "rankRemaining": {
+    "message": "$COUNT$ more words to $RANK$",
+    "description": "Rank panel: words until the next rank.",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      },
+      "rank": {
+        "content": "$2"
+      }
+    }
+  },
+  "rankRemainingOne": {
+    "message": "1 more word to $RANK$",
+    "description": "Rank panel: one word until the next rank.",
+    "placeholders": {
+      "rank": {
+        "content": "$2"
+      }
+    }
+  },
+  "rankTop": {
+    "message": "The highest rank",
+    "description": "Rank panel: nothing above."
+  },
+  "rankUpTitle": {
+    "message": "New rank",
+    "description": "Celebration: title."
+  },
+  "quizMuteWarning": {
+    "message": "If you skip today, your $COUNT$-day streak resets.",
+    "description": "Quiz card: said once before \"Not today\".",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "quizMuteWarningOne": {
+    "message": "If you skip today, your 1-day streak resets.",
+    "description": "Quiz card: said once before \"Not today\", streak of one."
+  },
+  "quizMuteAnyway": {
+    "message": "Skip today anyway",
+    "description": "Quiz card: \"Not today\" after the warning."
+  },
+  "reminderTitle": {
+    "message": "Wordvault",
+    "description": "Evening reminder: title."
+  },
+  "reminderStreak": {
+    "message": "You have not done a quiz today yet. A few questions keep your $COUNT$-day streak going.",
+    "description": "Evening reminder with a streak.",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "reminderStreakOne": {
+    "message": "You have not done a quiz today yet. A few questions keep your streak going.",
+    "description": "Evening reminder with a streak of one day."
+  },
+  "reminderNoStreak": {
+    "message": "You have not done a quiz today yet. A few questions are enough to start a streak.",
+    "description": "Evening reminder without a streak."
+  },
+  "quizWhyQuietHours": {
+    "message": "it is within your quiet hours",
+    "description": "Why no quiz: quiet hours."
   }
 }

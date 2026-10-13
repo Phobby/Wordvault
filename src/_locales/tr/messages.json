@@ -1686,5 +1686,160 @@
   },
   "tbLearnedEmptyHint": {
     "message": "Bir kelime, farklı günlerde üst üste birkaç doğru cevaptan sonra öğrenilmiş sayılır. Kasanda kalır ve yalnızca nadiren sorulur."
+  },
+  "progressTitle": {
+    "message": "Seri ve rütbe"
+  },
+  "streakNone": {
+    "message": "Henüz seri yok"
+  },
+  "streakDone": {
+    "message": "$COUNT$ günlük seri, bugün tamam",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "streakWaiting": {
+    "message": "$COUNT$ günlük seri, bugün henüz yapılmadı",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "streakDays": {
+    "message": "$COUNT$ günlük seri",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "streakDaysOne": {
+    "message": "1 günlük seri"
+  },
+  "streakStart": {
+    "message": "Henüz seri yok"
+  },
+  "streakToday": {
+    "message": "Bugün: $GOAL$ sorudan $DONE$ tanesi",
+    "placeholders": {
+      "done": {
+        "content": "$1"
+      },
+      "goal": {
+        "content": "$2"
+      }
+    }
+  },
+  "streakTodayDone": {
+    "message": "Bugün tamamlandı"
+  },
+  "freezeOffer": {
+    "message": "Dünü kaçırdın. Bu haftanın dondurma hakkı $COUNT$ günlük serini koruyabilir.",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "freezeOfferOne": {
+    "message": "Dünü kaçırdın. Bu haftanın dondurma hakkı 1 günlük serini koruyabilir."
+  },
+  "freezeUse": {
+    "message": "Dondurmayı kullan"
+  },
+  "rankRookie": {
+    "message": "Çaylak"
+  },
+  "rankBeginner": {
+    "message": "Beginner"
+  },
+  "rankMiddle": {
+    "message": "Middle"
+  },
+  "rankSenior": {
+    "message": "Kıdemli"
+  },
+  "rankMafya": {
+    "message": "Mafya"
+  },
+  "rankBoss": {
+    "message": "Boss"
+  },
+  "rankLegend": {
+    "message": "Efsane"
+  },
+  "rankLearned": {
+    "message": "$COUNT$ öğrenildi",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "rankLearnedOne": {
+    "message": "1 öğrenildi"
+  },
+  "rankRemaining": {
+    "message": "$RANK$ için $COUNT$ kelime daha",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      },
+      "rank": {
+        "content": "$2"
+      }
+    }
+  },
+  "rankRemainingOne": {
+    "message": "$RANK$ için 1 kelime daha",
+    "placeholders": {
+      "rank": {
+        "content": "$2"
+      }
+    }
+  },
+  "rankTop": {
+    "message": "En üst rütbe"
+  },
+  "rankUpTitle": {
+    "message": "Yeni rütbe"
+  },
+  "quizMuteWarning": {
+    "message": "Bugünü atlarsan $COUNT$ günlük serin sıfırlanır.",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "quizMuteWarningOne": {
+    "message": "Bugünü atlarsan 1 günlük serin sıfırlanır."
+  },
+  "quizMuteAnyway": {
+    "message": "Yine de bugün sorma"
+  },
+  "reminderTitle": {
+    "message": "Wordvault"
+  },
+  "reminderStreak": {
+    "message": "Bugün hâlâ quiz çözmedin, $COUNT$ günlük serin gitmek üzere. Birkaç soru yeter.",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "reminderStreakOne": {
+    "message": "Bugün hâlâ quiz çözmedin, serin gitmek üzere. Birkaç soru yeter."
+  },
+  "reminderNoStreak": {
+    "message": "Bugün henüz quiz çözmedin. Bir seri başlatmak için birkaç soru yeter."
+  },
+  "quizWhyQuietHours": {
+    "message": "sessiz saatlerin içindesin"
   }
 }

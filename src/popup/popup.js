@@ -1,6 +1,7 @@
 // Toolbar popup: the vault. Lists the saved words, shows the details of one, and links to
 // export, import and the settings.
 
+import { createProgressPanel } from '../quiz/progress-panel.js';
 import { supportLink } from '../support/support.js';
 import { looksDamaged } from '../lib/text-damage.js';
 import { downloadBackup } from '../lib/backup.js';
@@ -10,7 +11,7 @@ import { listEntries, removeEntry } from '../lib/vault.js';
 const WV = globalThis.WV;
 const { h, t, icon, languages } = WV;
 
-WV.adoptStyles(WV.styles.tokens + WV.styles.controls);
+WV.adoptStyles(WV.styles.tokens + WV.styles.controls + WV.styles.progress);
 document.documentElement.lang = languages.uiLanguage();
 
 const ICON_BACK = 'M15 6l-6 6 6 6';
@@ -179,6 +180,9 @@ const languagesView = h(
   h('div', { class: 'languages' }, languageList.element),
 );
 
+// Streak and rank, under the header. A new rank is celebrated over the whole popup.
+const progressPanel = createProgressPanel({ celebrateIn: document.getElementById('app') });
+
 document.getElementById('app').append(
   h(
     'header',
@@ -190,6 +194,7 @@ document.getElementById('app').append(
     iconButton(ICON_SCAN, 'ocrMenuScan', scanScreen),
     iconButton(ICON_SETTINGS, 'tbSettings', openSettings),
   ),
+  progressPanel.element,
   listView,
   detailView,
   languagesView,
@@ -427,6 +432,7 @@ function rerender() {
   renderHeader();
   renderFilters();
   renderTabs();
+  progressPanel.render();
   renderDamaged();
   renderList();
   if (state.view === 'detail') renderDetail();

@@ -63,11 +63,12 @@
    *   index: number } | null, summary?: { right: number, answered: number, skipped: number } | null } | null | void>} [hooks.report]
    *   Called once per question. `correct`, `choice` and `ms` come with 'answer' only.
    * @param {() => unknown} [hooks.mute]     "Not today" was pressed.
+   * @param {() => Promise<{ streak: object }>} [hooks.progress]  How the streak stands (for the flame).
    * @param {() => void} [hooks.onClose]     The quiz has left the screen.
    * @param {boolean} [hooks.floating]       Drawn as a card over a page instead of filling `root`.
    * @returns {{ close(): void, isOpen(): boolean }}
    */
-  function mount(root, quiz, { report, mute, onClose, floating = false } = {}) {
+  function mount(root, quiz, { report, mute, onClose, progress: getProgress, floating = false } = {}) {
     const total = Math.max(1, Number(quiz.total) || 1);
     const timeoutMs = Number(quiz.timeoutSeconds) > 0 ? Number(quiz.timeoutSeconds) * 1000 : 0;
     let current = null; // the question on screen
@@ -75,21 +76,41 @@
     let closed = false;
 
     const progress = h('span', { class: 'wv-quiz-progress' });
+    // The streak, as a flame with the number of days: bright once today's quiz is done.
+    const streakSlot = h('span', { class: 'wv-quiz-streak' });
+    const warning = h('div', { class: 'wv-quiz-warning', role: 'alert', hidden: true });
+    let streak = null; // what the background script last said about it
+    let warned = false;
+
+    /** Asks how the streak stands and draws it. Never in the way: without an answer there is no flame. */
+    function refreshStreak() {
+      if (!getProgress || !WV.progressUi) return;
+      Promise.resolve()
+        .then(() => getProgress())
+        .then((state) => {
+          if (closed || !state?.streak) return;
+          streak = state.streak;
+          streakSlot.replaceChildren(WV.progressUi.flame(streak));
+        })
+        .catch(() => {});
+    }
     const body = h('div', { class: 'wv-quiz-body' });
     const bar = h('div', { class: 'wv-quiz-timer-bar' });
     const timerBar = h('div', { class: 'wv-quiz-timer', hidden: true }, bar);
+    const muteButton = h('button', { class: 'wv-quiz-action', type: 'button', 'data-action': 'mute', title: t('quizMuteHint'), text: t('quizMute'), onclick: () => muteToday() });
     const card = h(
       'div',
       { class: floating ? 'wv-quiz wv-quiz-floating' : 'wv-quiz', role: 'dialog', 'aria-label': t('quizTitle') },
-      h('div', { class: 'wv-quiz-head' }, h('span', { class: 'wv-quiz-title', text: t('quizTitle') }), progress),
+      h('div', { class: 'wv-quiz-head' }, h('span', { class: 'wv-quiz-title', text: t('quizTitle') }), streakSlot, progress),
       body,
       // Always there, whatever the quiz is showing.
       h(
         'div',
         { class: 'wv-quiz-bottom' },
-        h('button', { class: 'wv-quiz-action', type: 'button', 'data-action': 'mute', title: t('quizMuteHint'), text: t('quizMute'), onclick: muteToday }),
+        muteButton,
         h('button', { class: 'wv-quiz-action', type: 'button', 'data-action': 'close', text: t('quizClose'), onclick: close }),
       ),
+      warning,
       timerBar,
     );
 
@@ -114,6 +135,8 @@
         reported = Promise.reject(error);
       }
       // An extension that was reloaded underneath the page cannot be reached: the quiz just ends.
+      // an answer may have completed the day: the flame is looked at again
+      reported.then(() => refreshStreak(), () => {});
       return reported.then((following) => following || null, () => null);
     }
 
@@ -135,6 +158,15 @@
 
     function muteToday() {
       if (closed) return;
+      // A streak that today's quiz would keep alive: said once, before it is given up. The
+      // second press does what the button says.
+      if (!warned && streak && streak.alive && !streak.todayDone && streak.count > 0) {
+        warned = true;
+        warning.textContent = t(streak.count === 1 ? 'quizMuteWarningOne' : 'quizMuteWarning', [String(streak.count)]);
+        warning.hidden = false;
+        muteButton.textContent = t('quizMuteAnyway');
+        return;
+      }
       // The question on screen is closed first, so that it is not left hanging.
       const reported = finish('closed');
       close(Promise.resolve(reported).then(() => mute?.()));
@@ -473,6 +505,7 @@
     }
 
     root.replaceChildren(card);
+    refreshStreak();
     showQuestion(quiz.question, quiz.index);
     return { close, isOpen: () => !closed };
   }

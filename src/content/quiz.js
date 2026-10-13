@@ -60,6 +60,7 @@
     WV.quizCard.show(quiz, {
       report: (result) => WV.send('wv:quiz:answer', result),
       mute: () => WV.send('wv:quiz:mute'),
+      progress: () => WV.send('wv:progress'),
       onClose: () => link.end(),
     });
   }

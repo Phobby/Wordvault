@@ -10,11 +10,12 @@ import { downloadBackup, restoreBackup } from '../lib/backup.js';
 import { getSettings, updateSettings } from '../lib/settings.js';
 import { getPreferences, setTargetLanguage } from '../lib/translator.js';
 import { INTERVAL_MINUTES, TIMEOUT_SECONDS, getDiagnostics } from '../quiz/scheduler.js';
+import { createProgressPanel } from '../quiz/progress-panel.js';
 import { createSyncControls } from './sync.js';
 
 const { h, t, languages, speech } = globalThis.WV;
 
-globalThis.WV.adoptStyles(globalThis.WV.styles.tokens + globalThis.WV.styles.controls);
+globalThis.WV.adoptStyles(globalThis.WV.styles.tokens + globalThis.WV.styles.controls + globalThis.WV.styles.progress);
 document.documentElement.lang = languages.uiLanguage();
 document.title = t('optionsTitle');
 catchUncaught('options');
@@ -348,6 +349,7 @@ const QUIZ_REASONS = {
   already_showing: 'quizWhyAlreadyShowing',
   page_not_supported: 'quizWhyPageNotSupported',
   muted: 'quizWhyMuted',
+  quiet_hours: 'quizWhyQuietHours',
   no_display: 'quizWhyNoDisplay',
   // why one particular way of showing the quiz was not possible (quiz/display.js)
   popup_unsupported: 'quizWhyPopupUnsupported',
@@ -425,6 +427,7 @@ const quizTestResult = h('p', { class: 'help', role: 'status' });
 let quizDiagnostics = null;
 
 async function renderQuiz() {
+  quizProgress.render();
   const d = await getDiagnostics();
   quizDiagnostics = d;
   quizVerdict.textContent = d.standingReason ? t('quizVerdictNo', [reasonText(d.standingReason, d)]) : t('quizVerdictYes', [d.nextAt ? timeText(d.nextAt) : t('quizDiagNotScheduled')]);
@@ -469,11 +472,13 @@ async function testQuiz() {
   quizTestResult.textContent = result.ok ? t('quizTestShown', [shownText(result, diagnostics)]) : skipText(result, diagnostics);
 }
 
+const quizProgress = createProgressPanel({ celebrateIn: null });
 const quizSection = h(
   'section',
   { class: 'card', id: 'quiz' },
   h('h2', { text: t('optQuizTitle') }),
   h('p', { class: 'help', text: t('optQuizHelp') }),
+  quizProgress.element,
   h(
     'div',
     { class: 'fields' },

@@ -523,6 +523,10 @@
     .wv-quiz-speaker.wv-busy { opacity: 0.6; }
     .wv-quiz-notice { margin: 0 0 8px; padding: 6px 10px; border-radius: 8px; background: var(--wv-tint); font-size: 12.5px; }
 
+    .wv-quiz-streak { flex: none; display: inline-flex; align-items: center; }
+    /* said once before "Not today" gives a streak up */
+    .wv-quiz-warning { margin-top: 6px; padding: 6px 10px; border-radius: 8px; background: color-mix(in srgb, #f97316 14%, transparent); font-size: 12.5px; font-weight: 600; }
+
     /* Always there: "Not today" and "Close". */
     .wv-quiz-bottom {
       display: flex;
