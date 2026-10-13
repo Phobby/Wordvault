@@ -44,6 +44,15 @@ başka hiçbir yere gitmez. Anahtar yalnızca bu tarayıcıda saklanır; yedeğe
 bildirime dahil edilmez. Bir hata olursa servis kendiliğinden değiştirilmez; MyMemory ile devam etmek
 senin seçimindir. Çevirilerin yanıtları 7 gün boyunca yalnızca bu tarayıcıda önbellekte tutulur.
 
+Bir **cümle ya da paragraf** seçip çevirdiğinde (sağ tık menüsündeki "Wordvault ile çevir", seçimin
+yanındaki "Çevir" düğmesi ya da klavye kısayolu) de aynı şey olur: **yalnızca seçtiğin metin** ve dil
+çifti, yalnızca seçili çeviri servisine gider; başka hiçbir yere gönderilmez. Uzun metin servise cümle
+sonlarında bölünmüş parçalar halinde, sırayla gönderilir (bir kerede en çok 5.000 karakter). Metnin
+dili tarayıcının içinde algılanır. Çeviri kasaya kendiliğinden girmez; "İfade olarak kasaya ekle"ye
+basarsan saklanır ve ifadeler için sözlüğe (Wiktionary) sorulmaz. Wordvault'un sayfaya çizim
+yapamadığı yerlerde (tarayıcının kendi sayfaları, PDF görüntüleyicisi) çeviri küçük bir pencerede
+gösterilir; seçilen metin o pencereye tarayıcının oturum belleği üzerinden verilir, diske yazılmaz.
+
 YouTube'da altyazıdaki bir kelimenin üzerinde imleci tuttuğunda da aynı şey olur: **yalnızca o kelime**
 ve dil çifti gönderilir. Altyazı satırı dili algılamak için tarayıcının içinde kullanılır, kelimeyi
 kasaya eklersen onunla birlikte saklanır; altyazı akışı kaydedilmez ya da indirilmez.

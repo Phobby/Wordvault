@@ -2615,5 +2615,49 @@
   "selNotHere": {
     "message": "Wordvault: the shortcut does not work on this page. Select the text and use “Translate with Wordvault” in the right-click menu.",
     "description": "Tooltip of the toolbar button on pages extensions cannot run on (browser pages, the PDF viewer)."
+  },
+  "optSelTitle": {
+    "message": "Translate a selection",
+    "description": "Options page: heading of the part about translating a selected sentence or paragraph."
+  },
+  "optSelHelp": {
+    "message": "Select a sentence or a paragraph on a page and translate it in one of three ways: the right-click menu, the small button next to the selection, or the keyboard shortcut. Up to $1 characters at a time; longer text goes to the translation service in parts that end where sentences end. A single selected word is looked up as a word, as before.",
+    "description": "$1: the upper limit, e.g. 5,000."
+  },
+  "optSelMenu": {
+    "message": "Right-click menu"
+  },
+  "optSelMenuHelp": {
+    "message": "“Translate with Wordvault” in the menu of selected text. On pages where Wordvault cannot draw (the browser's own pages, its PDF viewer) the translation opens in a small window."
+  },
+  "optSelButton": {
+    "message": "“Translate” button on selection"
+  },
+  "optSelButtonHelp": {
+    "message": "A small button next to a selection of more than one word. It does not appear for a single word or in text you are typing."
+  },
+  "optSelShortcut": {
+    "message": "Keyboard shortcut"
+  },
+  "optSelShortcutHelpChrome": {
+    "message": "Translates the selected text. To change it, or if it is not assigned: open the address below in a new tab and give “Translate the selected text” a key combination."
+  },
+  "optSelShortcutHelpFirefox": {
+    "message": "Translates the selected text. To change it: open about:addons (below), click the gear button, then “Manage Extension Shortcuts”."
+  },
+  "optSelShortcutWarnNone": {
+    "message": "No shortcut is assigned (another extension or the browser may be using it). Assign one as described below, or use the right-click menu or the button next to the selection."
+  },
+  "optSelShortcutWarnOption": {
+    "message": "On a Mac, shortcuts with the Option key are unreliable (Option types special characters). Give this command another combination, for example Command+Shift+U."
+  },
+  "optSelPhrases": {
+    "message": "Ask phrases in the quiz"
+  },
+  "optSelPhrasesHelp": {
+    "message": "A translated selection can be kept in the vault as a phrase. Phrases are a kind of their own: the quiz asks only words unless this is switched on."
+  },
+  "optSelPrivacy": {
+    "message": "The selected text is sent only to the translation service chosen above, and nowhere else. Nothing is kept unless you add it to the vault yourself. Note that MyMemory's free use is limited per day; long passages use it up quickly."
   }
 }

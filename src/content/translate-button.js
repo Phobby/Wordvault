@@ -110,13 +110,18 @@
   function openFor({ text, range = null, rect = null, point = null }) {
     const locale = WV.selection.languageOf(range?.startContainer || document.body);
     const anchor = point || { x: Math.round(window.innerWidth / 2 - 150), y: 80 };
+    // Where the selection is now. Some pages draw their text again a moment after a click
+    // (YouTube's description does), which leaves the range without a place; the popup then
+    // stays where the text was instead of closing.
+    const box = range ? range.getBoundingClientRect() : null;
+    const place = rect || (box && (box.width > 0 || box.height > 0) ? new DOMRect(box.left, box.top, box.width, box.height) : null);
     if (WV.passageText.isPassage(text, locale)) {
-      WV.popup.open({ text, range, rect, point: anchor, pageLang: locale, mode: 'passage' });
+      WV.popup.open({ text, range, rect: place, point: anchor, pageLang: locale, mode: 'passage' });
       return true;
     }
     const word = WV.selection.tidyWord(text);
     if (!word) return false;
-    WV.popup.open({ text: word, range, rect, point: anchor, pageLang: locale, ...WV.selection.context(range, locale) });
+    WV.popup.open({ text: word, range, rect: place, point: anchor, pageLang: locale, ...WV.selection.context(range, locale) });
     return true;
   }
 

@@ -67,6 +67,7 @@ SPEC-QUIZ-POPUP.md,
 SPEC-CAPTIONS.md        Video altyazılarında kelimenin üzerine gelince çeviri
 SPEC-OCR.md             Ekrandan metin tarama (OCR) ve üzerine gelince çeviri
 SPEC-SUPPORT.md         Destek bağlantısı, iletişim/geri bildirim ve mağaza hazırlığı
+SPEC-SELECTION.md       Seçilen cümle/paragrafı çevirme (sağ tık, "Çevir" düğmesi, kısayol)
 feedback-worker/        Geri bildirim alıcısı (Cloudflare Worker → Telegram/Discord), kendi README'siyle
 manifest.firefox.json   Firefox manifesti (background.scripts, gecko ayarları)
 manifest.chrome.json    Chrome manifesti (background.service_worker)
@@ -96,6 +97,7 @@ src/
   content/              Web sayfalarına eklenen betikler
     selection.js        Seçim, bağlam cümlesi ve dil yardımcıları
     quiz.js             Quiz'i sayfada gösterir; "şu an uygun mu" kontrolleri (ayarlar sayfası da yükler)
+    translate-button.js Seçimin yanındaki "Çevir" düğmesi; menünün ve kısayolun isteğini karşılar
     triggers.js         Pencereyi açan tetikleyiciler (çift tıklama)
   ui/popup/popup.js     Çeviri penceresi (baloncuk): seçilen metin için de, bir kelime kaynağının
                         bulduğu kelime için de (openForHit) aynı pencere
@@ -372,6 +374,52 @@ dolu, ağ hatası, DeepL'in desteklemediği hedef dil) baloncuk hatayı DeepL'in
 Her sonucun altında hangi servisle çevrildiği yazar. Hedef dil DeepL'de yoksa ayarlar sayfası da uyarır.
 
 **Çeviri önbelleği:** bkz. aşağıda "Çeviri önbelleği".
+
+### Seçilen cümle ya da paragrafı çevirme
+
+`SPEC-SELECTION.md`. Sayfada birden çok kelime seçildiğinde üç yoldan çevrilir; tek kelime seçimi
+eskisi gibi kelime olarak aranır (`shared/passage-text.js`: `isPassage`).
+
+| Yol | Nerede | Not |
+| --- | --- | --- |
+| Sağ tık menüsü: "Translate with Wordvault" / "Wordvault ile çevir" | `features/passage/background.js` | Menü `onInstalled` ve `onStartup`'ta kurulur (`background/menus.js`; OCR maddesiyle aynı yerden, çünkü menü önce boşaltılır), tıklama dinleyicisi üst düzeydedir. Mesaj menünün açıldığı çerçeveye (`frameId`) gider. Sayfanın kendi seçimi varsa o kullanılır (satır sonları ve yeri vardır), yoksa `info.selectionText`. |
+| Seçimin yanındaki "Çevir" düğmesi | `content/translate-button.js` | Seçim 250 ms durulunca, fare bırakıldıktan sonra belirir. Kendi kapalı Shadow DOM'undadır, odak almaz, basışı yutar: sayfanın seçimi bozulmaz. Tek kelimede, metin alanlarında ve düzenlenen metinde çıkmaz. |
+| Klavye kısayolu (`translate-selection`) | manifestler, `features/passage/background.js` | Varsayılan: Mac `Command+Shift+U`, diğerleri `Ctrl+Shift+U`. Sekmenin bütün çerçevelerine sorulur; seçimi ve odağı olan çerçeve cevaplar. |
+
+**Pencere (cümle modu).** Aynı `ui/popup/popup.js`, `mode: 'passage'` ile: seçilen metin (üç satırda
+kesilir, "Tümünü göster"), satır sonları korunan çeviri (kendi kaydırma çubuğuyla), algılanan kaynak
+dil, "Kopyala", seslendirme (en çok 1.000 karakter; tarayıcının kendi sesiyle, kayıt kullanılan
+tarayıcılarda yalnızca "tarayıcı sesi" ayarı açıksa) ve altta servis adı. Esc ve dışarı tıklama kapatır.
+
+**Çeviri mantığı** (`lib/passage.js`, `lib/translator.js`: `translatePassage`). Üst sınır 5.000
+karakter; aşılırsa hiçbir şey gönderilmez ve iki sayı da söylenir. Metin `Intl.Segmenter` ile cümle
+sonlarında parçalara bölünür, parçalar sırayla çevrilir ve birleştirilir. Parça sınırı servisten gelir:
+
+| Servis | Resmî sınır (2026-10-13'te belgelerinden) | Parça |
+| --- | --- | --- |
+| MyMemory | `q` en çok 500 bayt (UTF-8) | 500 bayt; satır sonlarını korumadığı için paragraflar ayrı parçalardır |
+| DeepL | İstek gövdesi en çok 128 KiB; metin başına sınır yok | 1.500 karakter (kendi seçimimiz); paragraflar aynı istekte kalabilir |
+
+Her parça mevcut önbelleğe ayrı kayıt olarak yazılır (anahtar: metin + dil çifti + servis), bu yüzden
+aynı metin yeniden sorulduğunda istek gitmez ve yarıda kalan bir çeviride "Tekrar dene" yalnızca
+eksik parçaları ister. Bir parça başarısız olursa o ana kadarki çeviri ve hata birlikte gösterilir.
+Dil, seçilen metnin kendisinden tarayıcının içinde algılanır; metin hedef dildeyse hata değil not
+çıkar. MyMemory'nin anonim kullanımı günde 5.000 karakterle sınırlıdır: uzun bir paragraf günlük
+hakkın çoğunu harcar.
+
+**Kasa.** Çeviri kasaya kendiliğinden girmez. En çok 500 karakterlik bir seçim "İfade olarak kasaya
+ekle" ile saklanabilir (`kind: 'phrase'`; senkron kaydında `k: 'p'`). İfadeler için sözlüğe
+sorulmaz ve "İfadeleri quiz'de sor" ayarı açılmadıkça quiz'e girmezler.
+
+**İçerik betiği olmayan yerler.** Chrome'da eklenti yüklenmeden önce açılmış sekmelere betikler
+istek anında `chrome.scripting` ile eklenir (çalışan çerçevelere dokunulmaz). Hiç çizim yapılamayan
+sayfalarda (tarayıcının kendi sayfaları, PDF görüntüleyicisi, mağazalar) sağ tık menüsünün çevirisi
+küçük bir pencerede (`passage/passage.html`) gösterilir; metin o pencereye `storage.session` ile
+verilir, adrese ya da diske yazılmaz. Kısayol bu sayfalarda seçimi okuyamaz; araç çubuğu düğmesinde
+bunu söyleyen bir işaret çıkar.
+
+**Ayarlar** ("Seçimi çevir" bölümü, `options/passage.js`): "Sağ tık menüsü", "Seçimde Çevir düğmesi",
+kısayol ve nasıl değiştirileceği, "İfadeleri quiz'de sor".
 
 ### Çeviri önbelleği
 
@@ -921,8 +969,8 @@ iki manifestteki `host_permissions` listesine de ekle.
 | `alarms` | Quiz'in zamanlayıcısı için. Arka plan betiği uyurken zamanı gelince onu uyandırır. |
 | `activeTab` | Ekrandan metin tarama için: kullanıcı kısayola bastığında ya da menüden seçtiğinde, yalnızca o sekmenin ekran görüntüsünü almak (`tabs.captureVisibleTab`). Sürekli bir izin değildir; kullanıcı taramayı başlatmadıkça hiçbir sekmenin görüntüsü alınamaz. |
 | `offscreen` (yalnızca Chrome) | Metin tanımayı (WebAssembly, Worker) çalıştıracak görünmez bir eklenti sayfası açmak için: Chrome'un service worker'ı Worker başlatamaz. Firefox'ta arka plan sayfası bu işi kendi yapar, izin orada yoktur. |
-| `scripting` (yalnızca Chrome) | Kullanıcı taramayı, eklenti yüklenmeden önce açılmış bir sekmede başlatırsa içerik betiklerini o sekmeye eklemek için (Chrome bunu kendiliğinden yapmaz). Yalnızca `activeTab` ile, yani kullanıcının taramayı başlattığı sekmede çalışır. |
-| `contextMenus` | Sağ tık menüsüne ve araç çubuğu simgesinin menüsüne "Ekrandan metin tara" maddesini eklemek için. Sayfa içeriğine erişim vermez. |
+| `scripting` (yalnızca Chrome) | Kullanıcı taramayı ya da seçili metnin çevirisini (sağ tık menüsü, kısayol), eklenti yüklenmeden önce açılmış bir sekmede başlatırsa içerik betiklerini o sekmeye eklemek için (Chrome bunu kendiliğinden yapmaz). Yalnızca `activeTab` ile, yani kullanıcının taramayı başlattığı sekmede çalışır. |
+| `contextMenus` | Seçili metnin sağ tık menüsüne "Wordvault ile çevir" maddesini (ayarlardan kapatılabilir), sayfanın sağ tık menüsüne ve araç çubuğu simgesinin menüsüne "Ekrandan metin tara" maddesini eklemek için. Sayfa içeriğine erişim vermez. |
 | `identity` | Bulut hesabına bağlanırken sağlayıcının oturum penceresini açmak (`identity.launchWebAuthFlow`) için. Tarayıcı hesabının e-postası istenmez (`identity.email` yok). |
 | İsteğe bağlı adres izni: `https://*/*`, `http://localhost/*`, `http://127.0.0.1/*` | Kurulumda verilmez. Bir bulut hesabı ya da kendi sunucun bağlanırken tarayıcı yalnızca o adres için sorar (Google Drive: `www.googleapis.com`, `oauth2.googleapis.com`; OneDrive: `graph.microsoft.com`, `login.microsoftonline.com`; Dropbox: `api.dropboxapi.com`, `content.dropboxapi.com`). Desen geniştir çünkü kullanıcının gireceği sunucu adresi önceden bilinemez; verilen izin yalnızca istenen adrestir. | Geri bildirim gönderilirken de aynı yol kullanılır: ilk gönderimde tarayıcı yalnızca geri bildirim alıcısının alan adı (`FEEDBACK_ENDPOINT`) için sorar; başka hiçbir adres istenmez. DeepL seçilirse `api-free.deepl.com` ya da `api.deepl.com` için de aynı yolla, "Anahtarı test et"e basıldığında sorulur.
 | `notifications` (isteğe bağlı) | Kurulumda istenmez. Yalnızca ayarlardan **İzin ver**'e basılırsa tarayıcı sorar; quiz başka hiçbir yolla gösterilemediğinde bildirimle haber vermek için. Ayarlardan geri alınabilir. |

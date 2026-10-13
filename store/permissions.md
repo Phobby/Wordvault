@@ -23,11 +23,11 @@ bunu denetler).
 
 ## `activeTab`
 
-> "Scan text on screen": when the user presses the keyboard shortcut or picks the menu item, the extension takes one picture of the current tab (chrome.tabs.captureVisibleTab) so that the area the user selects can be read with on-device text recognition. activeTab limits this to the tab the user invoked the extension on, at that moment. The picture is processed locally, is not stored and is never transmitted.
+> "Scan text on screen": when the user presses the keyboard shortcut or picks the menu item, the extension takes one picture of the current tab (chrome.tabs.captureVisibleTab) so that the area the user selects can be read with on-device text recognition. activeTab limits this to the tab the user invoked the extension on, at that moment. The picture is processed locally, is not stored and is never transmitted. The same gesture (context menu item or keyboard shortcut) is what lets "Translate with Wordvault" reach a tab that was open before the extension was installed.
 
 ## `contextMenus`
 
-> Adds the "Scan text on screen" item to the page's context menu and to the toolbar button's menu, as a second way to start a scan besides the keyboard shortcut.
+> Adds two items: "Translate with Wordvault" in the context menu of selected text (translates the selected sentence or paragraph; the user can switch the item off in the settings), and "Scan text on screen" in the page's context menu and the toolbar button's menu, as a second way to start a scan besides the keyboard shortcut.
 
 ## `offscreen`
 
@@ -35,7 +35,7 @@ bunu denetler).
 
 ## `scripting`
 
-> Chrome does not inject content scripts into tabs that were already open when the extension was installed or updated. If the user starts a screen scan in such a tab, the extension's own bundled content scripts are injected into that tab with chrome.scripting.executeScript. It is used only together with activeTab, in the tab the user invoked the scan on, and only with files from the package (no remote code, no code strings).
+> Chrome does not inject content scripts into tabs that were already open when the extension was installed or updated. If the user starts a screen scan in such a tab, or asks for the selected text to be translated there (context menu item or keyboard shortcut), the extension's own bundled content scripts are injected into that tab with chrome.scripting.executeScript. It is used only together with activeTab, in the tab the user invoked the extension on, and only with files from the package (no remote code, no code strings).
 
 ## `notifications` (optional)
 

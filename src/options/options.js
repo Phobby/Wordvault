@@ -3,6 +3,7 @@
 
 import { createFeedbackPanel } from './feedback.js';
 import { createOcrSection } from './ocr.js';
+import { createPassageSection } from './passage.js';
 import { createCacheSection, createProviderSection } from './provider.js';
 import { catchUncaught } from '../features/feedback/error-log.js';
 import { supportCard } from '../support/support.js';
@@ -612,6 +613,7 @@ const quizSection = h(
 // --- Page ----------------------------------------------------------------------------------------
 
 const ocrSection = createOcrSection({ flashSaved, switchRow, fieldRow });
+const passageSection = createPassageSection({ flashSaved, switchRow, fieldRow });
 const providerSection = createProviderSection({ flashSaved });
 const cacheSection = createCacheSection();
 const feedbackPanel = createFeedbackPanel();
@@ -638,6 +640,7 @@ const panels = {
     ),
     providerSection.element,
     h('section', { class: 'card' }, switchRow(doubleClick, 'optDoubleClick', 'optDoubleClickHelp')),
+    passageSection.element,
     // Only meaningful in the browsers where recordings replace the browser's voice. (append()
     // would write a `false` out as text, hence the empty string.)
     speech.usesRecordings ? h('section', { class: 'card' }, switchRow(ttsFallback, 'optTtsFallback', 'optTtsFallbackHelp')) : '',
@@ -694,6 +697,7 @@ function render() {
   renderSwitches();
   renderQuizSettings();
   ocrSection.render();
+  passageSection.render();
   providerSection.render();
 }
 cacheSection.render();

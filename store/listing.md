@@ -27,6 +27,7 @@ Manifestteki açıklamanın aynısıdır (`_locales/*/messages.json`: `extDescri
 Wordvault is for learning a language while you browse.
 
 • Double-click a word on any page: its translation opens on top of the page, and you can listen to how it is pronounced.
+• Select a sentence or a paragraph and translate it: from the right-click menu ("Translate with Wordvault"), the small button next to the selection, or a keyboard shortcut.
 • On YouTube, point at a word in the captions: the translation opens without leaving the video.
 • Scan text on screen: pause a video or open an image, select an area, and the text inside it is read on your device. Click a word to translate it.
 • Save words with "Add to vault". Each word stays in your vault with the sentence it came from.
@@ -52,6 +53,7 @@ Wordvault is free. If it helps you, there is a "Support the project" link in the
 Wordvault, gezinirken dil öğrenmek içindir.
 
 • Herhangi bir sayfada bir kelimeye çift tıkla: çevirisi sayfanın üstünde açılır, telaffuzunu dinleyebilirsin.
+• Bir cümle ya da paragraf seç ve çevir: sağ tık menüsünden ("Wordvault ile çevir"), seçimin yanındaki küçük düğmeden ya da klavye kısayoluyla.
 • YouTube'da altyazıdaki bir kelimenin üzerine gel: çeviri videodan çıkmadan açılır.
 • Ekrandan metin tara: videoyu durdur ya da bir resim aç, bir alan seç; içindeki yazı cihazında okunur. Çevirmek için kelimeye tıkla.
 • "Kasaya ekle" ile kaydet. Her kelime, alındığı cümleyle birlikte kasanda durur.

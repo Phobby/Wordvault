@@ -2027,5 +2027,47 @@
   },
   "selNotHere": {
     "message": "Wordvault: kısayol bu sayfada çalışmaz. Metni seçip sağ tık menüsündeki “Wordvault ile çevir”i kullan."
+  },
+  "optSelTitle": {
+    "message": "Seçimi çevir"
+  },
+  "optSelHelp": {
+    "message": "Sayfada bir cümle ya da paragraf seç ve üç yoldan biriyle çevir: sağ tık menüsü, seçimin yanındaki küçük düğme ya da klavye kısayolu. Bir kerede en çok $1 karakter; uzun metin çeviri servisine cümle sonlarında bölünmüş parçalar halinde gider. Seçilen tek bir kelime, eskisi gibi kelime olarak aranır."
+  },
+  "optSelMenu": {
+    "message": "Sağ tık menüsü"
+  },
+  "optSelMenuHelp": {
+    "message": "Seçili metnin menüsünde “Wordvault ile çevir”. Wordvault'un çizim yapamadığı sayfalarda (tarayıcının kendi sayfaları, PDF görüntüleyicisi) çeviri küçük bir pencerede açılır."
+  },
+  "optSelButton": {
+    "message": "Seçimde “Çevir” düğmesi"
+  },
+  "optSelButtonHelp": {
+    "message": "Birden çok kelime seçildiğinde seçimin yanında beliren küçük düğme. Tek kelime seçiminde ve yazı yazdığın alanlarda çıkmaz."
+  },
+  "optSelShortcut": {
+    "message": "Klavye kısayolu"
+  },
+  "optSelShortcutHelpChrome": {
+    "message": "Seçili metni çevirir. Değiştirmek için ya da atanmamışsa: aşağıdaki adresi yeni sekmede aç ve “Seçili metni çevir” için bir tuş birleşimi ver."
+  },
+  "optSelShortcutHelpFirefox": {
+    "message": "Seçili metni çevirir. Değiştirmek için: about:addons adresini aç (aşağıda), dişli düğmesine, sonra “Manage Extension Shortcuts”a tıkla."
+  },
+  "optSelShortcutWarnNone": {
+    "message": "Kısayol atanmamış (başka bir uzantı ya da tarayıcı kullanıyor olabilir). Aşağıda anlatıldığı gibi ata, ya da sağ tık menüsünü ya da seçimin yanındaki düğmeyi kullan."
+  },
+  "optSelShortcutWarnOption": {
+    "message": "Mac'te Option tuşlu kısayollar güvenilir değildir (Option özel karakter yazar). Bu komuta başka bir birleşim ver, örneğin Command+Shift+U."
+  },
+  "optSelPhrases": {
+    "message": "İfadeleri quiz'de sor"
+  },
+  "optSelPhrasesHelp": {
+    "message": "Çevrilen bir seçim kasada ifade olarak saklanabilir. İfadeler ayrı bir türdür: bu açılmadıkça quiz yalnızca kelimeleri sorar."
+  },
+  "optSelPrivacy": {
+    "message": "Seçilen metin yalnızca yukarıda seçili çeviri servisine gönderilir, başka hiçbir yere gönderilmez. Sen kasaya eklemedikçe hiçbir şey saklanmaz. MyMemory'nin ücretsiz kullanımı günlük sınırlıdır; uzun metinler bu sınırı çabuk doldurur."
   }
 }
