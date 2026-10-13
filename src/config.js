@@ -26,7 +26,7 @@ export function supportUrl(value = SUPPORT_URL) {
  * (feedback-worker/). While it is empty or still the placeholder the form can be filled in and
  * previewed, but nothing can be sent.
  */
-export const FEEDBACK_ENDPOINT = 'https://YOUR_WORKER.workers.dev/feedback';
+export const FEEDBACK_ENDPOINT = 'https://wordvault-feedback.phoby.workers.dev/feedback';
 
 /**
  * @returns {string} The address feedback is posted to, or '' when there is none. Only https;

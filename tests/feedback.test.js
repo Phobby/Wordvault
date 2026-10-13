@@ -35,7 +35,8 @@ beforeEach(() => {
 // --- configuration ---
 
 test('the receiver is https (http only on this computer); the placeholder is no receiver', () => {
-  assert.equal(feedbackEndpoint(), '', 'out of the box nothing can be sent');
+  const configured = feedbackEndpoint();
+  assert.ok(configured === '' || new URL(configured).protocol === 'https:', 'what is shipped is https or nothing');
   assert.equal(feedbackEndpoint(ENDPOINT), ENDPOINT);
   assert.equal(feedbackEndpoint('http://localhost:8787/feedback'), 'http://localhost:8787/feedback');
   for (const value of ['', 'https://YOUR_WORKER.workers.dev/feedback', 'http://example.com/feedback', 'mailto:someone@example.com', 'javascript:alert(1)']) {
