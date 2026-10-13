@@ -58,9 +58,29 @@ export const TUNING = Object.freeze({
   HARD_MIN_ATTEMPTS: 4,
   HARD_DIFFICULTY: 0.6,
   HARD_LAPSES: 3,
-  /** "Learned": the gap has reached seven days. */
-  LEARNED_GAP_MINUTES: 10_080,
+
+  // --- The three ways of asking ---------------------------------------------------------------
+  /**
+   * How much a right answer is worth, by how it was asked: the gap that follows is multiplied
+   * by this. Typing the word is recall, picking it from four is recognition; hearing it sits
+   * in between.
+   */
+  MODE_FACTOR: Object.freeze({ classic: 1, listening: 1.15, writing: 1.35 }),
+
+  // --- "Learned" ------------------------------------------------------------------------------
+  /** This many right answers in a row ... (the setting quizLearnedStreak overrides it) */
+  LEARNED_STREAK: 5,
+  /** ... given on at least this many different calendar days ... */
+  LEARNED_DAYS: 3,
+  /** ... make a word learned. It is then asked this rarely, at the least. */
+  LEARNED_MIN_GAP_MINUTES: 30 * 1440,
+  /** How many of the days of a run are remembered (more than LEARNED_DAYS are never needed). */
+  RUN_DAYS_KEPT: 5,
 });
+
+export const MODES = Object.freeze(['classic', 'writing', 'listening']);
+/** The letter a mode's counters are kept under: c1/c0, w1/w0, l1/l0 (right/wrong). */
+const MODE_LETTER = Object.freeze({ classic: 'c', writing: 'w', listening: 'l' });
 
 /**
  * What is kept about a word's history. Stored with the word (vault entry `quiz`) and
@@ -82,10 +102,23 @@ export const TUNING = Object.freeze({
  * @property {number} d  Difficulty, 0 to 1.
  * @property {number} x  When the word was last answered (ms since the epoch; 0 = never). A
  *                       question that was postponed or left unanswered does not count.
+ *
+ * Since schema 2 (learned state and the three ways of asking; all plain values, so that a
+ * version that does not know them carries them along unchanged):
+ * @property {number} n  Right answers in a row, in whatever way they were asked.
+ * @property {string} y  The calendar days of that run: 'YYYY-MM-DD,YYYY-MM-DD', each once.
+ * @property {number} o  How many answers of that run were typed or heard (not picked from four).
+ * @property {number} g  When the word became learned (ms since the epoch; 0 = it is not).
+ * @property {number} c1 @property {number} c0  Right / wrong answers when asked the classic way.
+ * @property {number} w1 @property {number} w0  ... when the word had to be typed.
+ * @property {number} l1 @property {number} l0  ... when the word was heard.
  */
 
 const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
-const STAT_KEYS = new Set(['a', 'k', 's', 'e', 'i', 'l', 'm', 'd', 'x']);
+const STAT_KEYS = new Set(['a', 'k', 's', 'e', 'i', 'l', 'm', 'd', 'x', 'n', 'y', 'o', 'g', 'c1', 'c0', 'w1', 'w0', 'l1', 'l0']);
+const DAY = /^\d{4}-\d{2}-\d{2}$/;
+/** The days of a run from their stored form: valid ones, each once, in order, the newest few. */
+const runDays = (value) => [...new Set(String(value || '').split(',').filter((day) => DAY.test(day)))].sort().slice(-TUNING.RUN_DAYS_KEPT);
 const round = (value, digits) => Number(value.toFixed(digits));
 const count = (value) => (Number.isFinite(value) && value > 0 ? Math.floor(value) : 0);
 
@@ -117,6 +150,11 @@ export function normalizeStats(raw, { keepUnknown = false } = {}) {
     d: Number.isFinite(raw.d) ? round(clamp(raw.d, 0, 1), 2) : 0,
     x: count(raw.x),
   };
+  // The fields of schema 2 are only there when they say something: a word that was never
+  // typed carries no "typed" counters, on the device or on its way between devices. Data
+  // written before schema 2 has none of them, which reads as: no run yet, not learned.
+  const later = { n: Math.min(a, count(raw.n)), y: runDays(raw.y).join(','), o: Math.min(a, count(raw.o)), g: count(raw.g), c1: count(raw.c1), c0: count(raw.c0), w1: count(raw.w1), w0: count(raw.w0), l1: count(raw.l1), l0: count(raw.l0) };
+  for (const [key, value] of Object.entries(later)) if (value) stats[key] = value;
   return stats.a === 0 && stats.x === 0 ? null : stats;
 }
 
@@ -210,31 +248,69 @@ export function difficultyOf(stats, usual = TUNING.EXPECTED_MS_START) {
   return round(clamp(weights.errors * errors + weights.ease * ease + weights.slowness * slowness, 0, 1), 2);
 }
 
+/** The fields of schema 2 and what a word without them has. */
+const LATER_FIELDS = Object.freeze({ n: 0, y: '', o: 0, g: 0, c1: 0, c0: 0, w1: 0, w0: 0, l1: 0, l0: 0 });
+
+/** Whether a run of right answers makes a word learned. */
+export function runIsLearned(stats, { learnedStreak = TUNING.LEARNED_STREAK, learnedDays = TUNING.LEARNED_DAYS, requireOtherMode = true } = {}) {
+  return (stats.n || 0) >= learnedStreak && runDays(stats.y).length >= learnedDays && (!requireOtherMode || (stats.o || 0) >= 1);
+}
+
 /**
  * The word's history after an answer, and when it is due again.
  *
  * @param {CardStats | null} previous
- * @param {{ quality: number, correct: boolean, ms?: number }} answer  `quality` from rateAnswer().
+ * @param {{ quality: number, correct: boolean, ms?: number, mode?: 'classic' | 'writing' | 'listening', hinted?: boolean }} answer
+ *   `quality` from rateAnswer(). `mode`: how the word was asked. `hinted`: letters were given
+ *   away first: the answer is right, but it is not part of a run of right answers.
  * @param {number} now
  * @param {number} [usual]  The user's usual answer time (usualMs()), for the difficulty score.
- * @returns {{ stats: CardStats, dueAt: number }}
+ * @param {{ day?: string, learnedStreak?: number, learnedDays?: number, requireOtherMode?: boolean }} [rules]
+ *   `day`: the calendar day of the answer where the user is ('YYYY-MM-DD'; progress.js: localDay).
+ *   The rest: when a word counts as learned (the settings; TUNING has the defaults).
+ * @returns {{ stats: CardStats, dueAt: number, learnedNow: boolean, unlearned: boolean }}
+ *   learnedNow / unlearned: this answer made the word learned / took that away again.
  */
-export function applyAnswer(previous, answer, now, usual) {
-  const stats = { ...(previous || newStats()) };
+export function applyAnswer(previous, answer, now, usual, rules = {}) {
+  const stats = { ...LATER_FIELDS, ...newStats(), ...(previous || {}) };
+  const mode = MODES.includes(answer.mode) ? answer.mode : 'classic';
   const passed = answer.quality >= 3;
+  const wasLearned = stats.g > 0;
   stats.a += 1;
   if (answer.correct) stats.k += 1;
   stats.s = passed ? stats.s + 1 : 0;
   if (!answer.correct) stats.l += 1;
+  // each way of asking keeps its own count; the state of the word is one
+  stats[`${MODE_LETTER[mode]}${answer.correct ? 1 : 0}`] += 1;
   stats.e = round(clamp(stats.e + TUNING.EASE_CHANGE[answer.quality], TUNING.EASE_MIN, TUNING.EASE_MAX), 2);
-  stats.i = passed ? nextGap(stats.i, stats.e, answer.quality) : TUNING.RELEARN_MINUTES;
+  stats.i = passed ? Math.round(clamp(nextGap(stats.i, stats.e, answer.quality) * TUNING.MODE_FACTOR[mode], TUNING.LADDER_MINUTES[0], TUNING.MAX_GAP_MINUTES)) : TUNING.RELEARN_MINUTES;
   if (Number.isFinite(answer.ms) && answer.ms > 0) {
     const ms = Math.min(answer.ms, TUNING.RESPONSE_MS_CAP);
     stats.m = Math.round(stats.m > 0 ? stats.m + TUNING.MEAN_WEIGHT * (ms - stats.m) : ms);
   }
   stats.x = now;
+
+  // The run of right answers that makes a word learned. A wrong answer ends it, and a word
+  // that was learned is not any more; a right answer with a hint neither adds to it nor ends it.
+  if (!answer.correct) {
+    stats.n = 0;
+    stats.y = '';
+    stats.o = 0;
+    stats.g = 0;
+  } else if (!answer.hinted) {
+    stats.n += 1;
+    if (DAY.test(rules.day || '')) stats.y = runDays(`${stats.y},${rules.day}`).join(',');
+    if (mode !== 'classic') stats.o += 1;
+  }
+  if (!stats.g && runIsLearned(stats, rules)) stats.g = now;
+  // Learned: asked very rarely, whatever the speed of the last answer was.
+  if (stats.g) stats.i = Math.max(stats.i, TUNING.LEARNED_MIN_GAP_MINUTES);
+
   stats.d = difficultyOf(stats, usual);
-  return { stats, dueAt: now + stats.i * MINUTE };
+  const result = { dueAt: now + stats.i * MINUTE, learnedNow: !wasLearned && stats.g > 0, unlearned: wasLearned && stats.g === 0 };
+  // kept only when they say something (see normalizeStats)
+  for (const key of Object.keys(LATER_FIELDS)) if (!stats[key]) delete stats[key];
+  return { stats, ...result };
 }
 
 /**
@@ -255,8 +331,8 @@ export function postpone(previous, now) {
  */
 export function statusOf(stats) {
   if (!stats || stats.a === 0) return 'new';
-  // A word that made it to a week-long gap is learned, however rough the way there was.
-  if (stats.i >= TUNING.LEARNED_GAP_MINUTES) return 'learned';
+  // Learned is a state of its own (a run of right answers over several days), not a long gap.
+  if (stats.g > 0) return 'learned';
   if (stats.a >= TUNING.HARD_MIN_ATTEMPTS && (stats.d >= TUNING.HARD_DIFFICULTY || stats.l >= TUNING.HARD_LAPSES)) return 'hard';
   return 'learning';
 }

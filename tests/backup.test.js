@@ -19,7 +19,7 @@ test('a backup restores on an empty device, dictionary data included', async () 
   await updateEntry(saved.id, { dictionary: { fetchedAt: 1, groups: [{ partOfSpeech: 'Noun', definitions: [{ text: 'luck', examples: [] }] }] } });
   await addEntry({ ...WORD, text: 'book', translation: 'kitap' });
   const file = JSON.stringify(await createBackup());
-  assert.deepEqual([JSON.parse(file).format, JSON.parse(file).version, JSON.parse(file).entries.length], ['wordvault-backup', 1, 2]);
+  assert.deepEqual([JSON.parse(file).format, JSON.parse(file).version, JSON.parse(file).entries.length], ['wordvault-backup', 2, 2]);
 
   device = use(createDevice('second'));
   await chrome.storage.local.set({ settings: { targetLang: 'de' } });

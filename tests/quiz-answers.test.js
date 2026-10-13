@@ -38,7 +38,8 @@ test('a right answer is stored with the word: statistics, next date, a new revis
   const result = await recordAnswer({ id: ID, correct: true, ms: 4000, chars: 20 });
   assert.deepEqual(result, { quality: 4, dueAt: T0 + 15 * MINUTE, status: 'learning' });
   const entry = await getEntry(ID);
-  assert.deepEqual(entry.quiz, { a: 1, k: 1, s: 1, e: 2.5, i: 10, l: 0, m: 4000, d: entry.quiz.d, x: T0 + 5 * MINUTE });
+  assert.deepEqual(entry.quiz, { a: 1, k: 1, s: 1, e: 2.5, i: 10, l: 0, m: 4000, d: entry.quiz.d, x: T0 + 5 * MINUTE, n: 1, y: entry.quiz.y, c1: 1 });
+  assert.match(entry.quiz.y, /^\d{4}-\d{2}-\d{2}$/, 'the day of the answer, for the learned rule');
   assert.deepEqual([entry.dueAt, entry.box, entry.rev, entry.updatedAt], [T0 + 15 * MINUTE, 0, 2, T0 + 5 * MINUTE]);
   assert.deepEqual((await getQuizState()).lastAnswer, { at: T0 + 5 * MINUTE, id: ID, outcome: 'answer', correct: true, quality: 4 });
 
@@ -191,7 +192,7 @@ test('statistics synchronise with the word and merge by the usual rule', async (
   await addEntry({ text: 'book', translation: 'kitap', sourceLang: 'en', targetLang: 'tr' });
   await recordAnswer({ id: ID, correct: true, ms: 4000, chars: 20 });
   let merged = await exchange();
-  assert.deepEqual(merged.e[ID].q, { a: 1, k: 1, s: 1, e: 2.5, i: 10, l: 0, m: 4000, d: merged.e[ID].q.d, x: T0 });
+  assert.deepEqual(merged.e[ID].q, { a: 1, k: 1, s: 1, e: 2.5, i: 10, l: 0, m: 4000, d: merged.e[ID].q.d, x: T0, n: 1, y: merged.e[ID].q.y, c1: 1 });
   assert.deepEqual(normalizeDocument(JSON.parse(serializeDocument(merged))), merged, 'the document with statistics passes the checks for incoming documents');
   use(b);
   assert.deepEqual((await getEntry(ID)).quiz, merged.e[ID].q, 'B knows how A answered');

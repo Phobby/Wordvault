@@ -171,12 +171,13 @@ test('statuses: new, learning, learned, hard', () => {
   assert.equal(statusOf(newStats()), 'new');
   assert.equal(statusOf(after(4)), 'learning');
   assert.equal(statusOf(after(4, 4, 4)), 'learning');
-  assert.equal(statusOf(after(4, 4, 4, 4)), 'learned', 'the gap reached seven days');
+  assert.equal(statusOf(after(4, 4, 4, 4)), 'learning', 'a long gap alone is not learned any more (see tests/learned.test.js)');
+  assert.equal(statusOf({ ...after(4, 4), g: T0 }), 'learned');
   const struggling = [1, 1, 1, 4].reduce((s, q) => answer(s, q).stats, null);
   assert.equal(statusOf(struggling), 'hard');
   assert.equal(statusOf([1, 1].reduce((s, q) => answer(s, q).stats, null)), 'learning', 'two answers are too few to call a word hard');
   const recovered = [4, 4, 4, 4].reduce((s, q) => answer(s, q).stats, struggling);
-  assert.equal(statusOf(recovered), 'learned', 'a hard word that made it is learned');
+  assert.equal(statusOf({ ...recovered, g: T0 }), 'learned', 'a hard word that made it is learned');
   assert.deepEqual([null, after(4), after(4, 4), after(4, 4, 4), after(4, 4, 4, 4)].map(levelOf), [0, 0, 1, 2, 3]);
 });
 

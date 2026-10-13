@@ -4,7 +4,8 @@
 
 import { ENTRY_PREFIX, TOMBSTONE_PREFIX, entryKey, tombstoneKey } from '../lib/vault.js';
 import { compareVersions } from './merge.js';
-import { emptyDocument, fromRecord, isTombstone, toRecord, toTombstone } from './model.js';
+import { emptyDocument, fromRecord, isTombstone, streakSection, toRecord, toTombstone } from './model.js';
+import { addRemoteDays, getDays } from '../quiz/streak.js';
 
 async function readState() {
   const all = await chrome.storage.local.get(null);
@@ -31,7 +32,10 @@ function documentFrom({ entries, tombstones }) {
 
 /** The vault of this device, removals included, as a synchronised document. */
 export async function readLocalDocument() {
-  return documentFrom(await readState());
+  const document = documentFrom(await readState());
+  const streak = streakSection(await getDays());
+  if (streak) document.s = streak;
+  return document;
 }
 
 /**
@@ -75,5 +79,7 @@ export async function applyDocument(document) {
 
   if (Object.keys(writes).length > 0) await chrome.storage.local.set(writes);
   if (removals.length > 0) await chrome.storage.local.remove(removals);
+  // Quiz days another device knows of are added to this device's; none is ever taken away.
+  if (document.s) await addRemoteDays({ days: document.s.d, frozen: document.s.f });
   return changes;
 }

@@ -1,6 +1,6 @@
 // The synchronised document: what travels between a user's devices.
 //
-//   { v: 1, e: { "<id>": <record> | <tombstone>, ... } }
+//   { v: 2, e: { "<id>": <record> | <tombstone>, ... }, s: { d: [...], f: [...] } }
 //
 //   record     a word in the vault        { w, t, sl, tl, c, b, n, q, u, r }
 //   tombstone  a word that was removed    { d, r }
@@ -10,6 +10,15 @@
 //   u  updated at (ms)       d  deleted at (ms)      r  revision (see merge.js)
 //   q  quiz statistics: a summary of how the word has been answered (quiz/learning.js:
 //      CardStats); there is no answer history, so the document does not grow with use
+//
+//   s  the streak (since version 2; left out while empty): d = the days a quiz was done,
+//      f = missed days covered by a freeze, both as 'YYYY-MM-DD' in the user's local time.
+//      Lists, not counters: two devices' lists merge by taking every day that is in either,
+//      so there is nothing to conflict (quiz/progress.js).
+//
+// Version 2 also added fields to q (learned state, a count per way of asking). A document of
+// version 1 is read as it is; what this version writes is version 2, which a version-1
+// installation refuses to rewrite until it is updated.
 //
 // The keys are short because the document has to fit into small quotas (browser sync holds
 // about 100 KB). Empty values are left out. The id is the key and is derived from the word and
@@ -21,8 +30,9 @@
 import { WordvaultError } from '../lib/errors.js';
 import { entryId } from '../lib/vault.js';
 import { normalizeStats } from '../quiz/learning.js';
+import { cleanDays } from '../quiz/progress.js';
 
-export const SCHEMA_VERSION = 1;
+export const SCHEMA_VERSION = 2;
 /** Tombstones older than this are dropped at the next synchronisation. */
 export const TOMBSTONE_TTL_MS = 90 * 24 * 60 * 60 * 1000;
 /** "A short context sentence": the full one stays on the device it was saved on. */
@@ -142,5 +152,19 @@ export function normalizeDocument(raw) {
     if (!isObject(value)) continue;
     if (isTombstone(value) ? isRevision(value.r) : validRecord(id, value)) document.e[id] = value;
   }
+  const streak = streakSection(isObject(raw.s) ? { days: raw.s.d, frozen: raw.s.f } : null);
+  if (streak) document.s = streak;
   return document;
+}
+
+/**
+ * The streak part of a document from lists of days, or null when there is nothing to carry.
+ * @param {{ days?: unknown, frozen?: unknown } | null} lists
+ * @returns {{ d: string[], f?: string[] } | null}
+ */
+export function streakSection(lists) {
+  const days = cleanDays(lists?.days);
+  const frozen = cleanDays(lists?.frozen);
+  if (days.length === 0 && frozen.length === 0) return null;
+  return frozen.length > 0 ? { d: days, f: frozen } : { d: days };
 }

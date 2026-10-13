@@ -91,7 +91,7 @@ test('the local document holds words and removals, and only those', async () => 
   await removeEntry('en|tr|door');
   await chrome.storage.local.set({ settings: { targetLang: 'tr', providerConfig: { deepl: { apiKey: 'SECRET-KEY' } } }, siteSourceLangs: { 'example.com': 'de' } });
   const document = await readLocalDocument();
-  assert.deepEqual(document, { v: 1, e: { 'en|tr|door': { d: T0, r: 2 }, [ID]: { w: 'book', t: 'kitap', sl: 'en', tl: 'tr', c: 'A good book.', u: T0, r: 1 } } });
+  assert.deepEqual(document, { v: 2, e: { 'en|tr|door': { d: T0, r: 2 }, [ID]: { w: 'book', t: 'kitap', sl: 'en', tl: 'tr', c: 'A good book.', u: T0, r: 1 } } });
   const text = serializeDocument(document);
   for (const secret of ['SECRET-KEY', 'example.com', 'Page A', 'settings']) assert.ok(!text.includes(secret), `"${secret}" must not leave the device`);
 });

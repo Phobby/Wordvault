@@ -42,6 +42,37 @@ export const DEFAULT_SETTINGS = Object.freeze({
    * Whatever is chosen, the other ways follow when it is not possible (quiz/display.js).
    */
   quizDisplay: 'auto',
+  /**
+   * The ways a word is asked, each on its own switch: 'classic' (pick the meaning from four),
+   * 'writing' (type the word for a meaning), 'listening' (hear the word, pick from four).
+   * With none switched on, the classic way is used.
+   */
+  quizModeClassic: true,
+  quizModeWriting: false,
+  quizModeListening: false,
+  /** With several ways switched on: mix them at random (otherwise they take turns). */
+  quizModeMixed: true,
+  /** Writing: an answer that differs only in accents ("cafe" for "café") counts as right. */
+  quizAccentTolerant: false,
+  /** Listening: say the word once when the question appears. */
+  quizListenAutoplay: true,
+  /** Listening: what the four choices are: 'meaning' (translations) or 'spelling' (the words themselves). */
+  quizListenChoices: 'meaning',
+  /** A word is learned after this many right answers in a row, on at least three different days. */
+  quizLearnedStreak: 5,
+  /** ... of which at least one has to be typed or heard, not picked from four. */
+  quizLearnedNeedsOtherMode: true,
+  /** A day counts for the streak once this many questions were answered on it. */
+  quizDailyGoal: 5,
+  /** One missed day a week can be covered by a freeze. */
+  quizFreezeEnabled: true,
+  /** In the evening, if the day's quiz is not done yet, say so once (needs the notification permission). */
+  quizReminderEnabled: true,
+  /** When: 'HH:MM', local time. */
+  quizReminderTime: '20:00',
+  /** No quiz and no reminder between these times of day ('HH:MM'; both empty: no quiet hours). */
+  quizQuietStart: '',
+  quizQuietEnd: '',
   /** Screen text scanning: start the next selection with the area that was scanned last. */
   ocrRememberArea: false,
   /** Screen text scanning: languages the text is read with: 'auto', or a language tag ('en', 'tr'). */

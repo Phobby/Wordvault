@@ -13,7 +13,9 @@
 import { getSettings } from '../lib/settings.js';
 import { resolveTargetLanguage } from '../lib/translator.js';
 import { getEntry, listEntries, updateEntry } from '../lib/vault.js';
-import { applyAnswer, expectedMs, levelOf, postpone, rateAnswer, recordSpeed, statusOf, usualMs } from './learning.js';
+import { MODES, applyAnswer, expectedMs, levelOf, postpone, rateAnswer, recordSpeed, statusOf, usualMs } from './learning.js';
+import { localDay } from './progress.js';
+import { countAnswer, dailyGoal } from './streak.js';
 import { METHODS, NOTIFICATION_ID, PREFERENCES, display, methodOrder, notificationsAllowed, sessionClaimed } from './display.js';
 import { CHOICE_COUNT, askableCards, countMeanings, questionFor } from './question.js';
 import { isDue, selectCard } from './selection.js';
@@ -480,18 +482,53 @@ export async function recordAnswer(answer) {
   let result;
   let quality = null;
   let speed = state.speed;
+  let day = null;
   const correct = outcome === 'answer' && answer.correct === true;
+  const mode = MODES.includes(answer.mode) ? answer.mode : 'classic';
+  const hints = Math.max(0, Math.floor(Number(answer.hints) || 0));
   if (UNANSWERED.has(outcome)) {
     result = postpone(entry.quiz, now);
   } else {
+    const settings = await getSettings();
     const ms = outcome === 'answer' ? Number(answer.ms) : NaN;
-    quality = rateAnswer({ correct, ms, unknown: outcome === 'unknown' }, expectedMs(state.speed, answer.chars));
-    result = applyAnswer(entry.quiz, { quality, correct, ms }, now, usualMs(state.speed));
-    if (correct) speed = recordSpeed(state.speed, ms, answer.chars);
+    quality = qualityOf({ correct, ms, unknown: outcome === 'unknown', mode, hints, letters: Number(answer.letters) || 0 }, expectedMs(state.speed, answer.chars));
+    result = applyAnswer(entry.quiz, { quality, correct, ms: mode === 'classic' ? ms : NaN, mode, hinted: hints > 0 }, now, usualMs(state.speed), {
+      day: localDay(now),
+      learnedStreak: learnedStreak(settings),
+      requireOtherMode: settings.quizLearnedNeedsOtherMode !== false,
+    });
+    // The user's pace is that of picking one of four; typing and listening take their own time.
+    if (correct && mode === 'classic') speed = recordSpeed(state.speed, ms, answer.chars);
+    // An answered question counts towards the day, whatever the answer was.
+    day = await countAnswer(now, dailyGoal(settings));
   }
   await updateEntry(id, { quiz: result.stats, dueAt: result.dueAt, box: levelOf(result.stats) });
   await saveQuizState({ speed, lastAnswer: { at: now, id, outcome, correct, quality } });
-  return { quality, dueAt: result.dueAt, status: statusOf(result.stats) };
+  return { quality, dueAt: result.dueAt, status: statusOf(result.stats), ...(result.learnedNow ? { learnedNow: true } : {}), ...(result.unlearned ? { unlearned: true } : {}), ...(day?.completedNow ? { dayCompleted: true } : {}) };
+}
+
+/** Limits of the "right answers in a row" setting. */
+export const LEARNED_STREAK = Object.freeze({ MIN: 3, MAX: 20, DEFAULT: 5 });
+
+function learnedStreak(settings) {
+  const count = Math.round(Number(settings.quizLearnedStreak));
+  return Number.isFinite(count) && count > 0 ? Math.min(LEARNED_STREAK.MAX, Math.max(LEARNED_STREAK.MIN, count)) : LEARNED_STREAK.DEFAULT;
+}
+
+/**
+ * The quality of an answer (0-5, learning.js: rateAnswer) by how the word was asked.
+ *   classic    judged by speed, as always;
+ *   listening  right is 4: how long the word took to be said and heard is not the user's speed;
+ *   writing    right is 4; with a hint it is "partly right": 3, and 2 (asked again soon) once
+ *              half of the letters or more were given away.
+ * ASSUMPTION: typing speed is not judged: it measures the keyboard, not the memory.
+ */
+export function qualityOf({ correct, ms, unknown, mode, hints = 0, letters = 0 }, expected) {
+  if (mode === 'classic') return rateAnswer({ correct, ms, unknown }, expected);
+  if (unknown) return 0;
+  if (!correct) return 1;
+  if (hints > 0) return letters > 0 && hints * 2 >= letters ? 2 : 3;
+  return 4;
 }
 
 /** Everything the "Why is there no quiz?" panel shows. */

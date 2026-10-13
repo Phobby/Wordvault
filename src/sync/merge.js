@@ -20,7 +20,7 @@
 // of merge order even when revision and time are equal; rule 4 replaces a per-device identifier,
 // which would cost bytes in every record of a document that has to stay small.
 
-import { SCHEMA_VERSION, TOMBSTONE_TTL_MS, isTombstone, timeOf } from './model.js';
+import { SCHEMA_VERSION, TOMBSTONE_TTL_MS, isTombstone, streakSection, timeOf } from './model.js';
 
 /** JSON with object keys in sorted order: equal values give equal text on every device. */
 export function canonical(value) {
@@ -49,8 +49,15 @@ export function compareVersions(a, b) {
 }
 
 /** A document with its entries in sorted order, so that equal documents serialise equally. */
-function documentOf(entries) {
-  return { v: SCHEMA_VERSION, e: Object.fromEntries(Object.entries(entries).sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))) };
+function documentOf(entries, streak = null) {
+  const document = { v: SCHEMA_VERSION, e: Object.fromEntries(Object.entries(entries).sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))) };
+  if (streak) document.s = streak;
+  return document;
+}
+
+/** The streak days of two documents as one: every day that is in either (nothing to conflict). */
+function mergeStreaks(a, b) {
+  return streakSection({ days: [...(a?.d || []), ...(b?.d || [])], frozen: [...(a?.f || []), ...(b?.f || [])] });
 }
 
 /**
@@ -62,7 +69,7 @@ export function mergeDocuments(a, b) {
   for (const [id, value] of Object.entries(b.e)) {
     if (!(id in entries) || compareVersions(value, entries[id]) > 0) entries[id] = value;
   }
-  return documentOf(entries);
+  return documentOf(entries, mergeStreaks(a.s, b.s));
 }
 
 /**
@@ -72,12 +79,12 @@ export function mergeDocuments(a, b) {
  * word back: that is the price of not keeping tombstones forever.
  */
 export function purgeTombstones(document, now = Date.now()) {
-  return documentOf(Object.fromEntries(Object.entries(document.e).filter(([, value]) => !(isTombstone(value) && value.d <= now - TOMBSTONE_TTL_MS))));
+  return documentOf(Object.fromEntries(Object.entries(document.e).filter(([, value]) => !(isTombstone(value) && value.d <= now - TOMBSTONE_TTL_MS))), mergeStreaks(document.s, null));
 }
 
 /** The text that is stored and compared: equal documents give equal text. */
 export function serializeDocument(document) {
-  return canonical(documentOf(document.e));
+  return canonical(documentOf(document.e, mergeStreaks(document.s, null)));
 }
 
 export function documentsEqual(a, b) {

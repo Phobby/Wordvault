@@ -1,14 +1,16 @@
 // Export and import of the vault as a JSON file (backup, moving to another device).
 
 import { WordvaultError } from './errors.js';
+import { addRemoteDays, getDays } from '../quiz/streak.js';
 import { importEntries, listEntries } from './vault.js';
 
 const FORMAT = 'wordvault-backup';
-const VERSION = 1;
+/** 2: entries carry the learned state (in `quiz`), and the file the days a quiz was done. Files of version 1 are read as they are. */
+const VERSION = 2;
 
-/** @returns {Promise<{ format: string, version: number, exportedAt: string, entries: object[] }>} */
+/** @returns {Promise<{ format: string, version: number, exportedAt: string, entries: object[], streak: { days: string[], frozen: string[] } }>} */
 export async function createBackup() {
-  return { format: FORMAT, version: VERSION, exportedAt: new Date().toISOString(), entries: await listEntries() };
+  return { format: FORMAT, version: VERSION, exportedAt: new Date().toISOString(), entries: await listEntries(), streak: await getDays() };
 }
 
 /** "wordvault-2026-10-11.json" */
@@ -32,7 +34,10 @@ export async function restoreBackup(json) {
   // A bare array of entries is accepted too, so a hand-made word list can be imported.
   const entries = Array.isArray(data) ? data : data?.format === FORMAT ? data.entries : null;
   if (!Array.isArray(entries)) throw new WordvaultError('bad_backup');
-  return importEntries(entries);
+  const counts = await importEntries(entries);
+  // The quiz days of the file are added to this device's (cleaned on the way in; none is removed).
+  if (!Array.isArray(data) && data.streak && typeof data.streak === 'object') await addRemoteDays(data.streak);
+  return counts;
 }
 
 /**

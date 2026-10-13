@@ -8,6 +8,7 @@
 import { catchUncaught, recordError } from '../features/feedback/error-log.js';
 import { sendFeedback } from '../features/feedback/send.js';
 import { lookupWord } from '../lib/dictionary.js';
+import { ensureSchema } from '../lib/schema.js';
 import { registerScreenOcr, screenOcrHandlers } from '../features/screen-ocr/background.js';
 import { WordvaultError, serializeError } from '../lib/errors.js';
 import { fetchRecording } from '../lib/pronunciation.js';
@@ -15,6 +16,7 @@ import { CLEANUP_ALARM, cleanupCache, ensureCacheCleanup } from '../lib/translat
 import { cancelTranslation, checkProvider, clearTranslationCaches, getPreferences, setSiteSourceLanguage, setTargetLanguage, translate, translationCacheStats } from '../lib/translator.js';
 import { ENTRY_PREFIX, TOMBSTONE_PREFIX, addEntry, entryId, getEntry, hasEntry, removeEntry, updateEntry } from '../lib/vault.js';
 import { NOTIFICATION_ID } from '../quiz/display.js';
+import { DAYS_KEY } from '../quiz/streak.js';
 import { ensureSyncScheduled, onSyncAlarm, syncInBackground, turnOffEncryption, unlockEncryption, vaultChanged } from '../sync/engine.js';
 import { ALARM_NAME, answerQuestion, claimSession, ensureScheduled, muteToday, openFromNotification, quizPageGone, runScheduledQuiz, testQuiz, unmute } from '../quiz/scheduler.js';
 
@@ -171,6 +173,11 @@ chrome.storage.onChanged.addListener((changes, area) => {
 });
 scheduleQuiz();
 
+// --- Stored data -------------------------------------------------------------------------------
+// Older data is brought up to this version's layout (lib/schema.js) whenever this script starts.
+
+ensureSchema().catch(() => {});
+
 // --- Translation cache -------------------------------------------------------------------------
 // Translations nobody asked for in seven days are deleted: once a day by an alarm, and when
 // this script starts after a longer pause (lib/translation-cache.js). The vault is not touched.
@@ -195,7 +202,8 @@ chrome.runtime.onStartup.addListener(() => {
 chrome.storage.onChanged.addListener((changes, area) => {
   if (area !== 'local') return;
   if (changes.syncConfig) scheduleSync();
-  if (Object.keys(changes).some((key) => key.startsWith(ENTRY_PREFIX) || key.startsWith(TOMBSTONE_PREFIX))) vaultChanged().catch(() => {});
+  // the vault, or the days a quiz was done (they travel with it)
+  if (Object.keys(changes).some((key) => key.startsWith(ENTRY_PREFIX) || key.startsWith(TOMBSTONE_PREFIX) || key === DAYS_KEY)) vaultChanged().catch(() => {});
 });
 // Back online while this script happens to be awake: send what was waiting. (When it is
 // asleep, the retry alarm does the same a little later.)
