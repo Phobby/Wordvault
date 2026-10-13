@@ -13,6 +13,12 @@ const OEM_LSTM = 1;
  * screen is not a page of prose; captions, labels and signs sit anywhere on it.
  */
 const PSM_SPARSE = '11';
+/**
+ * Tesseract writes notes such as "Estimating resolution as 606" to its error stream on every
+ * scan; the core passes that to console.error, and Chrome lists it under the extension's
+ * "Errors". Sent to the engine's own null file instead, they are not written anywhere.
+ */
+const QUIET = '/dev/null';
 
 let worker = null;
 let loaded = ''; // the languages the worker has ready, e.g. 'eng+tur'
@@ -48,8 +54,9 @@ export const tesseractEngine = {
         logger: onLog,
         errorHandler: () => {},
       });
-      await worker.setParameters({ tessedit_pageseg_mode: PSM_SPARSE });
     }
+    // After a change of languages as well: starting the engine again may forget them.
+    await worker.setParameters({ tessedit_pageseg_mode: PSM_SPARSE, debug_file: QUIET });
     loaded = languages;
   },
 
