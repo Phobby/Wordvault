@@ -1841,5 +1841,65 @@
   },
   "quizWhyQuietHours": {
     "message": "sessiz saatlerin içindesin"
+  },
+  "optQuizProgressTitle": {
+    "message": "Öğrenme, seri ve hatırlatma"
+  },
+  "optQuizLearnedStreak": {
+    "message": "Bir kelimeyi öğrenmek için üst üste doğru"
+  },
+  "optQuizLearnedStreakHelp": {
+    "message": "Ayrıca en az üç farklı güne yayılmış olmaları gerekir. Öğrenilen kelime kasanda kalır ve yaklaşık ayda bir sorulur; yanlış cevap onu yeniden öğrenilecek kelime yapar."
+  },
+  "optQuizLearnedOther": {
+    "message": "Öğrenmek için seçmek yetmez"
+  },
+  "optQuizLearnedOtherHelp": {
+    "message": "O doğru cevaplardan en az biri yazılmış ya da dinlenmiş olmalı. Yalnızca klasik yolu kullanıyorsan bunu kapat; yoksa hiçbir kelime öğrenilmiş sayılmaz."
+  },
+  "optQuizDailyGoal": {
+    "message": "Günlük hedef"
+  },
+  "optQuizDailyGoalHelp": {
+    "message": "Bir gün, o gün bu kadar soruyu doğru ya da yanlış cevapladığında serine sayılır."
+  },
+  "optQuizQuestionsUnit": {
+    "message": "soru"
+  },
+  "optQuizFreeze": {
+    "message": "Seri dondurma"
+  },
+  "optQuizFreezeHelp": {
+    "message": "Haftada bir kez kaçırılan bir gün kapatılabilir; tarayıcıyı açmadığın bir gün serini bitirmez. Önerilir, kendiliğinden kullanılmaz."
+  },
+  "optQuizReminder": {
+    "message": "Akşam hatırlatması"
+  },
+  "optQuizReminderHelp": {
+    "message": "Günde bir bildirim, yalnızca günün quizi henüz yapılmadıysa. Yukarıdaki bildirim izni gerekir."
+  },
+  "optQuizReminderTime": {
+    "message": "Hatırlatma saati"
+  },
+  "optQuizReminderNeedsPermission": {
+    "message": "Bildirimlere henüz izin verilmedi"
+  },
+  "optQuizQuiet": {
+    "message": "Sessiz saatler"
+  },
+  "optQuizQuietHelp": {
+    "message": "Bu saatler arasında quiz ve hatırlatma gelmez. İkisini de boş bırakırsan sessiz saat olmaz."
+  },
+  "optQuizQuietStart": {
+    "message": "Sessiz saatlerin başı"
+  },
+  "optQuizQuietEnd": {
+    "message": "Sessiz saatlerin sonu"
+  },
+  "optQuizReset": {
+    "message": "Varsayılana dön"
+  },
+  "optQuizResetDone": {
+    "message": "Quiz ayarları varsayılana döndü. Kelimelerine, serine ve rütbene dokunulmadı."
   }
 }

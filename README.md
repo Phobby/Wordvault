@@ -439,6 +439,84 @@ Kazancın tamamı servise gitmemekten gelir (yüzlerce ms → 1-2 ms). Yeni iki 
 kazancı 1-2 ms'dir, yani hissedilmez; bu yüzden ikisi de sade tutuldu (oturum katmanı sınırı aşınca
 tümden boşalır, sayfa belleği yalnızca birebir aynı istekte kullanılır).
 
+### Quiz modları, öğrenildi durumu, seri ve rütbeler
+
+`SPEC-LEARNING.md`. Her şey yereldir: sıralama, paylaşım ya da sunucu yoktur. Senkronizasyon açıksa
+öğrenildi durumu ve quiz günleri kasayla birlikte, kullanıcının seçtiği yere gider.
+
+**Modlar** (`quiz/question.js`, `shared/quiz-card.js`). Quiz yalnızca kasadaki kelimeleri sorar;
+önbellekteki aramalar girmez. Ayarlarda her biri ayrı açılıp kapanır (varsayılan: Klasik + Karışık):
+
+| Mod | Ne gösterilir | Cevap |
+| --- | --- | --- |
+| Klasik | Kelime | Dört anlamdan biri |
+| Yazma | Anlam | Kelime yazılır; Enter gönderir |
+| Dinleme | Hiçbir şey; kelime okunur | Dört şıktan biri (anlam ya da yazılış) |
+
+- Karışık açıkken açık modlardan biri rastgele seçilir; kapalıyken sırayla gelirler. Bir kelimeye istenen
+  mod uymazsa (yazmak için fazla uzun, okunacak dili yok, şık yetmiyor) açık olan başka bir moda düşülür.
+- **Yazma:** büyük/küçük harf, baştaki/sondaki ve aradaki fazla boşluk ile Unicode biçimi önemsizdir
+  (`shared/quiz-answers.js`). Aksan farkı varsayılan olarak yazım hatasıdır; "aksanlara toleranslı"
+  açılınca sayılmaz. Yanlışta doğru kelime, hatalı ya da eksik harfleri işaretlenerek gösterilir.
+  "İpucu" her basışta bir harf açar (son harf hariç); ipuçlu doğru cevap **kısmen doğru**dur: kalite 3,
+  harflerin yarısı açıldıysa 2. "Geç" cevabı gösterir ve bilinmedi sayar. Alana yazılan tuşlar sayfaya
+  ulaşmaz (video oynatıcının kısayolları tetiklenmez); yazarken zaman aşımı yeniden başlar.
+  Aynı çeviriyle kayıtlı başka bir kasa kelimesi de doğru kabul edilir ("büyük" → "big" ya da "large").
+- **Dinleme:** mevcut seslendirme (`shared/speech.js`) kullanılır; hiçbir okuma kesilmez (`cancel()`
+  çağrılmaz), Firefox/macOS'te kayıtlar Web Audio ile sönümlenerek çalınır, yani eski "patlama" sesi
+  bu modda da oluşmaz. Soru açılınca bir kez okunur (ayarlanabilir); tarayıcı kendiliğinden ses
+  başlatmayı reddederse hoparlör düğmesi çalışır. Ses yoksa kart bunu söyler, kelimeye hiçbir şey
+  yazılmaz, yerine başka kelime gelir ve o dil (kayıt kullanılan yerde o kelime) 24 saat dinlemeyle sorulmaz.
+- Üç mod aynı zamanlayıcıyı besler. Doğru cevabın sonraki aralığı moda göre çarpılır: klasik 1,
+  dinleme 1,15, yazma 1,35 (`TUNING.MODE_FACTOR`). Hız yalnızca klasikte puanlanır.
+
+**Öğrenildi** (`quiz/learning.js`). Üst üste N doğru (varsayılan 5; ayar 3-20), en az 3 farklı takvim
+gününde, ve en az biri yazma ya da dinleme (kapatılabilir). Öğrenilen kelime silinmez; en az 30 günde
+bir sorulur. Yanlış cevap durumu düşürür ve kelime 10 dakika sonra yeniden gelir. İpuçlu doğru seriye
+eklenmez ama seriyi de bozmaz. Kelime özetindeki alanlar: `n` (seri), `y` (serinin günleri), `o`
+(yazma/dinleme doğruları), `g` (öğrenildiği an), `c1/c0`, `w1/w0`, `l1/l0` (mod başına doğru/yanlış).
+Yalnızca bir şey söylediklerinde yazılırlar. Kasa penceresindeki **Kelime haznem** sekmesi öğrenilenleri
+tarihleriyle listeler; ana listeden çıkmazlar.
+
+**Seri (streak)** (`quiz/progress.js`, `quiz/streak.js`). Sayaç saklanmaz; quiz çözülen günlerin listesi
+saklanır (`quizDays.days`, cihazın yerel tarihi, `YYYY-AA-GG`) ve seri her seferinde ondan hesaplanır.
+İki cihazın listeleri birleşim alınarak birleşir.
+
+- **Günlük hedef:** bir gün, o gün toplam `quizDailyGoal` (varsayılan 5) soru cevaplanınca sayılır.
+  Doğru, yanlış ve "bilmiyorum" sayılır; ertelenen, kapatılan ve zaman aşımına uğrayan sayılmaz. Sayım
+  cihaz başınadır (iki cihazda üçer soru bir gün etmez).
+- **Alev:** bugün tamamsa canlı, bekliyorsa soluk, seri yoksa gri. CSS ile çizilir; "hareketi azalt"
+  açıkken durur.
+- **Dondurma:** dün kaçırıldıysa ve ondan önce bir seri varsa, son 7 günde kullanılmamış hak o günü
+  kapatabilir (`quizDays.frozen`). Dondurulan gün seriyi koparmaz, sayıya eklenmez. Önerilir, kendiliğinden
+  kullanılmaz.
+- **Akşam hatırlatması** (`quiz/reminder.js`): `chrome.alarms` ile seçilen saatte (varsayılan 20:00),
+  günde en çok bir kez, yalnızca bugünün hedefi tamamlanmadıysa, sessiz saatlerin dışında ve bildirim
+  izni verilmişse. Bildirimde kasadan kelime yoktur. İzin yoksa hiçbir şey gösterilmez ve başka hiçbir
+  şey etkilenmez. Sessiz saatler quizin kendisini de durdurur.
+- **"Bugün sorma":** bugün yapılmamışken bir seri varsa ilk basışta "Bugünü atlarsan N günlük serin
+  sıfırlanır" denir; ikinci basış erteler.
+
+**Rütbeler** (`quiz/progress.js`: `RANKS`, eşiklerin tek yeri). Öğrenilen kelime sayısına göre:
+
+| Öğrenilen | Rütbe |
+| --- | --- |
+| 0-99 | Çaylak |
+| 100-199 | Beginner |
+| 200-299 | Middle |
+| 300-499 | Kıdemli |
+| 500-999 | Mafya |
+| 1000-1999 | Boss |
+| 2000+ | Efsane |
+
+Rozet (kalkan ve basamak sayısı kadar çizgi), alev ve kutlama `shared/progress-ui.js` içinde çizilir;
+görsel dosyası yoktur. Yeni rütbe bir kez, yalnızca görünür bir sayfada kutlanır.
+
+**Sürümler.** Senkron belgesi sürüm 2 (`s`: gün listeleri; sürüm 1 belgeler olduğu gibi okunur, sürüm 1
+kurulumlar sürüm 2 belgeyi yeniden yazmayı reddeder). Yedek dosyası sürüm 2 (gün listeleri de içinde;
+sürüm 1 dosyalar olduğu gibi içe aktarılır). Yerel şema sürümü `schemaVersion: 2` olarak not edilir;
+1 → 2 hiçbir kaydı yeniden yazmaz, çünkü yeni alanların hepsi isteğe bağlıdır (`lib/schema.js`).
+
 ### Hedef ve kaynak dil
 
 Hedef dil tek bir yerde durur: `chrome.storage.local` içindeki `settings.targetLang`. Çeviri penceresi,

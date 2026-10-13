@@ -195,3 +195,9 @@ test('where recordings stand in for the voice, a missing one is about the word, 
   assert.ok(noVoice['id:en|tr|blue'] > Date.now());
   assert.equal(noVoice.en, undefined);
 });
+
+test('settings changed in quick succession all take effect', async () => {
+  await Promise.all([updateSettings({ quizModeWriting: true }), updateSettings({ quizAccentTolerant: true }), updateSettings({ quizDailyGoal: 3 }), updateSettings({ quizListenChoices: 'spelling' })]);
+  const { settings } = await chrome.storage.local.get('settings');
+  assert.deepEqual([settings.quizModeWriting, settings.quizAccentTolerant, settings.quizDailyGoal, settings.quizListenChoices], [true, true, 3, 'spelling']);
+});

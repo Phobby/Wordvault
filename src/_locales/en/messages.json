@@ -2378,5 +2378,85 @@
   "quizWhyQuietHours": {
     "message": "it is within your quiet hours",
     "description": "Why no quiz: quiet hours."
+  },
+  "optQuizProgressTitle": {
+    "message": "Learning, streak and reminder",
+    "description": "Options: heading."
+  },
+  "optQuizLearnedStreak": {
+    "message": "Right answers in a row to learn a word",
+    "description": "Options: learned threshold."
+  },
+  "optQuizLearnedStreakHelp": {
+    "message": "They also have to fall on at least three different days. A learned word stays in your vault and is asked about once a month; a wrong answer makes it a word to learn again.",
+    "description": "Options: learned threshold help."
+  },
+  "optQuizLearnedOther": {
+    "message": "Learning needs more than picking",
+    "description": "Options: require a typed or heard answer."
+  },
+  "optQuizLearnedOtherHelp": {
+    "message": "At least one of those right answers has to be typed or heard. Switch this off if you only use the classic way, or no word will ever count as learned.",
+    "description": "Options: require a typed or heard answer, help."
+  },
+  "optQuizDailyGoal": {
+    "message": "Daily goal",
+    "description": "Options: daily goal."
+  },
+  "optQuizDailyGoalHelp": {
+    "message": "A day counts for your streak once you answered this many questions on it, right or wrong.",
+    "description": "Options: daily goal help."
+  },
+  "optQuizQuestionsUnit": {
+    "message": "questions",
+    "description": "Options: unit after the daily goal."
+  },
+  "optQuizFreeze": {
+    "message": "Streak freeze",
+    "description": "Options: freeze."
+  },
+  "optQuizFreezeHelp": {
+    "message": "Once a week a missed day can be covered, so a day without the browser does not end your streak. It is offered, never used by itself.",
+    "description": "Options: freeze help."
+  },
+  "optQuizReminder": {
+    "message": "Evening reminder",
+    "description": "Options: reminder."
+  },
+  "optQuizReminderHelp": {
+    "message": "One notification a day, only if the day's quiz is not done yet. Needs the notification permission above.",
+    "description": "Options: reminder help."
+  },
+  "optQuizReminderTime": {
+    "message": "Reminder time",
+    "description": "Options: reminder time."
+  },
+  "optQuizReminderNeedsPermission": {
+    "message": "Notifications are not allowed yet",
+    "description": "Options: the reminder cannot be shown."
+  },
+  "optQuizQuiet": {
+    "message": "Quiet hours",
+    "description": "Options: quiet hours."
+  },
+  "optQuizQuietHelp": {
+    "message": "No quiz and no reminder between these times. Leave both empty for none.",
+    "description": "Options: quiet hours help."
+  },
+  "optQuizQuietStart": {
+    "message": "Quiet hours start",
+    "description": "Options: quiet hours start."
+  },
+  "optQuizQuietEnd": {
+    "message": "Quiet hours end",
+    "description": "Options: quiet hours end."
+  },
+  "optQuizReset": {
+    "message": "Back to defaults",
+    "description": "Options: resets the quiz settings."
+  },
+  "optQuizResetDone": {
+    "message": "The quiz settings are back to their defaults. Your words, streak and rank were not touched.",
+    "description": "Options: after resetting."
   }
 }

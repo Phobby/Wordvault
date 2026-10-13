@@ -89,11 +89,20 @@ export async function getSettings() {
   return { ...DEFAULT_SETTINGS, ...(stored && typeof stored === 'object' ? stored : {}) };
 }
 
+// Changing a setting is "read all of them, change one, write all of them". Two changes made
+// at the same moment from one page (two switches flipped in a row) would each read the old
+// state and the second would undo the first, so they take turns. Only the order is kept here.
+let turns = Promise.resolve();
+
 /** @param {Partial<typeof DEFAULT_SETTINGS>} patch */
-export async function updateSettings(patch) {
-  const next = { ...(await getSettings()), ...patch };
-  await chrome.storage.local.set({ [SETTINGS_KEY]: next });
-  return next;
+export function updateSettings(patch) {
+  const done = turns.then(async () => {
+    const next = { ...(await getSettings()), ...patch };
+    await chrome.storage.local.set({ [SETTINGS_KEY]: next });
+    return next;
+  });
+  turns = done.catch(() => {});
+  return done;
 }
 
 // --- "Always use this source language on this site" ----------------------------------------------

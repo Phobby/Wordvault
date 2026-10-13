@@ -108,6 +108,7 @@ body {
   gap: 8px;
 }
 .field select,
+.field input[type="time"],
 .field input[type="number"] {
   box-sizing: border-box;
   height: 32px;

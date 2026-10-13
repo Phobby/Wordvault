@@ -7,9 +7,10 @@ import { createCacheSection, createProviderSection } from './provider.js';
 import { catchUncaught } from '../features/feedback/error-log.js';
 import { supportCard } from '../support/support.js';
 import { downloadBackup, restoreBackup } from '../lib/backup.js';
-import { getSettings, updateSettings } from '../lib/settings.js';
+import { DEFAULT_SETTINGS, getSettings, updateSettings } from '../lib/settings.js';
 import { getPreferences, setTargetLanguage } from '../lib/translator.js';
-import { INTERVAL_MINUTES, TIMEOUT_SECONDS, getDiagnostics } from '../quiz/scheduler.js';
+import { INTERVAL_MINUTES, LEARNED_STREAK, TIMEOUT_SECONDS, getDiagnostics } from '../quiz/scheduler.js';
+import { DAILY_GOAL } from '../quiz/streak.js';
 import { createProgressPanel } from '../quiz/progress-panel.js';
 import { createSyncControls } from './sync.js';
 
@@ -250,6 +251,52 @@ const quizDisplay = h(
   ['auto', 'popup', 'window', 'card'].map((value) => h('option', { value, text: t(DISPLAY_NAMES[value]) })),
 );
 
+// Learned, the daily goal, the freeze, the evening reminder and the quiet hours.
+const quizNumber = (key, limits, labelKey) => {
+  const input = h('input', {
+    type: 'number',
+    inputmode: 'numeric',
+    min: String(limits.MIN),
+    max: String(limits.MAX),
+    step: '1',
+    'data-setting': key,
+    'aria-label': t(labelKey),
+    onchange: () => {
+      const value = numberIn(input, limits.MIN, limits.MAX);
+      if (value !== null) saveQuiz({ [key]: value });
+      else renderQuizSettings(input);
+    },
+  });
+  return input;
+};
+/** A time of day; emptied, it means "none" (the quiet hours) or the default (the reminder). */
+const quizTime = (key, labelKey) => h('input', { type: 'time', 'data-setting': key, 'aria-label': t(labelKey), onchange: (event) => saveQuiz({ [key]: event.target.value }) });
+const quizLearnedStreak = quizNumber('quizLearnedStreak', LEARNED_STREAK, 'optQuizLearnedStreak');
+const quizLearnedNeedsOtherMode = quizSwitch('quizLearnedNeedsOtherMode');
+const quizDailyGoal = quizNumber('quizDailyGoal', DAILY_GOAL, 'optQuizDailyGoal');
+const quizFreezeEnabled = quizSwitch('quizFreezeEnabled');
+const quizReminderEnabled = quizSwitch('quizReminderEnabled');
+const quizReminderTime = quizTime('quizReminderTime', 'optQuizReminderTime');
+const quizQuietStart = quizTime('quizQuietStart', 'optQuizQuietStart');
+const quizQuietEnd = quizTime('quizQuietEnd', 'optQuizQuietEnd');
+const quizReminderNote = h('span', { class: 'unit', role: 'status' });
+
+// "Back to defaults": every quiz setting as it was when the extension was installed. Words,
+// their history, the streak and the rank are not settings and stay as they are.
+const quizResetStatus = h('span', { class: 'unit', role: 'status' });
+const quizReset = h('button', {
+  class: 'wv-btn',
+  type: 'button',
+  'data-action': 'reset-quiz',
+  text: t('optQuizReset'),
+  onclick: async () => {
+    const defaults = Object.fromEntries(Object.entries(DEFAULT_SETTINGS).filter(([key]) => key.startsWith('quiz')));
+    await saveQuiz(defaults);
+    await renderQuizSettings();
+    quizResetStatus.textContent = t('optQuizResetDone');
+  },
+});
+
 // The system notification is the last resort, and the only thing here that needs a permission
 // of its own; it is asked for when the user wants it and not before.
 const NOTIFICATIONS = { permissions: ['notifications'] };
@@ -294,6 +341,16 @@ async function renderQuizSettings(rejected) {
   quizAccentTolerant.checked = settings.quizAccentTolerant === true;
   quizListenAutoplay.checked = settings.quizListenAutoplay !== false;
   quizListenChoices.value = settings.quizListenChoices === 'spelling' ? 'spelling' : 'meaning';
+  quizLearnedNeedsOtherMode.checked = settings.quizLearnedNeedsOtherMode !== false;
+  quizFreezeEnabled.checked = settings.quizFreezeEnabled !== false;
+  quizReminderEnabled.checked = settings.quizReminderEnabled !== false;
+  if (free(quizLearnedStreak)) quizLearnedStreak.value = String(Math.min(LEARNED_STREAK.MAX, Math.max(LEARNED_STREAK.MIN, Math.round(Number(settings.quizLearnedStreak)) || LEARNED_STREAK.DEFAULT)));
+  if (free(quizDailyGoal)) quizDailyGoal.value = String(Math.min(DAILY_GOAL.MAX, Math.max(DAILY_GOAL.MIN, Math.round(Number(settings.quizDailyGoal)) || DAILY_GOAL.DEFAULT)));
+  if (free(quizReminderTime)) quizReminderTime.value = /^\d{1,2}:\d{2}$/.test(settings.quizReminderTime || '') ? settings.quizReminderTime.padStart(5, '0') : '20:00';
+  if (free(quizQuietStart)) quizQuietStart.value = settings.quizQuietStart || '';
+  if (free(quizQuietEnd)) quizQuietEnd.value = settings.quizQuietEnd || '';
+  // The reminder is a notification: without the permission it stays silent, and says so here.
+  quizReminderNote.textContent = settings.quizReminderEnabled !== false && !d.notifications ? t('optQuizReminderNeedsPermission') : '';
 
   const minutes = d.intervalMinutes;
   const offered = [...(developmentInstall ? [INTERVAL_TESTING] : []), ...INTERVAL_PRESETS];
@@ -504,6 +561,19 @@ const quizSection = h(
     switchRow(quizListenAutoplay, 'optQuizListenAutoplay', 'optQuizListenAutoplayHelp'),
     fieldRow('optQuizListenChoices', 'optQuizListenChoicesHelp', quizListenChoices),
   ),
+  h('h3', { text: t('optQuizProgressTitle') }),
+  h(
+    'div',
+    { class: 'fields', id: 'quiz-progress-settings' },
+    fieldRow('optQuizLearnedStreak', 'optQuizLearnedStreakHelp', quizLearnedStreak),
+    switchRow(quizLearnedNeedsOtherMode, 'optQuizLearnedOther', 'optQuizLearnedOtherHelp'),
+    fieldRow('optQuizDailyGoal', 'optQuizDailyGoalHelp', h('span', { class: 'inline' }, quizDailyGoal, h('span', { class: 'unit', text: t('optQuizQuestionsUnit') }))),
+    switchRow(quizFreezeEnabled, 'optQuizFreeze', 'optQuizFreezeHelp'),
+    switchRow(quizReminderEnabled, 'optQuizReminder', 'optQuizReminderHelp'),
+    fieldRow('optQuizReminderTime', null, quizReminderNote, quizReminderTime),
+    fieldRow('optQuizQuiet', 'optQuizQuietHelp', h('span', { class: 'inline' }, quizQuietStart, h('span', { class: 'unit', text: '–' }), quizQuietEnd)),
+  ),
+  h('div', { class: 'buttons' }, quizReset, quizResetStatus),
   h('h3', { text: t('quizDiagTitle') }),
   quizVerdict,
   quizFacts,

@@ -79,7 +79,8 @@ gideceğini anlatan onayı verdiğinde kasan **senin seçtiğin yere** gönderil
 | Kendi sunucum | Girdiğin WebDAV ya da HTTP adresine |
 
 **Gönderilen:** her kelime, çevirisi, dil çifti, kısa bağlam cümlesi (en çok 160 karakter), tekrar
-ilerlemesi (kutu, sonraki tekrar zamanı, cevap özeti) ve silinen kelimelerin silme kayıtları.
+ilerlemesi (kutu, sonraki tekrar zamanı, cevap özeti, öğrenildi durumu), quiz çözdüğün günlerin tarih
+listesi (seri için) ve silinen kelimelerin silme kayıtları.
 
 **Asla gönderilmeyen:** sayfa adresleri ve başlıkları, ayarlar, API anahtarları, erişim token'ları,
 sunucu parolaları, çeviri önbelleği, quiz zamanlayıcısının durumu.
@@ -150,8 +151,14 @@ yüklemez. Açılan sayfada o hizmetin kendi koşulları geçerlidir.
 
 ### Sistem bildirimi (yalnızca izin verirsen)
 
-Quiz başka hiçbir yolla gösterilemediğinde tarayıcının bildirim sistemi kullanılabilir. Bildirim
-metninde kelime ya da kişisel veri bulunmaz.
+Quiz başka hiçbir yolla gösterilemediğinde ve akşam hatırlatmasında tarayıcının bildirim sistemi
+kullanılabilir. Bildirim metninde kelime ya da kişisel veri bulunmaz.
+
+### Seri, rütbe ve öğrenme durumu
+
+Seri (quiz çözdüğün günler), rütbe ve hangi kelimeyi öğrendiğin bu tarayıcıda hesaplanır ve durur.
+Sıralama, paylaşım ya da karşılaştırma yoktur; geliştiriciye gitmez. Eşitlemeyi açtıysan kasanla
+birlikte senin seçtiğin yere gider.
 
 ## İzinler
 
