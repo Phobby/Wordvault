@@ -50,6 +50,7 @@ const state = {
   language: '', // source-language filter ('' = all)
   confirmId: null, // entry whose delete button is armed
   enriching: new Set(), // ids whose dictionary data is being fetched
+  tab: 'all', // 'all' (the vault) or 'learned' ("My vocabulary": the words that are learned)
   onlyDamaged: false, // list only the words whose translation seems to have lost letters
   failed: new Set(), // ids whose dictionary data could not be fetched
 };
@@ -97,6 +98,35 @@ const languageFilter = h('select', {
   },
 });
 const filters = h('div', { class: 'filters' }, search, languageFilter);
+
+// Two views of the same vault: every saved word, and "My vocabulary": the ones that are
+// learned (quiz/learning.js). A learned word stays in the first list too; nothing is moved.
+const isLearned = (entry) => Number(entry.quiz?.g) > 0;
+const tabButton = (name, labelKey) =>
+  h('button', { class: 'vault-tab', type: 'button', role: 'tab', 'data-tab': name, onclick: () => selectTab(name) }, h('span', { text: t(labelKey) }), ' ', h('span', { class: 'vault-tab-count' }));
+const vaultTabs = { all: tabButton('all', 'tbTabAll'), learned: tabButton('learned', 'tbTabLearned') };
+const tabBar = h('div', { class: 'vault-tabs', role: 'tablist' }, vaultTabs.all, vaultTabs.learned);
+const learnedSummary = h('div', { class: 'learned-summary', role: 'status', hidden: true });
+
+function selectTab(name) {
+  state.tab = name;
+  state.confirmId = null;
+  renderTabs();
+  renderList();
+}
+
+function renderTabs() {
+  const learned = state.entries.filter(isLearned).length;
+  for (const [name, button] of Object.entries(vaultTabs)) {
+    button.setAttribute('aria-selected', String(state.tab === name));
+    button.querySelector('.vault-tab-count').textContent = String(name === 'learned' ? learned : state.entries.length);
+  }
+  tabBar.hidden = state.entries.length === 0;
+  learnedSummary.hidden = state.tab !== 'learned' || state.entries.length === 0;
+  learnedSummary.textContent = learned === 1 ? t('tbLearnedOne') : t('tbLearnedTotal', [String(learned)]);
+}
+
+const learnedDate = (time) => new Date(time).toLocaleDateString(languages.uiLanguage(), { day: 'numeric', month: 'short', year: 'numeric' });
 // Words whose saved translation seems to have lost letters on the way from the translation
 // service ("e?itle"). They are pointed out, never changed: the vault is the user's.
 const damagedText = h('span');
@@ -125,7 +155,9 @@ const listView = h(
   'section',
   { class: 'view' },
   setup,
+  tabBar,
   filters,
+  learnedSummary,
   damagedNotice,
   list,
   h(
@@ -204,6 +236,7 @@ function renderFilters() {
 }
 
 function matches(entry) {
+  if (state.tab === 'learned' && !isLearned(entry)) return false;
   if (state.onlyDamaged && !isDamaged(entry)) return false;
   if (state.language && entry.sourceLang !== state.language) return false;
   const query = fold(state.query.trim());
@@ -220,7 +253,14 @@ function renderList() {
     list.replaceChildren(emptyState('tbEmptyTitle', 'tbEmptyHint'));
     return;
   }
+  const learnedView = state.tab === 'learned';
+  if (learnedView && !state.entries.some(isLearned)) {
+    list.replaceChildren(emptyState('tbLearnedEmptyTitle', 'tbLearnedEmptyHint'));
+    return;
+  }
   const visible = state.entries.filter(matches);
+  // "My vocabulary" lists the most recently learned first.
+  if (learnedView) visible.sort((a, b) => b.quiz.g - a.quiz.g);
   if (visible.length === 0) {
     list.replaceChildren(emptyState('tbNoMatch'));
     return;
@@ -237,6 +277,8 @@ function renderList() {
           h('span', { class: 'row-word', dir: 'auto', lang: entry.sourceLang || null, text: entry.text }),
           h('span', { class: 'row-pair', text: [entry.sourceLang || '?', entry.targetLang || '?'].join(' → ').toUpperCase() }),
           h('span', { class: 'row-translation', dir: 'auto', lang: entry.targetLang || null, text: entry.translation || t('dtNoTranslation') }),
+          // when it was learned, in "My vocabulary"; a small mark in the list of everything
+          learnedView ? h('span', { class: 'row-learned', text: t('tbLearnedOn', [learnedDate(entry.quiz.g)]) }) : isLearned(entry) && h('span', { class: 'row-badge', title: t('tbLearnedOn', [learnedDate(entry.quiz.g)]), text: t('tbLearnedBadge') }),
         ),
         confirming
           ? h('button', { class: 'wv-btn wv-btn-sm confirm', type: 'button', text: t('tbDeleteConfirm'), onclick: () => remove(entry.id) })
@@ -384,6 +426,7 @@ async function loadDictionary(id) {
 function rerender() {
   renderHeader();
   renderFilters();
+  renderTabs();
   renderDamaged();
   renderList();
   if (state.view === 'detail') renderDetail();

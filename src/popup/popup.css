@@ -217,3 +217,26 @@ body {
 
 /* Words whose translation seems to have lost letters on the way */
 .notice { margin: 0 12px 6px; padding: 6px 9px; border-radius: 8px; background: var(--wv-tint); font-size: 12.5px; }
+
+/* Two views of the vault: every word, and "My vocabulary" (the learned ones). */
+.vault-tabs { display: flex; gap: 2px; padding: 0 8px; border-bottom: 1px solid var(--wv-border); }
+.vault-tabs[hidden] { display: none; }
+.vault-tab {
+  margin: 0 0 -1px;
+  padding: 7px 8px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: none;
+  color: var(--wv-muted);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.vault-tab:hover { color: var(--wv-fg); }
+.vault-tab[aria-selected="true"] { border-bottom-color: var(--wv-accent); color: var(--wv-fg); }
+.vault-tab:focus-visible { outline: 2px solid var(--wv-accent); outline-offset: -2px; border-radius: 4px; }
+.vault-tab-count { font-weight: 500; font-variant-numeric: tabular-nums; opacity: 0.8; }
+.learned-summary { padding: 8px 12px 0; font-size: 12.5px; font-weight: 600; color: var(--wv-ok); }
+.row-learned { grid-column: 1 / -1; font-size: 11.5px; color: var(--wv-ok); }
+.row-badge { grid-column: 1 / -1; justify-self: start; padding: 0 6px; border-radius: 999px; background: color-mix(in srgb, var(--wv-ok) 16%, transparent); color: var(--wv-ok); font-size: 10.5px; font-weight: 650; line-height: 16px; }

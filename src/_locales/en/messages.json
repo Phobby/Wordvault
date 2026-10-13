@@ -2148,5 +2148,47 @@
   "quizSkipFeedback": {
     "message": "This was the word.",
     "description": "Quiz, writing: shown with the answer after \"Skip\"."
+  },
+  "tbTabAll": {
+    "message": "Vault",
+    "description": "Vault popup: tab with every saved word."
+  },
+  "tbTabLearned": {
+    "message": "My vocabulary",
+    "description": "Vault popup: tab with the learned words."
+  },
+  "tbLearnedTotal": {
+    "message": "$COUNT$ words learned",
+    "description": "Vault popup: number of learned words.",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "tbLearnedOne": {
+    "message": "1 word learned",
+    "description": "Vault popup: one learned word."
+  },
+  "tbLearnedOn": {
+    "message": "Learned on $DATE$",
+    "description": "Vault popup: when a word was learned.",
+    "placeholders": {
+      "date": {
+        "content": "$1"
+      }
+    }
+  },
+  "tbLearnedBadge": {
+    "message": "Learned",
+    "description": "Vault popup: mark on a learned word in the list of all words."
+  },
+  "tbLearnedEmptyTitle": {
+    "message": "No learned words yet",
+    "description": "Vault popup: empty \"My vocabulary\"."
+  },
+  "tbLearnedEmptyHint": {
+    "message": "A word is learned after several right answers in a row on different days. It stays in your vault and is asked only rarely.",
+    "description": "Vault popup: empty \"My vocabulary\" hint."
   }
 }

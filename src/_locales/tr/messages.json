@@ -1652,5 +1652,39 @@
   },
   "quizSkipFeedback": {
     "message": "Kelime buydu."
+  },
+  "tbTabAll": {
+    "message": "Kasa"
+  },
+  "tbTabLearned": {
+    "message": "Kelime haznem"
+  },
+  "tbLearnedTotal": {
+    "message": "$COUNT$ kelime öğrenildi",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "tbLearnedOne": {
+    "message": "1 kelime öğrenildi"
+  },
+  "tbLearnedOn": {
+    "message": "$DATE$ tarihinde öğrenildi",
+    "placeholders": {
+      "date": {
+        "content": "$1"
+      }
+    }
+  },
+  "tbLearnedBadge": {
+    "message": "Öğrenildi"
+  },
+  "tbLearnedEmptyTitle": {
+    "message": "Henüz öğrenilen kelime yok"
+  },
+  "tbLearnedEmptyHint": {
+    "message": "Bir kelime, farklı günlerde üst üste birkaç doğru cevaptan sonra öğrenilmiş sayılır. Kasanda kalır ve yalnızca nadiren sorulur."
   }
 }
