@@ -35,6 +35,8 @@ export const ollama = {
    * and the answer within that.
    */
   partChars: 8_000,
+  /** ... and a page that is translated in chunks of this many (ai/page-translate.js): question and answer both have to fit. */
+  pageChunkChars: 1_500,
   origins: (config) => {
     const url = parseBase(config.baseUrl);
     return url ? [originPattern(url)] : [];

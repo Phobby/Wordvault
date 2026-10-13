@@ -12,7 +12,8 @@ import { tidyPassage } from '../lib/passage.js';
 import { resolveTargetLanguage } from '../lib/translator.js';
 import { PROMPT_SITES, activeAi, getAiConfig, missing, settingsFor, updateAiConfig } from './config.js';
 import { DEFAULT_TIMEOUT_MS } from './http.js';
-import { MAX_ANSWER_TOKENS, asOneText, explainPassagePrompt, explainWordPrompt, summaryJoinPrompt, summaryPartPrompt, summaryPrompt } from './prompts.js';
+import { PAGE_ANSWER_TOKENS, PAGE_CHUNK_CHARS, PAGE_CHUNK_ITEMS, PAGE_MAX_CHARS, parsePageTranslation, tidyItems } from './page-translate.js';
+import { MAX_ANSWER_TOKENS, asOneText, explainPassagePrompt, explainWordPrompt, pageTranslatePrompt, summaryJoinPrompt, summaryPartPrompt, summaryPrompt } from './prompts.js';
 import { getAiProvider } from './providers/index.js';
 import { siteStatus } from './sites.js';
 import { PART_SUMMARY_CHARS, lengthOf, planSummary } from './summary.js';
@@ -110,7 +111,7 @@ async function ask({ provider, settings, config }, prompt, request) {
   if (own && request) underWay.set(request, controller);
   const done = keepAwake();
   try {
-    const text = await provider.generate({ system: prompt.system, prompt: prompt.prompt, maxTokens: MAX_ANSWER_TOKENS }, settings, { signal: controller.signal, timeoutMs: provider.timeoutMs || DEFAULT_TIMEOUT_MS });
+    const text = await provider.generate({ system: prompt.system, prompt: prompt.prompt, maxTokens: prompt.maxTokens || MAX_ANSWER_TOKENS }, settings, { signal: controller.signal, timeoutMs: provider.timeoutMs || DEFAULT_TIMEOUT_MS });
     if (config.cache !== false) await remember(key, text);
     return { text, cached: false };
   } finally {
@@ -246,6 +247,37 @@ async function summarize(payload, sender) {
   }
 }
 
+// --- Translate this page -----------------------------------------------------------------------
+
+/** How a page is to cut its text for the provider in use, for it to show before the user agrees. Nothing is sent. */
+async function pagePlan(payload, sender) {
+  const state = await activeAi();
+  return {
+    ...(await status(sender)),
+    chunkChars: Math.max(500, Number(state.provider?.pageChunkChars) || PAGE_CHUNK_CHARS),
+    chunkItems: PAGE_CHUNK_ITEMS,
+    maxChars: PAGE_MAX_CHARS,
+    targetLang: await resolveTargetLanguage(),
+  };
+}
+
+/**
+ * One chunk of a page's visible text. The page asks chunk by chunk, after the user has seen
+ * how much there is and started it; every chunk passes the same gates again.
+ * @param {{ items: (string | string[])[], title?: string, requestId?: string, agree?: boolean }} payload
+ * @returns {Promise<{ items: (string | string[] | null)[], provider: object }>}
+ */
+async function translateChunk(payload, sender) {
+  const state = await cleared(payload, sender);
+  const chunkChars = Math.max(500, Number(state.provider.pageChunkChars) || PAGE_CHUNK_CHARS);
+  const items = tidyItems(payload?.items, chunkChars * 3);
+  const title = typeof payload?.title === 'string' ? payload.title : '';
+  const targetLang = await resolveTargetLanguage();
+  const prompt = { ...pageTranslatePrompt({ items, title, targetLang }), task: ['page', items, targetLang], maxTokens: PAGE_ANSWER_TOKENS };
+  const { text } = await ask(state, prompt, typeof payload?.requestId === 'string' ? payload.requestId : '');
+  return { items: parsePageTranslation(text, items), provider: named(state) };
+}
+
 /** "Test" on the settings page: the settings as they are typed in, one tiny request, nothing kept. */
 async function test(payload) {
   const provider = getAiProvider(payload?.provider);
@@ -277,6 +309,8 @@ export const aiHandlers = {
   'wv:ai:explain': explain,
   'wv:ai:summary:plan': summaryPlan,
   'wv:ai:summarize': summarize,
+  'wv:ai:page:plan': pagePlan,
+  'wv:ai:page:chunk': translateChunk,
   'wv:ai:cancel': (payload) => {
     const controller = underWay.get(payload?.requestId);
     controller?.abort();

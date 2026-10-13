@@ -3024,5 +3024,89 @@
   "aiSummaryNote": {
     "message": "“Summarise this page” is in the right-click menu of a page and in the Wordvault popup while a provider is set up. It reads the page's main text only when you ask, shows how much that is, and sends it after you agree. A long page goes in several parts (up to 120,000 characters).",
     "description": "Settings, AI section."
+  },
+  "ptMenu": {
+    "message": "Translate this page with AI (experimental)",
+    "description": "Right-click menu of a page and tooltip of the button in the toolbar popup. Only there while an AI provider is set up."
+  },
+  "ptTitle": {
+    "message": "Page translation",
+    "description": "Heading of the card shown on a page."
+  },
+  "ptExperimental": {
+    "message": "experimental",
+    "description": "Small label next to the heading."
+  },
+  "ptNoText": {
+    "message": "Wordvault found no visible text to translate on this page."
+  },
+  "ptSize": {
+    "message": "Visible text: about $1 characters"
+  },
+  "ptRequests": {
+    "message": "Sent in $1 requests, one after the other"
+  },
+  "ptInto": {
+    "message": "Translated into: $1",
+    "description": "$1: a language name."
+  },
+  "ptTruncated": {
+    "message": "The page is very long: only the first $1 of its $2 characters will be translated. The rest stays as it is."
+  },
+  "ptSendsTo": {
+    "message": "The visible text of this page and its title go to $1 ($2) and nowhere else. Fields, hidden parts, code and anything you typed are left out."
+  },
+  "ptConsent": {
+    "message": "The visible text of this page and its title will be sent to $1 ($2) and nowhere else. Fields, hidden parts, code and anything you typed are left out. Its own terms apply to what it does with the text. You are asked this once."
+  },
+  "ptCost": {
+    "message": "Every request counts against your quota or is billed by your provider. A whole page is far more text than a word or a summary.",
+    "description": "Cost warning before a page is translated."
+  },
+  "ptGo": {
+    "message": "Translate"
+  },
+  "ptAgreeGo": {
+    "message": "Agree and translate"
+  },
+  "ptWorking": {
+    "message": "Translating… (request $1 of $2)"
+  },
+  "ptPartDone": {
+    "message": "$1 of $2 requests are done; what they translated is on the page."
+  },
+  "ptContinue": {
+    "message": "Continue"
+  },
+  "ptDone": {
+    "message": "The page is translated."
+  },
+  "ptOriginalShown": {
+    "message": "Showing the original."
+  },
+  "ptShowOriginal": {
+    "message": "Show original"
+  },
+  "ptShowTranslation": {
+    "message": "Show translation"
+  },
+  "ptSkipped": {
+    "message": "$1 pieces of text stayed as they were (no usable answer, or the page changed them meanwhile)."
+  },
+  "ptLeftOut": {
+    "message": "The end of the page was beyond the limit and is not translated."
+  },
+  "ptNewText": {
+    "message": "New text has appeared on the page (about $1 characters). It is not sent unless you say so."
+  },
+  "ptTranslateNew": {
+    "message": "Translate it too"
+  },
+  "ptCloseHint": {
+    "message": "Closing this card puts the original text back."
+  },
+  "aiPageNote": {
+    "message": "“Translate this page with AI” (experimental) is in the same two places. It replaces the page's visible text chunk by chunk and can always be undone with “Show original”. It sends far more text than the other features: the card shows how much before you agree (up to 100,000 characters).",
+    "description": "Settings, AI section."
   }
 }

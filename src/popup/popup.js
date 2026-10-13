@@ -18,6 +18,7 @@ document.documentElement.lang = languages.uiLanguage();
 const ICON_BACK = 'M15 6l-6 6 6 6';
 const ICON_SETTINGS = 'M4 7h9M17 7h3M15 5v4M4 17h3M11 17h9M9 15v4';
 const ICON_SCAN = 'M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3M8 10h8M8 14h5';
+const ICON_TRANSLATE_PAGE = 'M4 6h9M8.5 4v2M11 6c-.6 3.4-2.9 6.2-6.5 8M6.5 9.5c1 1.9 2.6 3.4 4.8 4.5M12.5 20l4-9 4 9M14 17h5';
 const ICON_SUMMARY = 'M5 6h14M5 10h14M5 14h9M5 18h6';
 const ICON_TRASH = 'M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 11v6M14 11v6';
 
@@ -182,13 +183,16 @@ const languagesView = h(
   h('div', { class: 'languages' }, languageList.element),
 );
 
-// "Summarise this page": only there while an AI provider is set up (ai/background.js).
-const summaryButton = iconButton(ICON_SUMMARY, 'sumMenu', summarisePage);
-summaryButton.hidden = true;
-const summaryNotice = h('div', { class: 'notice', role: 'status', hidden: true, text: t('sumNotHere') });
+// "Summarise this page" and "Translate this page with AI": only there while an AI provider is
+// set up (ai/background.js).
+const summaryButton = iconButton(ICON_SUMMARY, 'sumMenu', () => openOnPage('wv:summary:start'));
 summaryButton.dataset.action = 'summarise';
+const translatePageButton = iconButton(ICON_TRANSLATE_PAGE, 'ptMenu', () => openOnPage('wv:page-translate:start'));
+translatePageButton.dataset.action = 'translate-page';
+summaryButton.hidden = translatePageButton.hidden = true;
+const summaryNotice = h('div', { class: 'notice', role: 'status', hidden: true, text: t('sumNotHere') });
 WV.send('wv:ai:status')
-  .then((ai) => (summaryButton.hidden = !ai.ready))
+  .then((ai) => (summaryButton.hidden = translatePageButton.hidden = !ai.ready))
   .catch(() => {});
 
 // Streak and rank, under the header. A new rank is celebrated over the whole popup.
@@ -205,6 +209,7 @@ document.getElementById('app').append(
     count,
     targetChip,
     summaryButton,
+    translatePageButton,
     iconButton(ICON_SCAN, 'ocrMenuScan', scanScreen),
     iconButton(ICON_SETTINGS, 'tbSettings', openSettings),
   ),
@@ -503,9 +508,9 @@ async function scanScreen() {
 }
 
 /** The card opens on the page the popup was opened on; nothing is read or sent before the user agrees there. */
-async function summarisePage() {
+async function openOnPage(type) {
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true }).catch(() => []);
-  const outcome = await WV.send('wv:summary:start', { tabId: tab?.id }).catch(() => 'unreachable');
+  const outcome = await WV.send(type, { tabId: tab?.id }).catch(() => 'unreachable');
   if (outcome === 'opened') return window.close();
   summaryNotice.hidden = false;
 }

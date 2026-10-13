@@ -10,6 +10,7 @@ import { catchUncaught, recordError } from '../features/feedback/error-log.js';
 import { sendFeedback } from '../features/feedback/send.js';
 import { lookupWord } from '../lib/dictionary.js';
 import { ensureSchema } from '../lib/schema.js';
+import { pageTranslationHandlers, registerPageTranslation } from '../features/page-translate/background.js';
 import { passageHandlers, registerPassage } from '../features/passage/background.js';
 import { registerScreenOcr, screenOcrHandlers } from '../features/screen-ocr/background.js';
 import { registerSummary, summaryHandlers } from '../features/summary/background.js';
@@ -144,6 +145,7 @@ const handlers = {
   ...screenOcrHandlers,
   ...passageHandlers,
   ...summaryHandlers,
+  ...pageTranslationHandlers,
   ...aiHandlers,
 };
 
@@ -189,6 +191,7 @@ chrome.runtime.onInstalled.addListener(async ({ reason }) => {
 registerPassage();
 registerScreenOcr();
 registerSummary();
+registerPageTranslation();
 chrome.runtime.onInstalled.addListener(rebuildMenus);
 chrome.runtime.onStartup.addListener(rebuildMenus);
 

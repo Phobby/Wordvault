@@ -2414,5 +2414,83 @@
   },
   "aiSummaryNote": {
     "message": "“Sayfayı özetle”, bir sağlayıcı ayarlıyken sayfanın sağ tık menüsünde ve Wordvault penceresinde durur. Sayfanın ana metnini yalnızca sen isteyince okur, ne kadar olduğunu gösterir ve sen onaylayınca gönderir. Uzun sayfa birkaç parçada gider (en çok 120.000 karakter)."
+  },
+  "ptMenu": {
+    "message": "Sayfayı yapay zekâ ile çevir (deneysel)"
+  },
+  "ptTitle": {
+    "message": "Sayfa çevirisi"
+  },
+  "ptExperimental": {
+    "message": "deneysel"
+  },
+  "ptNoText": {
+    "message": "Wordvault bu sayfada çevrilecek görünür metin bulamadı."
+  },
+  "ptSize": {
+    "message": "Görünür metin: yaklaşık $1 karakter"
+  },
+  "ptRequests": {
+    "message": "Art arda $1 istekte gönderilir"
+  },
+  "ptInto": {
+    "message": "Çevrileceği dil: $1"
+  },
+  "ptTruncated": {
+    "message": "Sayfa çok uzun: $2 karakterin yalnızca ilk $1 karakteri çevrilecek. Gerisi olduğu gibi kalır."
+  },
+  "ptSendsTo": {
+    "message": "Bu sayfanın görünür metni ve başlığı $1 ($2) sağlayıcısına gider, başka hiçbir yere gitmez. Yazı alanları, gizli bölümler, kod ve senin yazdıkların dışarıda bırakılır."
+  },
+  "ptConsent": {
+    "message": "Bu sayfanın görünür metni ve başlığı $1 ($2) sağlayıcısına gönderilecek, başka hiçbir yere gönderilmeyecek. Yazı alanları, gizli bölümler, kod ve senin yazdıkların dışarıda bırakılır. Metinle ne yaptığı kendi koşullarına bağlıdır. Bu bir kez sorulur."
+  },
+  "ptCost": {
+    "message": "Her istek kotandan düşer ya da sağlayıcın tarafından ücretlendirilir. Bütün bir sayfa, bir kelimeden ya da özetten çok daha fazla metindir."
+  },
+  "ptGo": {
+    "message": "Çevir"
+  },
+  "ptAgreeGo": {
+    "message": "Onayla ve çevir"
+  },
+  "ptWorking": {
+    "message": "Çevriliyor… (istek $1 / $2)"
+  },
+  "ptPartDone": {
+    "message": "$2 istekten $1 tanesi bitti; çevirdikleri sayfada duruyor."
+  },
+  "ptContinue": {
+    "message": "Devam et"
+  },
+  "ptDone": {
+    "message": "Sayfa çevrildi."
+  },
+  "ptOriginalShown": {
+    "message": "Orijinal gösteriliyor."
+  },
+  "ptShowOriginal": {
+    "message": "Orijinale dön"
+  },
+  "ptShowTranslation": {
+    "message": "Çeviriyi göster"
+  },
+  "ptSkipped": {
+    "message": "$1 metin parçası olduğu gibi kaldı (kullanılabilir cevap gelmedi ya da sayfa onları bu arada değiştirdi)."
+  },
+  "ptLeftOut": {
+    "message": "Sayfanın sonu sınırın dışında kaldı ve çevrilmedi."
+  },
+  "ptNewText": {
+    "message": "Sayfaya yeni metin geldi (yaklaşık $1 karakter). Sen söylemeden gönderilmez."
+  },
+  "ptTranslateNew": {
+    "message": "Onu da çevir"
+  },
+  "ptCloseHint": {
+    "message": "Bu kartı kapatmak sayfayı orijinal metnine döndürür."
+  },
+  "aiPageNote": {
+    "message": "“Sayfayı yapay zekâ ile çevir” (deneysel) aynı iki yerde durur. Sayfanın görünür metnini parça parça değiştirir ve “Orijinale dön” ile her zaman geri alınır. Diğer özelliklerden çok daha fazla metin gönderir: kart, sen onaylamadan önce ne kadar olduğunu gösterir (en çok 100.000 karakter)."
   }
 }

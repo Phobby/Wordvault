@@ -19,6 +19,7 @@ import { openai } from './openai.js';
  * @property {string} keyPage          Where a key is made ('' if there is no such page).
  * @property {number} [timeoutMs]      If answers take longer here than elsewhere.
  * @property {number} [partChars]      If a long page has to be sent in smaller parts here than elsewhere (ai/summary.js).
+ * @property {number} [pageChunkChars] The same for translating a page (ai/page-translate.js).
  * @property {(config: AiSettings) => string[]} origins
  *   The host permissions a request with this configuration needs (match patterns).
  * @property {(request: { system: string, prompt: string, maxTokens: number }, config: AiSettings, options?: { signal?: AbortSignal | null, timeoutMs?: number }) => Promise<string>} generate

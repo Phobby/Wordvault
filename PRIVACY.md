@@ -71,10 +71,16 @@ sağlayıcıya** gider, başka hiçbir yere gönderilmez; arada Wordvault'un bir
   ayıklanır. Sayfa yalnızca sen özet isteyince okunur; kart önce ne kadar metnin, kaç parçada, hangi
   sağlayıcıya gideceğini gösterir ve sen "Özetle"ye basmadan hiçbir şey gönderilmez. Uzun sayfa
   birkaç parçada gider; en çok 120.000 karakter, fazlası gönderilmez ve bu sana söylenir.
+- "Sayfayı yapay zekâ ile çevir" için (deneysel; aynı iki yerde): sayfanın **görünür metni** ve
+  başlığı, art arda birkaç istekte. Kart önce yaklaşık kaç karakterin kaç istekte, hangi sağlayıcıya
+  gideceğini ve bunun kotandan düşeceğini gösterir; sen "Çevir"e basmadan hiçbir şey gönderilmez.
+  En çok 100.000 karakter. Sayfaya sonradan gelen metin kendiliğinden gönderilmez: kart yeni metin
+  olduğunu söyler, sen istersen çevrilir. Çeviri yalnızca sayfadaki metnin yerine yazılır, hiçbir
+  yere kaydedilmez; "Orijinale dön" ya da kartı kapatmak sayfayı eski hâline getirir.
 
 Gönderilmeyenler: sayfanın adresi, parola alanları, form girdileri, gizli alanlar ve gizlenmiş
 bölümler, yazı yazdığın kutulardaki ve düzenlenebilir alanlardaki metin (böyle bir alandan seçilen
-metin için "açıkla" düğmesi çalışmaz; özet bu alanları sayfanın kopyasından çıkarır), kasan.
+metin için "açıkla" düğmesi çalışmaz; özet ve sayfa çevirisi bu alanları hiç okumaz), kasan.
 "Açıkla" için ayrıca sayfanın geri kalanı da gönderilmez. Hiçbir şey
 kendiliğinden ya da arka planda gönderilmez. İlk kullanımda pencere neyin nereye gideceğini söyler
 ve onayını ister; sağlayıcıyı değiştirirsen yeniden sorar. Banka, e-posta ve sağlık sitesine benzeyen

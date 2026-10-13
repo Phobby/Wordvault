@@ -16,31 +16,37 @@ const MENU_ID = 'wv-summarize-page';
 /** In this order: the library, what reads the page with it, what shows the result. */
 const FILES = ['vendor/readability/Readability.js', 'features/summary/content/extract.js', 'features/summary/content/card.js'];
 
-const open = (tabId) => chrome.tabs.sendMessage(tabId, { type: 'wv:summary:open' }, { frameId: 0 }).then((opened) => opened === true);
-
 /**
- * Opens the summary card on a tab.
+ * Opens a card of the AI features on a tab, putting its scripts there first if they are not.
+ * @param {object} tab
+ * @param {string[]} files   What the card needs, in load order.
+ * @param {string} message   The message its script answers with `true` once the card is open.
+ * @param {string} notHere   Message key for the toolbar button where it cannot be done.
  * @returns {Promise<'opened' | 'unreachable'>} 'unreachable': a page Wordvault cannot work on
  *          (the browser's own pages, its PDF viewer, the add-on stores).
  */
-export async function openSummary(tab) {
+export async function openCard(tab, files, message, notHere) {
   if (tab?.id == null) return 'unreachable';
-  // A tab that has shown a summary before still has the card: it only needs to be asked.
-  if (await open(tab.id).catch(() => false)) return 'opened';
+  const open = () => chrome.tabs.sendMessage(tab.id, { type: message }, { frameId: 0 }).then((opened) => opened === true);
+  // A tab that has shown the card before still has it: it only needs to be asked.
+  if (await open().catch(() => false)) return 'opened';
   try {
     if (!chrome.scripting) throw new Error('no scripting');
     // The card is drawn with what every page already has (shared/dom.js, shared/styles.js),
     // except in Chrome in a tab that was open before the extension was installed or reloaded.
     const present = await chrome.tabs.sendMessage(tab.id, { type: 'wv:passage:ping' }, { frameId: 0 }).catch(() => false);
     if (!present && !(await inject(tab.id, 0))) throw new Error('cannot inject');
-    await chrome.scripting.executeScript({ target: { tabId: tab.id, frameIds: [0] }, files: FILES });
-    if (await open(tab.id)) return 'opened';
+    await chrome.scripting.executeScript({ target: { tabId: tab.id, frameIds: [0] }, files });
+    if (await open()) return 'opened';
   } catch {
     // falls through
   }
-  await sayOnButton(tab, 'sumNotHere');
+  await sayOnButton(tab, notHere);
   return 'unreachable';
 }
+
+/** Opens the summary card on a tab. */
+export const openSummary = (tab) => openCard(tab, FILES, 'wv:summary:open', 'sumNotHere');
 
 async function menuItem() {
   if (!(await activeAi()).ready) return null;
