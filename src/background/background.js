@@ -5,6 +5,8 @@
 // All network requests are made from here. Content scripts cannot do it themselves: their
 // requests would be subject to the CORS and CSP rules of whatever page they run in.
 
+import { catchUncaught, recordError } from '../features/feedback/error-log.js';
+import { sendFeedback } from '../features/feedback/send.js';
 import { lookupWord } from '../lib/dictionary.js';
 import { registerScreenOcr, screenOcrHandlers } from '../features/screen-ocr/background.js';
 import { WordvaultError, serializeError } from '../lib/errors.js';
@@ -98,8 +100,14 @@ const handlers = {
   // turned into a key here; it is not kept.
   'wv:sync:unlock': fromOwnPage((payload) => unlockEncryption({ password: payload?.password, remember: payload?.remember })),
   'wv:sync:encryption-off': fromOwnPage(() => turnOffEncryption()),
+  // "Contact and feedback" on the options page, after the user has seen the data and pressed "Send".
+  'wv:feedback:send': fromOwnPage((payload) => sendFeedback(payload)),
   ...screenOcrHandlers,
 };
+
+// What nothing else caught goes to the local error log (features/feedback/error-log.js). It
+// stays on this device unless the user adds it to a piece of feedback.
+catchUncaught('background');
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   const handler = handlers[message?.type];
@@ -108,7 +116,12 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     .then(() => handler(message.payload, sender))
     .then(
       (data) => sendResponse({ ok: true, data }),
-      (error) => sendResponse({ ok: false, error: serializeError(error) }),
+      (error) => {
+        // An error with a code is an expected one (no network, nothing found); anything else
+        // is a fault of the extension. Only the kind of request is noted, never what it carried.
+        if (!(error instanceof WordvaultError)) recordError(String(message.type).replace(/^wv:/, ''), error);
+        sendResponse({ ok: false, error: serializeError(error) });
+      },
     );
   return true; // keep the channel open for the asynchronous response
 });

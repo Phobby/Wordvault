@@ -286,6 +286,48 @@ yalnızca bu tarayıcıda); ayarlardaki kart yerinde kalır.
 Karşılama sayfası (`welcome/welcome.html`) eklenti ilk kurulduğunda bir kez açılır (`welcomeShown`
 bayrağı; geçici yüklemelerde her seferinde açılmasın diye). Sekme açmak izin gerektirmez.
 
+### İletişim ve geri bildirim
+
+Ayarlar sayfasının ikinci sekmesi (`options/options.html#feedback`). Bir form: tür (Hata / Öneri /
+Diğer), ilgili özellik, 10-1500 karakterlik metin, isteğe bağlı e-posta, "Teknik bilgileri ekle"
+(varsayılan açık) ve "Son hata kayıtlarını ekle" (varsayılan kapalı). E-posta programı açılmaz
+(`mailto` yok).
+
+**Kullanıcı görmeden hiçbir şey gitmez.** Formdaki tek düğme "Gönderilecek veriyi göster"dir; açılan
+ekranda gidecek JSON'un tamamı ve gideceği alan adı durur, "Gönder" yalnızca oradadır. Gönderilen
+gövde, önizlemede gösterilen nesnenin kendisidir; arka plan betiği göndermeden önce biçimini bir kez
+daha denetler (`features/feedback/payload.js`: `checkPayload`) ve listede olmayan tek bir alan bile
+varsa göndermez.
+
+Alıcının adresi `src/config.js` içindeki `FEEDBACK_ENDPOINT` sabitidir (alıcı: `feedback-worker/`,
+3. aşama). Sabit boşken ya da yer tutucuyken form doldurulup önizlenebilir ama gönderilemez; ekran
+bunu söyler. Yalnızca `https` kabul edilir (yerelde deneme için `http://localhost` / `127.0.0.1` de).
+
+Gönderim arka plan betiğinden `fetch` ile yapılır: çerez ve yönlendiren adres gönderilmez, 12 sn zaman
+aşımı, ağ hatasında ya da alıcının 5xx yanıtında **bir kez** yeniden deneme. Alıcı reddederse (4xx)
+yeniden denenmez ve nedeni gösterilir. Başarılı bir gönderimden sonra 60 sn boyunca yenisi
+gönderilemez (düğme geri sayar; arka plan betiği de reddeder). Form her değişiklikte `storage.local`
+içine taslak olarak yazılır (`feedbackDraft`); gönderim başarısız olursa ya da sekme kapanırsa yazılan
+kaybolmaz, başarılı olunca silinir.
+
+**Teknik bilgi yalnızca şunlardır** (`features/feedback/tech-info.js`): tarayıcı adı ve sürümü (ve
+üzerine kurulduğu motor), işletim sisteminin adı, eklenti sürümü, arayüz dili, hangi özelliklerin açık
+olduğu (yalnızca `true`/`false`) ve senkronizasyonun türü (`off`/`browser`/`cloud`/`server`; hangi
+servis ya da hesap olduğu değil). Tarayıcı, Firefox tabanlılarda `runtime.getBrowserInfo` ile (Zen,
+LibreWolf gibi türevler kendi adını verir), Chromium tabanlılarda `navigator.userAgentData` markaları,
+`navigator.brave` ve kullanıcı aracısı ile (Edge, Brave, Opera, Vivaldi) ayırt edilir. Sayfa adresi,
+sayfa içeriği, kasadaki kelimeler, bağlam cümleleri, API anahtarları, OAuth belirteçleri toplanmaz;
+kurulum kimliği ya da başka bir kalıcı tanımlayıcı üretilmez.
+
+**Yerel hata günlüğü** (`features/feedback/error-log.js`): eklentinin arka plan betiğinde ve ayarlar
+sayfasında yakalanmayan hatalar ile arka plan betiğinin beklenmeyen (kodsuz) hataları, son 20 kayıtlık
+dairesel bir tamponda `storage.local` içinde tutulur (`errorLog`). Kayıt: hata mesajı, eklentinin
+hangi bölümü, zaman ve yığının eklenti dosyalarını gösteren ilk dört satırı. Web sayfalarının hataları
+dinlenmez. Her türlü adres yazılmadan önce çıkarılır (eklenti dosyalarının adresi paket içindeki yola
+indirilir; Firefox'ta kuruluma özgü olan kimlik kısmı da böylece gider), uzun tırnak içi metinler
+kısaltılır. Günlük yalnızca kullanıcı kutuyu işaretlerse gövdeye girer ve formdaki "Kayıtları sil" ile
+silinebilir. Gövde 8 KB'ı aşacaksa en eski kayıtlar çıkarılır.
+
 ### Hedef ve kaynak dil
 
 Hedef dil tek bir yerde durur: `chrome.storage.local` içindeki `settings.targetLang`. Çeviri penceresi,
@@ -672,7 +714,7 @@ iki manifestteki `host_permissions` listesine de ekle.
 | `scripting` (yalnızca Chrome) | Kullanıcı taramayı, eklenti yüklenmeden önce açılmış bir sekmede başlatırsa içerik betiklerini o sekmeye eklemek için (Chrome bunu kendiliğinden yapmaz). Yalnızca `activeTab` ile, yani kullanıcının taramayı başlattığı sekmede çalışır. |
 | `contextMenus` | Sağ tık menüsüne ve araç çubuğu simgesinin menüsüne "Ekrandan metin tara" maddesini eklemek için. Sayfa içeriğine erişim vermez. |
 | `identity` | Bulut hesabına bağlanırken sağlayıcının oturum penceresini açmak (`identity.launchWebAuthFlow`) için. Tarayıcı hesabının e-postası istenmez (`identity.email` yok). |
-| İsteğe bağlı adres izni: `https://*/*`, `http://localhost/*`, `http://127.0.0.1/*` | Kurulumda verilmez. Bir bulut hesabı ya da kendi sunucun bağlanırken tarayıcı yalnızca o adres için sorar (Google Drive: `www.googleapis.com`, `oauth2.googleapis.com`; OneDrive: `graph.microsoft.com`, `login.microsoftonline.com`; Dropbox: `api.dropboxapi.com`, `content.dropboxapi.com`). Desen geniştir çünkü kullanıcının gireceği sunucu adresi önceden bilinemez; verilen izin yalnızca istenen adrestir. |
+| İsteğe bağlı adres izni: `https://*/*`, `http://localhost/*`, `http://127.0.0.1/*` | Kurulumda verilmez. Bir bulut hesabı ya da kendi sunucun bağlanırken tarayıcı yalnızca o adres için sorar (Google Drive: `www.googleapis.com`, `oauth2.googleapis.com`; OneDrive: `graph.microsoft.com`, `login.microsoftonline.com`; Dropbox: `api.dropboxapi.com`, `content.dropboxapi.com`). Desen geniştir çünkü kullanıcının gireceği sunucu adresi önceden bilinemez; verilen izin yalnızca istenen adrestir. | Geri bildirim gönderilirken de aynı yol kullanılır: ilk gönderimde tarayıcı yalnızca geri bildirim alıcısının alan adı (`FEEDBACK_ENDPOINT`) için sorar; başka hiçbir adres istenmez.
 | `notifications` (isteğe bağlı) | Kurulumda istenmez. Yalnızca ayarlardan **İzin ver**'e basılırsa tarayıcı sorar; quiz başka hiçbir yolla gösterilemediğinde bildirimle haber vermek için. Ayarlardan geri alınabilir. |
 | `unlimitedStorage` | Kasa büyüdükçe `storage.local`'ın 10 MB sınırına takılmamak için. Kasadaki kelimeler asla otomatik silinmez. |
 | İçerik betiği: `*://*.youtube.com/*`, `*://*.youtube-nocookie.com/*` (bütün çerçevelerde) | Altyazıda üzerine gelinen kelimeyi bulmak için. Yalnızca YouTube'da (gömülü oynatıcılar dahil) yüklenir; yeni bir izin değildir, `<all_urls>` betiğinin kapsamı içindedir ama altyazı kodu başka sitelere hiç eklenmez. Altyazı metni kaydedilmez ya da indirilmez. |
@@ -695,7 +737,15 @@ kurucusu geçer; bu yol çalışmaz ve CSP zaten engeller. Dosyalar değiştiril
 Chrome'daki `key` alanı bir izin değildir: yalnızca bir açık anahtardır ve geliştirici modunda yüklenen
 eklentinin kimliğini sabitler (OAuth yönlendirme adresi kimlikten türer; bkz. `SETUP-OAUTH.md`).
 
-Firefox manifestindeki `data_collection_permissions` beyanı `websiteContent` içerir. Eşitleme açılırsa
+Firefox manifestindeki `data_collection_permissions` beyanında geri bildirim için üç **isteğe bağlı**
+tür vardır; kurulumda verilmez, ilk gönderimde tarayıcının kendi onay penceresi sorar ve yalnızca o
+mesajın taşıdığı türler istenir: `personalCommunications` (kullanıcının yazdığı metin; her zaman),
+`technicalAndInteraction` (teknik bilgi ya da hata kayıtları eklenmişse), `personallyIdentifyingInfo`
+(e-posta yazılmışsa). Tür adları Mozilla'nın belgesinden alınmıştır
+(extensionworkshop.com, "Firefox built-in consent for data collection and transmission"; `technicalAndInteraction`
+yalnızca isteğe bağlı olabilir).
+
+Aynı beyanın zorunlu kısmı `websiteContent` içerir. Eşitleme açılırsa
 kasadaki kelimeler (web sayfalarından alınmış metin) kullanıcının seçtiği hesaba ya da sunucuya gider;
 bu da aynı veri türüdür ve geliştiriciye ulaşmaz. Ayrıntı: `PRIVACY.md`. Tarayıcıdan çıkan veriler
 şunlardır: çevrilmesini istediğin (seçtiğin ya da YouTube altyazısında üzerinde durduğun) metin seçili çeviri servisine, kasaya eklediğin

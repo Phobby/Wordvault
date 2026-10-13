@@ -1515,5 +1515,224 @@
         "content": "$1"
       }
     }
+  },
+  "tabSettings": {
+    "message": "Settings",
+    "description": "Options page: name of the tab with the settings."
+  },
+  "fbTitle": {
+    "message": "Contact and feedback",
+    "description": "Options page: name of the feedback tab and title of its card."
+  },
+  "fbHelp": {
+    "message": "Found a bug or have an idea? Write it here. You see exactly what would be sent before anything is sent.",
+    "description": "Feedback: introduction."
+  },
+  "fbType": {
+    "message": "Type",
+    "description": "Feedback: label of the kind of feedback."
+  },
+  "fbTypeBug": {
+    "message": "Bug",
+    "description": "Feedback type."
+  },
+  "fbTypeIdea": {
+    "message": "Suggestion",
+    "description": "Feedback type."
+  },
+  "fbTypeOther": {
+    "message": "Other",
+    "description": "Feedback type."
+  },
+  "fbFeature": {
+    "message": "About",
+    "description": "Feedback: label of the list of features."
+  },
+  "fbFeatureBubble": {
+    "message": "Translation bubble",
+    "description": "Feedback: feature."
+  },
+  "fbFeatureCaptions": {
+    "message": "Captions",
+    "description": "Feedback: feature."
+  },
+  "fbFeatureQuiz": {
+    "message": "Flash cards / quiz",
+    "description": "Feedback: feature."
+  },
+  "fbFeatureSync": {
+    "message": "Synchronisation",
+    "description": "Feedback: feature."
+  },
+  "fbFeatureSettings": {
+    "message": "Settings",
+    "description": "Feedback: feature."
+  },
+  "fbFeatureOther": {
+    "message": "Other",
+    "description": "Feedback: feature."
+  },
+  "fbMessage": {
+    "message": "Your message",
+    "description": "Feedback: label of the text field."
+  },
+  "fbMessagePlaceholder": {
+    "message": "What happened, and what did you expect? For a bug: the steps that lead to it.",
+    "description": "Feedback: placeholder of the text field."
+  },
+  "fbEmail": {
+    "message": "E-mail (optional)",
+    "description": "Feedback: label of the e-mail field."
+  },
+  "fbEmailHelp": {
+    "message": "Only if you want an answer. Leave it empty and the message is anonymous.",
+    "description": "Feedback: explanation of the e-mail field."
+  },
+  "fbEmailPlaceholder": {
+    "message": "you@example.com",
+    "description": "Feedback: placeholder of the e-mail field."
+  },
+  "fbTech": {
+    "message": "Include technical information",
+    "description": "Feedback: checkbox."
+  },
+  "fbTechHelp": {
+    "message": "Browser and version, operating system, extension version, interface language, which features are on, kind of synchronisation. No pages, no words, no keys.",
+    "description": "Feedback: what the technical information is."
+  },
+  "fbErrors": {
+    "message": "Include recent error records",
+    "description": "Feedback: checkbox."
+  },
+  "fbErrorsHelpCount": {
+    "message": "$COUNT$ record(s) kept on this device: error message, part of the extension, time. No page addresses or content.",
+    "description": "Feedback: how many error records there are.",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "fbErrorsHelpNone": {
+    "message": "No errors have been recorded on this device.",
+    "description": "Feedback: the error log is empty."
+  },
+  "fbClearLog": {
+    "message": "Delete records",
+    "description": "Feedback: empties the local error log."
+  },
+  "fbShowData": {
+    "message": "Show the data to be sent",
+    "description": "Feedback: opens the preview."
+  },
+  "fbNothingSentYet": {
+    "message": "Nothing is sent by this button. You confirm on the next screen.",
+    "description": "Feedback: note under the preview button."
+  },
+  "fbPreviewTitle": {
+    "message": "This is everything that will be sent",
+    "description": "Feedback preview: title."
+  },
+  "fbPreviewHelp": {
+    "message": "Exactly this, and nothing else. Go back to change it.",
+    "description": "Feedback preview: explanation."
+  },
+  "fbDestination": {
+    "message": "It goes to $HOST$, which passes it on to the developer and does not store it.",
+    "description": "Feedback preview: where the data goes.",
+    "placeholders": {
+      "host": {
+        "content": "$1"
+      }
+    }
+  },
+  "fbNotConfigured": {
+    "message": "Sending is not set up in this build yet (no feedback address). Nothing can be sent.",
+    "description": "Feedback: no endpoint configured."
+  },
+  "fbSend": {
+    "message": "Send",
+    "description": "Feedback: sends."
+  },
+  "fbSendIn": {
+    "message": "Send (in $SECONDS$ s)",
+    "description": "Feedback: send button during the waiting time.",
+    "placeholders": {
+      "seconds": {
+        "content": "$1"
+      }
+    }
+  },
+  "fbBack": {
+    "message": "Back to editing",
+    "description": "Feedback preview: back to the form."
+  },
+  "fbSending": {
+    "message": "Sending…",
+    "description": "Feedback: in progress."
+  },
+  "fbSent": {
+    "message": "Sent. Thank you!",
+    "description": "Feedback: success."
+  },
+  "fbAnother": {
+    "message": "Write another",
+    "description": "Feedback: back to an empty form."
+  },
+  "fbProblemShort": {
+    "message": "Please write at least $MIN$ characters.",
+    "description": "Feedback: message too short.",
+    "placeholders": {
+      "min": {
+        "content": "$1"
+      }
+    }
+  },
+  "fbProblemLong": {
+    "message": "The message can be at most $MAX$ characters.",
+    "description": "Feedback: message too long.",
+    "placeholders": {
+      "max": {
+        "content": "$2"
+      }
+    }
+  },
+  "fbProblemEmail": {
+    "message": "That does not look like an e-mail address. Correct it or leave it empty.",
+    "description": "Feedback: bad e-mail."
+  },
+  "fbErrNetwork": {
+    "message": "Could not be sent: the receiver was not reached. Your text is kept; try again.",
+    "description": "Feedback error."
+  },
+  "fbErrServer": {
+    "message": "Could not be sent: the receiver had a problem. Your text is kept; try again later.",
+    "description": "Feedback error."
+  },
+  "fbErrRejected": {
+    "message": "The receiver did not accept the message ($REASON$). Your text is kept.",
+    "description": "Feedback error.",
+    "placeholders": {
+      "reason": {
+        "content": "$1"
+      }
+    }
+  },
+  "fbErrRate": {
+    "message": "Too many messages in a short time. Your text is kept; try again later.",
+    "description": "Feedback error."
+  },
+  "fbErrCooldown": {
+    "message": "Please wait $SECONDS$ more seconds before sending again.",
+    "description": "Feedback error.",
+    "placeholders": {
+      "seconds": {
+        "content": "$1"
+      }
+    }
+  },
+  "fbErrPermission": {
+    "message": "Not sent: permission to reach the receiver was not given.",
+    "description": "Feedback error."
   }
 }

@@ -1,7 +1,9 @@
 // Options page. It edits the same stored settings every other part of the extension reads
 // (lib/settings.js); nothing is kept here.
 
+import { createFeedbackPanel } from './feedback.js';
 import { createOcrSection } from './ocr.js';
+import { catchUncaught } from '../features/feedback/error-log.js';
 import { supportCard } from '../support/support.js';
 import { downloadBackup, restoreBackup } from '../lib/backup.js';
 import { getSettings, updateSettings } from '../lib/settings.js';
@@ -14,6 +16,7 @@ const { h, t, languages, speech } = globalThis.WV;
 globalThis.WV.adoptStyles(globalThis.WV.styles.tokens + globalThis.WV.styles.controls);
 document.documentElement.lang = languages.uiLanguage();
 document.title = t('optionsTitle');
+catchUncaught('options');
 
 // --- "Saved" indicator ---------------------------------------------------------------------------
 
@@ -471,6 +474,58 @@ const quizSection = h(
 // --- Page ----------------------------------------------------------------------------------------
 
 const ocrSection = createOcrSection({ flashSaved, switchRow, fieldRow });
+const feedbackPanel = createFeedbackPanel();
+
+// Two tabs: the settings, and "Contact and feedback". The address says which one is open
+// (#feedback), so that it can be linked to and survives a reload.
+const TABS = ['settings', 'feedback'];
+const tabButtons = Object.fromEntries(
+  TABS.map((name) => [name, h('button', { class: 'tab', type: 'button', role: 'tab', id: `tab-${name}`, 'aria-controls': `panel-${name}`, text: t(name === 'settings' ? 'tabSettings' : 'fbTitle'), onclick: () => selectTab(name, true) })]),
+);
+const panels = {
+  settings: h(
+    'div',
+    { id: 'panel-settings', role: 'tabpanel', 'aria-labelledby': 'tab-settings' },
+    // Only there when a support page is configured (config.js). (append() would write a null out as text.)
+    supportCard() || '',
+    h(
+      'section',
+      { class: 'card' },
+      h('h2', { text: t('optTargetLang') }),
+      h('p', { class: 'help', text: t('optTargetLangHelp') }),
+      currentTarget,
+      targetList.element,
+    ),
+    h('section', { class: 'card' }, switchRow(doubleClick, 'optDoubleClick', 'optDoubleClickHelp')),
+    // Only meaningful in the browsers where recordings replace the browser's voice. (append()
+    // would write a `false` out as text, hence the empty string.)
+    speech.usesRecordings ? h('section', { class: 'card' }, switchRow(ttsFallback, 'optTtsFallback', 'optTtsFallbackHelp')) : '',
+    quizSection,
+    ocrSection.element,
+    backupSection,
+  ),
+  feedback: h('div', { id: 'panel-feedback', role: 'tabpanel', 'aria-labelledby': 'tab-feedback' }, feedbackPanel.element),
+};
+
+function selectTab(name, fromUser = false) {
+  for (const tab of TABS) {
+    tabButtons[tab].setAttribute('aria-selected', String(tab === name));
+    tabButtons[tab].tabIndex = tab === name ? 0 : -1;
+    panels[tab].hidden = tab !== name;
+  }
+  if (fromUser) history.replaceState(null, '', name === 'settings' ? location.pathname : `#${name}`);
+}
+
+const tabList = h('div', {
+  class: 'tabs',
+  role: 'tablist',
+  onkeydown: (event) => {
+    if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
+    const next = TABS[(TABS.findIndex((tab) => tabButtons[tab].getAttribute('aria-selected') === 'true') + 1) % TABS.length];
+    selectTab(next, true);
+    tabButtons[next].focus();
+  },
+}, Object.values(tabButtons));
 
 document.getElementById('app').append(
   h(
@@ -480,24 +535,11 @@ document.getElementById('app').append(
     h('h1', { text: t('optionsTitle') }),
     saved,
   ),
-  // Only there when a support page is configured (config.js). (append() would write a null out as text.)
-  supportCard() || '',
-  h(
-    'section',
-    { class: 'card' },
-    h('h2', { text: t('optTargetLang') }),
-    h('p', { class: 'help', text: t('optTargetLangHelp') }),
-    currentTarget,
-    targetList.element,
-  ),
-  h('section', { class: 'card' }, switchRow(doubleClick, 'optDoubleClick', 'optDoubleClickHelp')),
-  // Only meaningful in the browsers where recordings replace the browser's voice. (append()
-  // would write a `false` out as text, hence the empty string.)
-  speech.usesRecordings ? h('section', { class: 'card' }, switchRow(ttsFallback, 'optTtsFallback', 'optTtsFallbackHelp')) : '',
-  quizSection,
-  ocrSection.element,
-  backupSection,
+  tabList,
+  panels.settings,
+  panels.feedback,
 );
+selectTab(location.hash === '#feedback' ? 'feedback' : 'settings');
 
 // The toolbar popup links here for importing.
 if (location.hash === '#backup') {
@@ -511,6 +553,7 @@ function render() {
   renderQuizSettings();
   ocrSection.render();
 }
+feedbackPanel.render();
 syncControls.render();
 
 let settleTimer = 0;

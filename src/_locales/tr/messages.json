@@ -1144,5 +1144,178 @@
         "content": "$1"
       }
     }
+  },
+  "tabSettings": {
+    "message": "Ayarlar"
+  },
+  "fbTitle": {
+    "message": "İletişim ve geri bildirim"
+  },
+  "fbHelp": {
+    "message": "Bir hata mı buldun, bir fikrin mi var? Buraya yaz. Bir şey gönderilmeden önce tam olarak neyin gideceğini görürsün."
+  },
+  "fbType": {
+    "message": "Tür"
+  },
+  "fbTypeBug": {
+    "message": "Hata"
+  },
+  "fbTypeIdea": {
+    "message": "Öneri"
+  },
+  "fbTypeOther": {
+    "message": "Diğer"
+  },
+  "fbFeature": {
+    "message": "İlgili özellik"
+  },
+  "fbFeatureBubble": {
+    "message": "Çeviri baloncuğu"
+  },
+  "fbFeatureCaptions": {
+    "message": "Altyazılar"
+  },
+  "fbFeatureQuiz": {
+    "message": "Flash card / quiz"
+  },
+  "fbFeatureSync": {
+    "message": "Senkronizasyon"
+  },
+  "fbFeatureSettings": {
+    "message": "Ayarlar"
+  },
+  "fbFeatureOther": {
+    "message": "Diğer"
+  },
+  "fbMessage": {
+    "message": "Mesajın"
+  },
+  "fbMessagePlaceholder": {
+    "message": "Ne oldu, ne olmasını bekliyordun? Hata ise: hataya götüren adımlar."
+  },
+  "fbEmail": {
+    "message": "E-posta (isteğe bağlı)"
+  },
+  "fbEmailHelp": {
+    "message": "Yalnızca yanıt istersen. Boş bırakırsan mesaj anonim gider."
+  },
+  "fbEmailPlaceholder": {
+    "message": "sen@ornek.com"
+  },
+  "fbTech": {
+    "message": "Teknik bilgileri ekle"
+  },
+  "fbTechHelp": {
+    "message": "Tarayıcı ve sürümü, işletim sistemi, eklenti sürümü, arayüz dili, hangi özelliklerin açık olduğu, senkronizasyon türü. Sayfa, kelime ya da anahtar yok."
+  },
+  "fbErrors": {
+    "message": "Son hata kayıtlarını ekle"
+  },
+  "fbErrorsHelpCount": {
+    "message": "Bu cihazda $COUNT$ kayıt var: hata mesajı, eklentinin hangi bölümü, zaman. Sayfa adresi ya da içeriği yok.",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "fbErrorsHelpNone": {
+    "message": "Bu cihazda kayıtlı hata yok."
+  },
+  "fbClearLog": {
+    "message": "Kayıtları sil"
+  },
+  "fbShowData": {
+    "message": "Gönderilecek veriyi göster"
+  },
+  "fbNothingSentYet": {
+    "message": "Bu düğme hiçbir şey göndermez. Bir sonraki ekranda sen onaylarsın."
+  },
+  "fbPreviewTitle": {
+    "message": "Gönderilecek olanın tamamı bu"
+  },
+  "fbPreviewHelp": {
+    "message": "Tam olarak bu, başka hiçbir şey değil. Değiştirmek için geri dön."
+  },
+  "fbDestination": {
+    "message": "$HOST$ adresine gider; orası mesajı geliştiriciye iletir ve saklamaz.",
+    "placeholders": {
+      "host": {
+        "content": "$1"
+      }
+    }
+  },
+  "fbNotConfigured": {
+    "message": "Bu derlemede gönderim henüz kurulmadı (geri bildirim adresi yok). Hiçbir şey gönderilemez."
+  },
+  "fbSend": {
+    "message": "Gönder"
+  },
+  "fbSendIn": {
+    "message": "Gönder ($SECONDS$ sn sonra)",
+    "placeholders": {
+      "seconds": {
+        "content": "$1"
+      }
+    }
+  },
+  "fbBack": {
+    "message": "Düzenlemeye dön"
+  },
+  "fbSending": {
+    "message": "Gönderiliyor…"
+  },
+  "fbSent": {
+    "message": "Gönderildi. Teşekkürler!"
+  },
+  "fbAnother": {
+    "message": "Yeni bir tane yaz"
+  },
+  "fbProblemShort": {
+    "message": "Lütfen en az $MIN$ karakter yaz.",
+    "placeholders": {
+      "min": {
+        "content": "$1"
+      }
+    }
+  },
+  "fbProblemLong": {
+    "message": "Mesaj en fazla $MAX$ karakter olabilir.",
+    "placeholders": {
+      "max": {
+        "content": "$2"
+      }
+    }
+  },
+  "fbProblemEmail": {
+    "message": "Bu bir e-posta adresine benzemiyor. Düzelt ya da boş bırak."
+  },
+  "fbErrNetwork": {
+    "message": "Gönderilemedi: alıcıya ulaşılamadı. Yazdıkların duruyor; yeniden dene."
+  },
+  "fbErrServer": {
+    "message": "Gönderilemedi: alıcıda bir sorun var. Yazdıkların duruyor; sonra yeniden dene."
+  },
+  "fbErrRejected": {
+    "message": "Alıcı mesajı kabul etmedi ($REASON$). Yazdıkların duruyor.",
+    "placeholders": {
+      "reason": {
+        "content": "$1"
+      }
+    }
+  },
+  "fbErrRate": {
+    "message": "Kısa sürede çok fazla mesaj. Yazdıkların duruyor; sonra yeniden dene."
+  },
+  "fbErrCooldown": {
+    "message": "Yeniden göndermeden önce $SECONDS$ saniye daha bekle.",
+    "placeholders": {
+      "seconds": {
+        "content": "$1"
+      }
+    }
+  },
+  "fbErrPermission": {
+    "message": "Gönderilmedi: alıcıya ulaşma izni verilmedi."
   }
 }

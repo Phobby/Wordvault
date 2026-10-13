@@ -20,3 +20,26 @@ export function supportUrl(value = SUPPORT_URL) {
     return '';
   }
 }
+
+/**
+ * Where "Contact and feedback" sends what the user wrote: the address of the feedback receiver
+ * (feedback-worker/). While it is empty or still the placeholder the form can be filled in and
+ * previewed, but nothing can be sent.
+ */
+export const FEEDBACK_ENDPOINT = 'https://YOUR_WORKER.workers.dev/feedback';
+
+/**
+ * @returns {string} The address feedback is posted to, or '' when there is none. Only https;
+ *          plain http is accepted for this computer alone (a receiver run locally for testing).
+ */
+export function feedbackEndpoint(value = FEEDBACK_ENDPOINT) {
+  const text = String(value || '').trim();
+  if (text === '' || /YOUR_/i.test(text)) return '';
+  try {
+    const url = new URL(text);
+    const local = url.protocol === 'http:' && (url.hostname === 'localhost' || url.hostname === '127.0.0.1');
+    return url.protocol === 'https:' || local ? url.href : '';
+  } catch {
+    return '';
+  }
+}
