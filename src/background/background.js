@@ -12,7 +12,7 @@ import { registerScreenOcr, screenOcrHandlers } from '../features/screen-ocr/bac
 import { WordvaultError, serializeError } from '../lib/errors.js';
 import { fetchRecording } from '../lib/pronunciation.js';
 import { CLEANUP_ALARM, cleanupCache, ensureCacheCleanup } from '../lib/translation-cache.js';
-import { checkProvider, getPreferences, setSiteSourceLanguage, setTargetLanguage, translate } from '../lib/translator.js';
+import { checkProvider, clearTranslationCaches, getPreferences, setSiteSourceLanguage, setTargetLanguage, translate, translationCacheStats } from '../lib/translator.js';
 import { ENTRY_PREFIX, TOMBSTONE_PREFIX, addEntry, entryId, getEntry, hasEntry, removeEntry, updateEntry } from '../lib/vault.js';
 import { NOTIFICATION_ID } from '../quiz/display.js';
 import { ensureSyncScheduled, onSyncAlarm, syncInBackground, turnOffEncryption, unlockEncryption, vaultChanged } from '../sync/engine.js';
@@ -101,6 +101,9 @@ const handlers = {
   // turned into a key here; it is not kept.
   'wv:sync:unlock': fromOwnPage((payload) => unlockEncryption({ password: payload?.password, remember: payload?.remember })),
   'wv:sync:encryption-off': fromOwnPage(() => turnOffEncryption()),
+  // "Cache" on the options page: how much is remembered, and forgetting it. The vault is not part of it.
+  'wv:cache:stats': fromOwnPage(() => translationCacheStats()),
+  'wv:cache:clear': fromOwnPage(() => clearTranslationCaches()),
   // "Test the key" on the options page: the key comes from there and is used for one request.
   'wv:provider:check': fromOwnPage((payload) => checkProvider(payload?.provider, payload?.config)),
   // "Contact and feedback" on the options page, after the user has seen the data and pressed "Send".

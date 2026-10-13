@@ -67,6 +67,19 @@ export async function getCached(request, now = Date.now()) {
   return entry.result;
 }
 
+/**
+ * Marks an entry as asked for just now, without reading its answer: for when a quicker layer
+ * answered (lib/session-cache.js). Its seven days start again all the same.
+ */
+export async function touchCached(key, now = Date.now()) {
+  const state = await read();
+  const entry = state.entries[key];
+  if (!alive(entry, now)) return false;
+  entry.seen = now;
+  await write(state).catch(() => {});
+  return true;
+}
+
 /** Remembers an answer. Never throws: a full disk must not break a translation. */
 export async function putCached(request, result, now = Date.now()) {
   try {
@@ -115,6 +128,10 @@ export async function cacheStats() {
   return { entries: Object.keys(state.entries).length, bytes: new TextEncoder().encode(JSON.stringify(state)).length, cleanedAt: state.cleanedAt };
 }
 
+/** Changes whenever the cache is emptied: pages that hold answers in memory drop them when it does. */
+export const EPOCH_KEY = 'translationCacheEpoch';
+
 export async function clearCache() {
   await write({ v: VERSION, cleanedAt: Date.now(), entries: {} });
+  await chrome.storage.local.set({ [EPOCH_KEY]: Date.now() });
 }

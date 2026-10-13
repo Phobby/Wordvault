@@ -5,7 +5,8 @@ import { DEFAULT_PROVIDER_ID, getProvider } from '../providers/index.js';
 import { WordvaultError } from './errors.js';
 import { matchSupported, normalizeLang, sameLanguage } from './languages.js';
 import { getSettings, getSiteSource, setSiteSource, updateSettings } from './settings.js';
-import { getCached, putCached } from './translation-cache.js';
+import { clearSession, getSession, hasSessionCache, putSession, sessionCount } from './session-cache.js';
+import { TOUCH_AFTER_MS, cacheKey, cacheStats, clearCache, getCached, putCached, touchCached } from './translation-cache.js';
 
 const FALLBACK_TARGET = 'en';
 /** Upper bound for one lookup. Wordvault is a vocabulary tool, not a page translator. */
@@ -115,6 +116,33 @@ export async function setSiteSourceLanguage(host, code) {
 }
 
 /**
+ * The answer to a request if it was given before. Looked for where it is quickest first: what
+ * the browser holds for this session, then the lasting cache; found in the lasting one, it is
+ * put into the session too. (In front of both, each page keeps its own few answers in memory:
+ * shared/translate-client.js.)
+ */
+async function recall(request, now = Date.now()) {
+  const key = cacheKey(request);
+  const quick = await getSession(key);
+  if (quick) {
+    // Being asked for counts for the seven days of the lasting entry, whichever layer answered.
+    if (now - quick.touched >= TOUCH_AFTER_MS) {
+      await touchCached(key, now).catch(() => {});
+      await putSession(key, quick.result, now);
+    }
+    return quick.result;
+  }
+  const lasting = await getCached(request, now).catch(() => null);
+  if (lasting) await putSession(key, lasting, now);
+  return lasting;
+}
+
+async function remember(request, result, now = Date.now()) {
+  await putCached(request, result, now);
+  await putSession(cacheKey(request), result, now);
+}
+
+/**
  * @param {Object} request
  * @param {string} request.text       Selected text. The only thing that is sent to the provider.
  * @param {string} [request.sample]   Text around the selection, used for local language detection.
@@ -178,12 +206,12 @@ export async function translate(request, host) {
 
   // Asked for before, of this service, for this language pair: not asked for again.
   const remembered = { provider: provider.id, source: sourceLang, target: targetLang, text };
-  let result = await getCached(remembered).catch(() => null);
+  let result = await recall(remembered);
   try {
     if (!result) {
       result = await provider.translate({ text, source: sourceLang, target: targetLang }, config);
       // an answer that lost letters is not worth remembering: next time may be better
-      if (result.damaged !== true) await putCached(remembered, { translation: result.translation, detectedSource: result.detectedSource || null, alternatives: result.alternatives || [] });
+      if (result.damaged !== true) await remember(remembered, { translation: result.translation, detectedSource: result.detectedSource || null, alternatives: result.alternatives || [] });
     }
   } catch (error) {
     // The provider found the text to be in the target language: that is information for the
@@ -228,4 +256,19 @@ export async function checkProvider(providerId, config) {
   const provider = getProvider(providerId);
   if (provider.id !== providerId || typeof provider.check !== 'function') throw new WordvaultError('provider_error', 'nothing to check');
   return provider.check(config || {});
+}
+
+/**
+ * "Clear cache" on the settings page: every layer, in this browser. The vault is something
+ * else and is not touched. Pages drop what they hold in memory when they see the lasting
+ * cache's epoch change (shared/translate-client.js).
+ */
+export async function clearTranslationCaches() {
+  await clearSession();
+  await clearCache();
+}
+
+/** What the settings page shows about the cache. */
+export async function translationCacheStats() {
+  return { ...(await cacheStats()), session: await sessionCount(), hasSession: hasSessionCache() };
 }

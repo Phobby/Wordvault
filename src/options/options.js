@@ -3,7 +3,7 @@
 
 import { createFeedbackPanel } from './feedback.js';
 import { createOcrSection } from './ocr.js';
-import { createProviderSection } from './provider.js';
+import { createCacheSection, createProviderSection } from './provider.js';
 import { catchUncaught } from '../features/feedback/error-log.js';
 import { supportCard } from '../support/support.js';
 import { downloadBackup, restoreBackup } from '../lib/backup.js';
@@ -476,6 +476,7 @@ const quizSection = h(
 
 const ocrSection = createOcrSection({ flashSaved, switchRow, fieldRow });
 const providerSection = createProviderSection({ flashSaved });
+const cacheSection = createCacheSection();
 const feedbackPanel = createFeedbackPanel();
 
 // Two tabs: the settings, and "Contact and feedback". The address says which one is open
@@ -506,6 +507,7 @@ const panels = {
     quizSection,
     ocrSection.element,
     backupSection,
+    cacheSection.element,
   ),
   feedback: h('div', { id: 'panel-feedback', role: 'tabpanel', 'aria-labelledby': 'tab-feedback' }, feedbackPanel.element),
 };
@@ -557,6 +559,7 @@ function render() {
   ocrSection.render();
   providerSection.render();
 }
+cacheSection.render();
 feedbackPanel.render();
 syncControls.render();
 

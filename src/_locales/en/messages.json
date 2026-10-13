@@ -1957,5 +1957,53 @@
   "optDeeplGuideLink": {
     "message": "Open DeepL's API page",
     "description": "Guide link."
+  },
+  "optCacheTitle": {
+    "message": "Cache",
+    "description": "Options: title of the cache section."
+  },
+  "optCacheHelp": {
+    "message": "Translations you looked up are remembered so that the same word is not asked for again. They are kept in three places:",
+    "description": "Options: cache introduction."
+  },
+  "optCacheLayerPage": {
+    "message": "In the page: a few answers, gone when the page is closed or reloaded.",
+    "description": "Options: memory layer."
+  },
+  "optCacheLayerSession": {
+    "message": "For the session: shared by all tabs, gone when the browser is closed.",
+    "description": "Options: session layer."
+  },
+  "optCacheLayerWeek": {
+    "message": "On this device: kept through restarts; an answer nobody asked for in 7 days is deleted.",
+    "description": "Options: lasting layer."
+  },
+  "optCacheVault": {
+    "message": "The cache is not your vault. Saved words are never deleted automatically, and clearing the cache does not touch them. The cache is not part of the backup or of synchronisation.",
+    "description": "Options: the cache is separate from the vault."
+  },
+  "optCacheFacts": {
+    "message": "Kept on this device now: $COUNT$ translations ($SIZE$).",
+    "description": "Options: cache size.",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      },
+      "size": {
+        "content": "$2"
+      }
+    }
+  },
+  "optCacheNoSession": {
+    "message": "This browser has no session storage; that part is skipped.",
+    "description": "Options: storage.session missing."
+  },
+  "optCacheClear": {
+    "message": "Clear cache",
+    "description": "Options: button."
+  },
+  "optCacheCleared": {
+    "message": "Cleared. Your vault was not touched.",
+    "description": "Options: after clearing."
   }
 }

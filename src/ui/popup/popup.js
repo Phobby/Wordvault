@@ -472,7 +472,7 @@
     ui.actions.replaceChildren();
     renderLanguages();
     try {
-      const data = await WV.send('wv:translate', {
+      const data = await WV.translateClient.translate({
         text: current.text,
         sample: current.sample,
         pageLang: current.pageLang,

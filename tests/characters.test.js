@@ -7,8 +7,7 @@ import { afterEach, beforeEach, test } from 'node:test';
 
 import { createBackup, restoreBackup } from '../src/lib/backup.js';
 import { looksDamaged } from '../src/lib/text-damage.js';
-import { translate } from '../src/lib/translator.js';
-import { clearCache } from '../src/lib/translation-cache.js';
+import { clearTranslationCaches, translate } from '../src/lib/translator.js';
 import { addEntry, listEntries } from '../src/lib/vault.js';
 import { decodeDocument, encodeDocument } from '../src/sync/codec.js';
 import { readLocalDocument } from '../src/sync/local.js';
@@ -71,7 +70,7 @@ test('every letter of a translation arrives: Turkish, and a dozen other scripts'
   for (const [language, words] of Object.entries(SAMPLES)) {
     for (const word of words) {
       answers.set('*', word);
-      await clearCache(); // the same text is asked for again, with another answer each time
+      await clearTranslationCaches(); // the same text is asked for again, with another answer each time
       const result = await translate({ text: 'sample', source: 'en' }, 'example.com');
       assert.equal(result.translation, word, `${language}: ${word}`);
       assert.equal(result.damaged, false, `${language}: ${word} is not taken for damaged text`);

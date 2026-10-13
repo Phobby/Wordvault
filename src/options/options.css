@@ -304,3 +304,8 @@ body {
 .provider-guide ol { margin: 8px 0; padding-left: 20px; }
 .provider-guide li { margin-bottom: 4px; }
 .provider-guide .help { margin-top: 6px; }
+
+/* Cache (options/provider.js) */
+.cache-layers { margin: 10px 0; padding-left: 20px; font-size: 13.5px; }
+.cache-layers li { margin-bottom: 4px; }
+.cache-facts { margin-top: 10px; }

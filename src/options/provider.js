@@ -151,3 +151,45 @@ export function createProviderSection({ flashSaved }) {
 
   return { element, render };
 }
+
+/**
+ * The "Cache" part: what is remembered where, when each part goes away, and a button that
+ * forgets all of it. The vault is not part of the cache and is said not to be.
+ * @returns {{ element: HTMLElement, render: () => Promise<void> }}
+ */
+export function createCacheSection() {
+  const facts = h('p', { class: 'help cache-facts', role: 'status' });
+  const done = h('span', { class: 'unit', role: 'status' });
+  const clear = h('button', {
+    class: 'wv-btn',
+    type: 'button',
+    'data-action': 'clear-cache',
+    text: t('optCacheClear'),
+    onclick: async () => {
+      clear.disabled = true;
+      await globalThis.WV.send('wv:cache:clear').catch(() => {});
+      clear.disabled = false;
+      done.textContent = t('optCacheCleared');
+      await render();
+    },
+  });
+  const element = h(
+    'section',
+    { class: 'card', id: 'cache' },
+    h('h2', { text: t('optCacheTitle') }),
+    h('p', { class: 'help', text: t('optCacheHelp') }),
+    h('ul', { class: 'cache-layers' }, h('li', { text: t('optCacheLayerPage') }), h('li', { text: t('optCacheLayerSession') }), h('li', { text: t('optCacheLayerWeek') })),
+    h('p', { class: 'help', text: t('optCacheVault') }),
+    facts,
+    h('div', { class: 'buttons' }, clear, done),
+  );
+
+  async function render() {
+    const stats = await globalThis.WV.send('wv:cache:stats').catch(() => null);
+    if (!stats) return;
+    const size = stats.entries === 0 ? '0 KB' : `${Math.max(1, Math.round(stats.bytes / 1024))} KB`;
+    facts.textContent = t('optCacheFacts', [String(stats.entries), size]) + (stats.hasSession ? '' : ` ${t('optCacheNoSession')}`);
+  }
+
+  return { element, render };
+}

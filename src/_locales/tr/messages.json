@@ -1503,5 +1503,43 @@
   },
   "optDeeplGuideLink": {
     "message": "DeepL'in API sayfasını aç"
+  },
+  "optCacheTitle": {
+    "message": "Önbellek"
+  },
+  "optCacheHelp": {
+    "message": "Baktığın çeviriler, aynı kelime yeniden sorulmasın diye hatırlanır. Üç yerde tutulur:"
+  },
+  "optCacheLayerPage": {
+    "message": "Sayfada: birkaç yanıt; sayfa kapanınca ya da yenilenince gider."
+  },
+  "optCacheLayerSession": {
+    "message": "Oturum boyunca: bütün sekmeler için ortak; tarayıcı kapanınca gider."
+  },
+  "optCacheLayerWeek": {
+    "message": "Bu cihazda: yeniden başlatmalardan etkilenmez; 7 gün boyunca sorulmayan yanıt silinir."
+  },
+  "optCacheVault": {
+    "message": "Önbellek kasan değildir. Kaydettiğin kelimeler asla kendiliğinden silinmez; önbelleği temizlemek onlara dokunmaz. Önbellek yedeğe ve senkronizasyona dahil değildir."
+  },
+  "optCacheFacts": {
+    "message": "Şu an bu cihazda: $COUNT$ çeviri ($SIZE$).",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      },
+      "size": {
+        "content": "$2"
+      }
+    }
+  },
+  "optCacheNoSession": {
+    "message": "Bu tarayıcıda oturum deposu yok; o kısım atlanır."
+  },
+  "optCacheClear": {
+    "message": "Önbelleği temizle"
+  },
+  "optCacheCleared": {
+    "message": "Temizlendi. Kasana dokunulmadı."
   }
 }
