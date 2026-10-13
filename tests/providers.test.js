@@ -12,7 +12,7 @@ import { buildPayload, checkPayload } from '../src/features/feedback/payload.js'
 import { featureFlags } from '../src/features/feedback/tech-info.js';
 import { createBackup } from '../src/lib/backup.js';
 import { updateSettings } from '../src/lib/settings.js';
-import { MAX_AGE_MS, MAX_ENTRIES, cacheKey, getCached, prune, putCached } from '../src/lib/translation-cache.js';
+import { cacheKey } from '../src/lib/translation-cache.js';
 import { checkProvider, getPreferences, translate } from '../src/lib/translator.js';
 import { addEntry } from '../src/lib/vault.js';
 import { deepl, deeplBase, deeplOrigin, fromDeepl, toDeeplSource, toDeeplTarget } from '../src/providers/deepl.js';
@@ -208,19 +208,6 @@ test('a translation is remembered per service: the same text is not asked for tw
   assert.equal((await translate({ text: 'habit', source: 'en' }, 'example.com')).translation, 'habit/deepl>DE', 'another language pair is another entry');
   assert.notEqual(cacheKey({ provider: 'deepl', source: 'en', target: 'tr', text: 'a' }), cacheKey({ provider: 'mymemory', source: 'en', target: 'tr', text: 'a' }));
   assert.notEqual(cacheKey({ provider: 'deepl', source: null, target: 'tr', text: 'a' }), cacheKey({ provider: 'deepl', source: 'en', target: 'tr', text: 'a' }));
-});
-
-test('remembered for a week, and no more than the newest few hundred', async () => {
-  const request = { provider: 'deepl', source: 'en', target: 'tr', text: 'old' };
-  const now = 1_800_000_000_000;
-  await putCached(request, { translation: 'eski' }, now);
-  assert.deepEqual(await getCached(request, now + MAX_AGE_MS - 1), { translation: 'eski' });
-  assert.equal(await getCached(request, now + MAX_AGE_MS), null);
-  assert.equal(await getCached(request, now - 1000), null, 'an entry from the future (a clock set back) is not trusted');
-  const many = Object.fromEntries(Array.from({ length: MAX_ENTRIES + 50 }, (_, index) => [`k${index}`, { at: now - index, result: {} }]));
-  const kept = prune({ ...many, stale: { at: now - MAX_AGE_MS, result: {} } }, now);
-  assert.equal(Object.keys(kept).length, MAX_ENTRIES);
-  assert.ok('k0' in kept && !(`k${MAX_ENTRIES}` in kept) && !('stale' in kept));
 });
 
 test('a failure is not remembered', async () => {

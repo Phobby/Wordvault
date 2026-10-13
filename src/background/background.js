@@ -11,6 +11,7 @@ import { lookupWord } from '../lib/dictionary.js';
 import { registerScreenOcr, screenOcrHandlers } from '../features/screen-ocr/background.js';
 import { WordvaultError, serializeError } from '../lib/errors.js';
 import { fetchRecording } from '../lib/pronunciation.js';
+import { CLEANUP_ALARM, cleanupCache, ensureCacheCleanup } from '../lib/translation-cache.js';
 import { checkProvider, getPreferences, setSiteSourceLanguage, setTargetLanguage, translate } from '../lib/translator.js';
 import { ENTRY_PREFIX, TOMBSTONE_PREFIX, addEntry, entryId, getEntry, hasEntry, removeEntry, updateEntry } from '../lib/vault.js';
 import { NOTIFICATION_ID } from '../quiz/display.js';
@@ -155,6 +156,7 @@ const scheduleQuiz = () => ensureScheduled().catch(() => {});
 
 chrome.alarms.onAlarm.addListener((alarm) => {
   if (alarm.name === ALARM_NAME) runScheduledQuiz().catch(() => {});
+  else if (alarm.name === CLEANUP_ALARM) cleanupCache().catch(() => {});
   else onSyncAlarm(alarm.name).catch(() => {});
 });
 chrome.runtime.onInstalled.addListener(scheduleQuiz);
@@ -163,6 +165,15 @@ chrome.storage.onChanged.addListener((changes, area) => {
   if (area === 'local' && changes.settings) scheduleQuiz();
 });
 scheduleQuiz();
+
+// --- Translation cache -------------------------------------------------------------------------
+// Translations nobody asked for in seven days are deleted: once a day by an alarm, and when
+// this script starts after a longer pause (lib/translation-cache.js). The vault is not touched.
+
+const scheduleCacheCleanup = () => ensureCacheCleanup().catch(() => {});
+chrome.runtime.onInstalled.addListener(scheduleCacheCleanup);
+chrome.runtime.onStartup.addListener(scheduleCacheCleanup);
+scheduleCacheCleanup();
 
 // --- Synchronisation ---------------------------------------------------------------------------
 // The engine (sync/engine.js) is started from here and nowhere else: when the browser starts,

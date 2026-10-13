@@ -371,9 +371,24 @@ dolu, ağ hatası, DeepL'in desteklemediği hedef dil) baloncuk hatayı DeepL'in
 "MyMemory ile devam et" düğmesini sunar. Düğme yalnızca o çeviriyi MyMemory ile yapar; ayar değişmez.
 Her sonucun altında hangi servisle çevrildiği yazar. Hedef dil DeepL'de yoksa ayarlar sayfası da uyarır.
 
-**Çeviri önbelleği** (`lib/translation-cache.js`): başarılı çeviriler 7 gün, en fazla 300 kayıt olarak
-`storage.local` içinde tutulur; aynı metin yeniden sorulmaz (kotayı da harcamaz). Anahtar sağlayıcıyı,
-dil çiftini ve metni içerir; iki servisin yanıtları karışmaz. Yedeğe ve senkronizasyona girmez.
+**Çeviri önbelleği:** bkz. aşağıda "Çeviri önbelleği".
+
+### Çeviri önbelleği
+
+Kasaya eklenmemiş çevirilerin yanıtları yeniden sorulmasın diye saklanır (`SPEC.md` 7. madde,
+`SPEC-CACHE.md`). Kalıcı katman `lib/translation-cache.js`'tir: `chrome.storage.local` içinde tek bir
+anahtar (`translationCache`), `{ v, cleanedAt, entries: { anahtar: { seen, result } } }`.
+
+- **7 gün kuralı son erişime göredir.** `seen`, kaydın en son sorulduğu andır; okunurken de güncellenir
+  (kayıt başına en çok saatte bir yazılır). 7 gün boyunca sorulmayan kayıt silinir; kullanılan kayıt kalır.
+- **Düzenli temizlik:** günde bir `chrome.alarms` alarmı (`wv:cache:cleanup`), ayrıca arka plan betiği her
+  başladığında son temizlik 6 saatten eskiyse. Son temizliğin zamanı önbellekle birlikte depoda durur;
+  bellekte durum tutulmaz. Alarm tarayıcı yeniden başlayınca yoksa yeniden kurulur.
+- **Üst sınır:** 500 kayıt; aşılınca en uzun süredir sorulmayanlar çıkar (LRU).
+- **İçerik:** yalnızca çeviri, algılanan kaynak dil ve alternatifler. Sözlük verisi (tür, tanım, örnek)
+  önbelleğe girmez, kasadaki kaydın içindedir.
+- **Kasa ayrıdır:** kasa `vault:` önekli başka anahtarlardadır; temizlik ve "önbelleği temizle" ona dokunmaz.
+- Yedeğe / JSON dışa aktarmaya, senkronizasyona ve geri bildirime girmez (`tests/translation-cache.test.js`).
 
 ### Hedef ve kaynak dil
 
