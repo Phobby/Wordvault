@@ -7,7 +7,6 @@
     "message": "Translate words on web pages and in video subtitles, save them to your vault and review them with quick quizzes.",
     "description": "Description of the extension (max. 132 characters)."
   },
-
   "popupClose": {
     "message": "Close",
     "description": "Label of the button that closes the translation popup."
@@ -44,7 +43,6 @@
     "message": "Try again",
     "description": "Button shown under an error message in the translation popup."
   },
-
   "langAuto": {
     "message": "Detect automatically",
     "description": "Source-language choice that lets the extension detect the language."
@@ -89,7 +87,6 @@
     "message": "Change",
     "description": "Button: open the list to pick another target language."
   },
-
   "speakNoRecording": {
     "message": "No recording of this word",
     "description": "Shown briefly when the pronounce button finds nothing to play."
@@ -106,7 +103,6 @@
     "message": "In this browser the built-in voice ends every word with a loud click, so Wordvault plays recordings from Wikimedia Commons instead. Turn this on to hear the built-in voice, click included, for words that have no recording.",
     "description": "Options page: explanation of the switch above."
   },
-
   "vaultAdd": {
     "message": "Add to vault",
     "description": "Button in the translation popup: save the word."
@@ -135,7 +131,6 @@
     "message": "Could not save",
     "description": "Shown when writing to the vault failed."
   },
-
   "tbCount": {
     "message": "$1 words",
     "description": "Toolbar popup: number of saved words. $1 is a number other than 1."
@@ -712,7 +707,6 @@
     "message": "iCloud is not offered: a browser extension has no way of reaching iCloud Drive. Export the vault as JSON above and save the file into your iCloud Drive folder instead.",
     "description": "Options page, synchronisation: note about iCloud."
   },
-
   "quizTitle": {
     "message": "Quiz",
     "description": "Title of the small quiz card shown on pages."
@@ -1181,7 +1175,6 @@
     "message": "The background script did not answer. Reload the extension.",
     "description": "Options page: shown when the test button gets no reply."
   },
-
   "optionsTitle": {
     "message": "Wordvault settings",
     "description": "Title of the options page."
@@ -1214,7 +1207,6 @@
     "message": "Saved",
     "description": "Options page: confirmation shown briefly after a setting is stored."
   },
-
   "errNetwork": {
     "message": "Could not reach the translation service. Check your internet connection.",
     "description": "Error: the request failed before any response arrived."
@@ -2078,11 +2070,11 @@
     "description": "Options: heading of the quiz modes."
   },
   "optQuizModesHelp": {
-    "message": "Only words in your vault are asked. Each way can be switched on and off; with none on, the classic way is used.",
+    "message": "Only words in your vault are asked. Switch on as many ways as you like; with several on, each question draws one of them.",
     "description": "Options: quiz modes help."
   },
   "optQuizModeClassic": {
-    "message": "Classic",
+    "message": "Classic (easy)",
     "description": "Options: quiz mode."
   },
   "optQuizModeClassicHelp": {
@@ -2090,15 +2082,15 @@
     "description": "Options: quiz mode help."
   },
   "optQuizModeWriting": {
-    "message": "Writing",
+    "message": "Writing (medium)",
     "description": "Options: quiz mode."
   },
   "optQuizModeWritingHelp": {
-    "message": "The meaning is shown; type the word. A right answer counts for more than in the classic way.",
+    "message": "The meaning is shown; type the word.",
     "description": "Options: quiz mode help."
   },
   "optQuizModeListening": {
-    "message": "Listening",
+    "message": "Listening (hard)",
     "description": "Options: quiz mode."
   },
   "optQuizModeListeningHelp": {
@@ -2109,12 +2101,8 @@
     "message": "Mixed",
     "description": "Options: quiz mode."
   },
-  "optQuizModeMixedHelp": {
-    "message": "With several ways switched on: pick one at random for each question. Off: they take turns.",
-    "description": "Options: quiz mode help."
-  },
   "optQuizAccentTolerant": {
-    "message": "Writing: tolerate accents",
+    "message": "Typing: tolerate accents",
     "description": "Options: accent tolerance."
   },
   "optQuizAccentTolerantHelp": {
@@ -2396,7 +2384,7 @@
     "description": "Options: require a typed or heard answer."
   },
   "optQuizLearnedOtherHelp": {
-    "message": "At least one of those right answers has to be typed or heard. Switch this off if you only use the classic way, or no word will ever count as learned.",
+    "message": "At least one of those right answers has to be from a level above easy (typed or heard). Switch this off if you only use the classic way, or no word will ever count as learned.",
     "description": "Options: require a typed or heard answer, help."
   },
   "optQuizDailyGoal": {
@@ -2458,5 +2446,111 @@
   "optQuizResetDone": {
     "message": "The quiz settings are back to their defaults. Your words, streak and rank were not touched.",
     "description": "Options: after resetting."
+  },
+  "quizExpertPrompt": {
+    "message": "Listen and type the word ($LANGUAGE$)",
+    "description": "Quiz, expert: prompt.",
+    "placeholders": {
+      "language": {
+        "content": "$1"
+      }
+    }
+  },
+  "quizStart": {
+    "message": "Start quiz",
+    "description": "Toolbar popup: starts a quiz by hand."
+  },
+  "diffEasy": {
+    "message": "Easy",
+    "description": "Difficulty level."
+  },
+  "diffMedium": {
+    "message": "Medium",
+    "description": "Difficulty level."
+  },
+  "diffHard": {
+    "message": "Hard",
+    "description": "Difficulty level."
+  },
+  "diffExpert": {
+    "message": "Expert",
+    "description": "Difficulty level."
+  },
+  "diffEasyMode": {
+    "message": "Classic: pick from four",
+    "description": "What the easy level starts."
+  },
+  "diffMediumMode": {
+    "message": "Writing: type the word",
+    "description": "What the medium level starts."
+  },
+  "diffHardMode": {
+    "message": "Listening: hear it, pick from four",
+    "description": "What the hard level starts."
+  },
+  "diffExpertMode": {
+    "message": "Listening + writing: hear it, type it",
+    "description": "What the expert level starts."
+  },
+  "diffLabel": {
+    "message": "Difficulty: $LEVEL$ ($MODE$). Click to change.",
+    "description": "Label of the difficulty selector.",
+    "placeholders": {
+      "level": {
+        "content": "$1"
+      },
+      "mode": {
+        "content": "$2"
+      }
+    }
+  },
+  "quizStartNoWords": {
+    "message": "There is no word with a translation in your vault to ask yet.",
+    "description": "Manual quiz: empty vault."
+  },
+  "quizStartFewWords": {
+    "message": "This level needs at least $NEEDED$ different meanings to choose from; your vault has $HAVE$. Save a few more words, or pick a level where you type.",
+    "description": "Manual quiz: too few words for four choices.",
+    "placeholders": {
+      "needed": {
+        "content": "$1"
+      },
+      "have": {
+        "content": "$2"
+      }
+    }
+  },
+  "quizStartNoFit": {
+    "message": "No word in your vault fits this level right now ($MODE$).",
+    "description": "Manual quiz: nothing fits the chosen mode.",
+    "placeholders": {
+      "mode": {
+        "content": "$1"
+      }
+    }
+  },
+  "quizStartNoVoice": {
+    "message": "This device cannot say your words aloud right now. Try a level without listening.",
+    "description": "Manual quiz: no voice."
+  },
+  "quizStartFailed": {
+    "message": "The quiz could not be started.",
+    "description": "Manual quiz: other failure."
+  },
+  "optQuizModeExpert": {
+    "message": "Expert",
+    "description": "Options: quiz mode."
+  },
+  "optQuizModeExpertHelp": {
+    "message": "The word is said aloud and nothing is shown; type what you hear.",
+    "description": "Options: quiz mode help."
+  },
+  "optQuizModeNone": {
+    "message": "At least one way has to stay switched on.",
+    "description": "Options: the last mode cannot be switched off."
+  },
+  "optQuizModesManual": {
+    "message": "These are for the quiz that appears by itself. A quiz you start from the toolbar popup uses the difficulty chosen there, whatever is switched on here.",
+    "description": "Options: the popup selector is separate."
   }
 }

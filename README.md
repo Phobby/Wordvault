@@ -444,37 +444,58 @@ tümden boşalır, sayfa belleği yalnızca birebir aynı istekte kullanılır).
 `SPEC-LEARNING.md`. Her şey yereldir: sıralama, paylaşım ya da sunucu yoktur. Senkronizasyon açıksa
 öğrenildi durumu ve quiz günleri kasayla birlikte, kullanıcının seçtiği yere gider.
 
-**Modlar** (`quiz/question.js`, `shared/quiz-card.js`). Quiz yalnızca kasadaki kelimeleri sorar;
-önbellekteki aramalar girmez. Ayarlarda her biri ayrı açılıp kapanır (varsayılan: Klasik + Karışık):
+**Zorluk seviyeleri / modlar** (`SPEC-QUIZ-MODES.md`; `quiz/question.js`, `shared/quiz-card.js`). Quiz
+yalnızca kasadaki kelimeleri sorar; önbellekteki aramalar girmez.
 
-| Mod | Ne gösterilir | Cevap |
-| --- | --- | --- |
-| Klasik | Kelime | Dört anlamdan biri |
-| Yazma | Anlam | Kelime yazılır; Enter gönderir |
-| Dinleme | Hiçbir şey; kelime okunur | Dört şıktan biri (anlam ya da yazılış) |
+| Seviye | Mod | Ne gösterilir | Cevap | Ağırlık |
+| --- | --- | --- | --- | --- |
+| Easy | Klasik (`classic`) | Kelime | Dört anlamdan biri | ×1 |
+| Medium | Yazma (`writing`) | Anlam | Kelime yazılır; Enter gönderir | ×1,15 |
+| Hard | Dinleme (`listening`) | Hiçbir şey; kelime okunur | Dört şıktan biri (anlam ya da yazılış) | ×1,3 |
+| Expert | Dinleme + yazma (`expert`) | Hiçbir şey; kelime okunur | Duyulan kelime yazılır | ×1,5 |
 
-- Karışık açıkken açık modlardan biri rastgele seçilir; kapalıyken sırayla gelirler. Bir kelimeye istenen
-  mod uymazsa (yazmak için fazla uzun, okunacak dili yok, şık yetmiyor) açık olan başka bir moda düşülür.
-- **Yazma:** büyük/küçük harf, baştaki/sondaki ve aradaki fazla boşluk ile Unicode biçimi önemsizdir
-  (`shared/quiz-answers.js`). Aksan farkı varsayılan olarak yazım hatasıdır; "aksanlara toleranslı"
-  açılınca sayılmaz. Yanlışta doğru kelime, hatalı ya da eksik harfleri işaretlenerek gösterilir.
-  "İpucu" her basışta bir harf açar (son harf hariç); ipuçlu doğru cevap **kısmen doğru**dur: kalite 3,
-  harflerin yarısı açıldıysa 2. "Geç" cevabı gösterir ve bilinmedi sayar. Alana yazılan tuşlar sayfaya
-  ulaşmaz (video oynatıcının kısayolları tetiklenmez); yazarken zaman aşımı yeniden başlar.
-  Aynı çeviriyle kayıtlı başka bir kasa kelimesi de doğru kabul edilir ("büyük" → "big" ya da "large").
-- **Dinleme:** mevcut seslendirme (`shared/speech.js`) kullanılır; hiçbir okuma kesilmez (`cancel()`
-  çağrılmaz), Firefox/macOS'te kayıtlar Web Audio ile sönümlenerek çalınır, yani eski "patlama" sesi
-  bu modda da oluşmaz. Soru açılınca bir kez okunur (ayarlanabilir); tarayıcı kendiliğinden ses
-  başlatmayı reddederse hoparlör düğmesi çalışır. Ses yoksa kart bunu söyler, kelimeye hiçbir şey
-  yazılmaz, yerine başka kelime gelir ve o dil (kayıt kullanılan yerde o kelime) 24 saat dinlemeyle sorulmaz.
-- Üç mod aynı zamanlayıcıyı besler. Doğru cevabın sonraki aralığı moda göre çarpılır: klasik 1,
-  dinleme 1,15, yazma 1,35 (`TUNING.MODE_FACTOR`). Hız yalnızca klasikte puanlanır.
+"Ağırlık", doğru cevaptan sonraki tekrar aralığının çarpanıdır (`TUNING.MODE_FACTOR`). Dört mod aynı
+zamanlayıcıyı besler; hız yalnızca klasikte puanlanır.
+
+- **Yazma ve Expert:** büyük/küçük harf, baştaki/sondaki ve aradaki fazla boşluk ile Unicode biçimi
+  önemsizdir (`shared/quiz-answers.js`). Aksan farkı varsayılan olarak yazım hatasıdır; "aksanlara
+  toleranslı" açılınca sayılmaz. Yanlışta doğru kelime, hatalı ya da eksik harfleri işaretlenerek
+  gösterilir. "İpucu" her basışta bir harf açar (son harf hariç); ipuçlu doğru cevap **kısmen doğru**dur:
+  kalite 3, harflerin yarısı açıldıysa 2. "Geç" cevabı gösterir ve bilinmedi sayar (kalite 0). Alana
+  yazılan tuşlar sayfaya ulaşmaz; yazarken zaman aşımı yeniden başlar.
+- Yazmada aynı çeviriyle kayıtlı başka bir kasa kelimesi de doğru kabul edilir ("büyük" → "big" ya da
+  "large"). Expert'te yalnızca okunan kelimenin kendisi doğrudur; anlamı ancak soru bitince gösterilir.
+- **Dinleme ve Expert:** mevcut seslendirme (`shared/speech.js`) kullanılır; hiçbir okuma kesilmez
+  (`cancel()` çağrılmaz), Firefox/macOS'te kayıtlar Web Audio ile sönümlenerek çalınır, yani eski
+  "patlama" sesi bu modlarda da oluşmaz. Soru açılınca bir kez okunur (ayarlanabilir); tarayıcı
+  kendiliğinden ses başlatmayı reddederse hoparlör düğmesi çalışır. Ses yoksa kart bunu söyler, kelimeye
+  hiçbir şey yazılmaz, yerine başka kelime gelir ve o dil (kayıt kullanılan yerde o kelime) 24 saat
+  dinlemeyle sorulmaz.
+
+**Kendiliğinden açılan quiz** ayarlardaki dört anahtarı kullanır (Classic, Writing, Listening, Expert;
+varsayılan yalnızca Classic). Birden fazlası açıkken her soru için biri rastgele seçilir; bir kelimeye
+seçilen mod uymazsa açık olan başka bir moda düşülür. Dördü birden açıkken başlığın yanında bilgi amaçlı
+"Mixed" etiketi görünür; ayrı bir Mixed anahtarı yoktur. Son açık anahtar kapatılamaz (uyarı gösterilir).
+
+**Elle başlatılan quiz** (`popup/quiz-starter.js`, `quiz/difficulty.js`). Eklenti penceresindeki "Quiz"
+bölümünde "Quiz başlat" düğmesi ve yanında zorluk seçici vardır. Seçici tek düğmedir: her tıklayış
+Easy → Medium → Hard → Expert → Easy sırasıyla bir adım ilerler; düğmenin rengi, adı ve başlatacağı mod
+değişir ve o seviyenin çizimi yaklaşık yarım saniyelik bir animasyon oynatır (filiz / kıvılcım / şimşek /
+kristal; satır içi SVG ve CSS, dosya yok; "hareketi azalt" açıkken oynamaz). Her tıklayışta çizim baştan
+kurulur, bu yüzden hızlı tıklamalarda animasyonlar üst üste binmez. Seçim `storage.local` içinde
+`quizDifficulty` olarak hatırlanır; ayarlardaki anahtarlardan bağımsızdır ve bir ayar değildir.
+
+Elle başlatılan quiz yalnızca seçilen modla sorar, günlük hedef kadar soru sorar (varsayılan 5; tek
+oturum günü tamamlar) ve seriye diğer quizler gibi sayılır. Ayarlardaki "quiz nasıl görünsün" seçimine
+uyar: "otomatik" ya da "eklenti penceresi" ise açık olan pencere quiz sayfasına dönüşür; "ayrı pencere"
+ya da "sayfa içi kart" ise oraya gider ve pencere kapanır (olmazsa pencerede gösterilir). Kasada yeterli
+kelime yoksa nedenini söyler: şıklı seviyeler en az dört farklı anlam ister, yazmalı seviyeler istemez.
 
 **Öğrenildi** (`quiz/learning.js`). Üst üste N doğru (varsayılan 5; ayar 3-20), en az 3 farklı takvim
-gününde, ve en az biri yazma ya da dinleme (kapatılabilir). Öğrenilen kelime silinmez; en az 30 günde
+gününde, ve en az biri Easy'nin üstündeki bir seviyeden (yazma, dinleme ya da expert; kapatılabilir). Öğrenilen kelime silinmez; en az 30 günde
 bir sorulur. Yanlış cevap durumu düşürür ve kelime 10 dakika sonra yeniden gelir. İpuçlu doğru seriye
 eklenmez ama seriyi de bozmaz. Kelime özetindeki alanlar: `n` (seri), `y` (serinin günleri), `o`
-(yazma/dinleme doğruları), `g` (öğrenildiği an), `c1/c0`, `w1/w0`, `l1/l0` (mod başına doğru/yanlış).
+(Easy üstü doğrular), `g` (öğrenildiği an), `c1/c0`, `w1/w0`, `l1/l0`, `x1/x0` (mod başına doğru/yanlış).
 Yalnızca bir şey söylediklerinde yazılırlar. Kasa penceresindeki **Kelime haznem** sekmesi öğrenilenleri
 tarihleriyle listeler; ana listeden çıkmazlar.
 

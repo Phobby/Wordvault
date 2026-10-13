@@ -152,6 +152,27 @@ export function writingQuestion(card, cards) {
   };
 }
 
+/**
+ * A question that has the word heard and typed: it is said aloud, and neither it nor its
+ * meaning is shown. Only the word itself is right: what was said is what is asked for.
+ * @returns {Question | null} null for a word without a language to say it in, or too long to type.
+ */
+export function expertQuestion(card) {
+  if (!card.sourceLang || card.text.length > MAX_WRITING_CHARS) return null;
+  return {
+    mode: 'expert',
+    id: card.id,
+    word: card.text,
+    answer: card.text,
+    accept: [card.text],
+    meaning: card.translation || '',
+    sourceLang: card.sourceLang,
+    targetLang: card.targetLang,
+    letters: [...card.text].filter((char) => !/[\s\-'’]/.test(char)).length,
+    chars: card.text.length * 2,
+  };
+}
+
 /** Other saved words as wrong choices for "which word did you hear": never one that could be the answer. */
 function pickSpellings(card, cards, random) {
   const candidates = [];
@@ -200,11 +221,13 @@ export function listeningQuestion(card, cards, random = Math.random, kind = 'mea
 
 /**
  * @typedef {Object} Question
- * @property {'classic' | 'writing' | 'listening'} [mode]  How the word is asked (missing: classic).
+ * @property {'classic' | 'writing' | 'listening' | 'expert'} [mode]  How the word is asked (missing: classic).
  *   classic    `word` is shown, `choices` are four meanings, `answer` the index of the right one;
  *   writing    `word` is the meaning; `answer` is the word to type, `accept` every saved word
  *              that is right, `letters` how many letters a hint can give away;
  *   listening  `word` is said aloud and not shown; `choices` are meanings or spellings (`choiceKind`).
+ *   expert     `word` is said aloud and not shown; `answer` is the word to type; `meaning` is
+ *              shown once the question is over.
  * @property {string} id          Vault id of the word being asked.
  * @property {string} word
  * @property {string} sourceLang
@@ -259,19 +282,20 @@ export function buildQuestion(entries, targetLang, random = Math.random) {
  * work for this word (too long to type, no language to say it in, too few choices), the
  * others that are switched on are tried, the classic way first.
  *
- * @param {'classic' | 'writing' | 'listening'} mode
+ * @param {'classic' | 'writing' | 'listening' | 'expert'} mode
  * @param {{ listenChoices?: 'meaning' | 'spelling', allowed?: string[], without?: string[] }} [options]
  *        allowed: the ways that are switched on (others are never fallen back to).
  *        without: ways that must not be used for this word (listening, where it has no voice).
  * @returns {Question | null}
  */
-export function questionInMode(card, cards, mode, random = Math.random, { listenChoices = 'meaning', allowed = ['classic', 'writing', 'listening'], without = [] } = {}) {
+export function questionInMode(card, cards, mode, random = Math.random, { listenChoices = 'meaning', allowed = ['classic', 'writing', 'listening', 'expert'], without = [] } = {}) {
   const build = {
     classic: () => questionFor(card, cards, random),
     writing: () => writingQuestion(card, cards),
     listening: () => listeningQuestion(card, cards, random, listenChoices),
+    expert: () => expertQuestion(card),
   };
-  const order = [mode, 'classic', 'writing', 'listening'].filter((way, index, all) => build[way] && all.indexOf(way) === index && allowed.includes(way) && !without.includes(way));
+  const order = [mode, 'classic', 'writing', 'listening', 'expert'].filter((way, index, all) => build[way] && all.indexOf(way) === index && allowed.includes(way) && !without.includes(way));
   for (const way of order) {
     const question = build[way]();
     if (question) return question;

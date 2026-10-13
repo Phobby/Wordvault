@@ -20,7 +20,7 @@ import { ackRank, freezeYesterday, getProgress } from '../quiz/progress-state.js
 import { REMINDER_ALARM, REMINDER_NOTIFICATION, ensureReminder, runReminder } from '../quiz/reminder.js';
 import { DAYS_KEY } from '../quiz/streak.js';
 import { ensureSyncScheduled, onSyncAlarm, syncInBackground, turnOffEncryption, unlockEncryption, vaultChanged } from '../sync/engine.js';
-import { ALARM_NAME, answerQuestion, claimSession, ensureScheduled, muteToday, openFromNotification, quizPageGone, runScheduledQuiz, testQuiz, unmute } from '../quiz/scheduler.js';
+import { ALARM_NAME, answerQuestion, claimSession, ensureScheduled, muteToday, openFromNotification, quizPageGone, runScheduledQuiz, startManualQuiz, testQuiz, unmute } from '../quiz/scheduler.js';
 
 /** Host name of the web page a message came from ('' for extension pages). */
 function hostOf(sender) {
@@ -93,6 +93,8 @@ const handlers = {
   'wv:vault:enrich': (payload) => enrich(payload?.id),
   'wv:vault:remove': (payload) => removeEntry(entryId(payload || {})),
   'wv:quiz:test': (payload) => testQuiz(payload),
+  // "Start quiz" in the toolbar popup, at the difficulty chosen there.
+  'wv:quiz:start': fromOwnPage((payload) => startManualQuiz({ mode: payload?.mode })),
   // From whatever shows the quiz: a quiz page asking for its question, the outcome of a
   // question, and "not today".
   'wv:quiz:claim': (payload) => claimSession(payload),

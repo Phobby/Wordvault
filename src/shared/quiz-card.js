@@ -5,8 +5,9 @@
 // is used as a card on web pages (content/quiz.js), in the toolbar popup and in the quiz window
 // (quiz/page.js).
 //
-// A word is asked in one of three ways (quiz/question.js): shown with four meanings to pick
-// from, as a meaning for which the word is typed, or said aloud with four choices.
+// A word is asked in one of four ways (quiz/question.js), from easy to expert: shown with
+// four meanings to pick from, as a meaning for which the word is typed, said aloud with four
+// choices, or said aloud to be typed.
 //
 // A question ends in exactly one of these ways, reported once through `report`:
 //   answer    a choice was picked or a word typed (right or wrong, with the time it took)
@@ -284,8 +285,13 @@
       return played.via ? 'said' : speech.usesRecordings ? 'no_voice_word' : 'no_voice_lang';
     }
 
-    function listeningBody(question) {
-      const parts = choiceParts(question);
+    /**
+     * The blank where the word would be and the button that says it: for both ways of asking
+     * by ear. If the word cannot be said here, that is said, the question ends without anything
+     * being held against the word, and the quiz goes on with another one.
+     * @param {() => void} lock  Takes the question's controls away when there is no voice.
+     */
+    function voiceRow(question, lock) {
       const blank = h('div', { class: 'wv-quiz-blank', 'aria-hidden': 'true', text: '?' });
       const notice = h('div', { class: 'wv-quiz-notice', role: 'status', hidden: true });
       const asked = () => current && current.question === question && !current.outcome;
@@ -295,25 +301,18 @@
         const result = await say(question);
         speaker.classList.remove('wv-busy');
         if (result === 'said' || !asked()) return;
-        // No way to say it here: said so, and the quiz goes on with another word. Nothing is
-        // held against this one.
-        for (const button of parts.buttons) button.disabled = true;
-        parts.actions.hidden = true;
+        lock();
         notice.textContent = t('quizNoVoice', [languages.name(question.sourceLang)]);
         notice.hidden = false;
         const following = finish('no_voice', { scope: result === 'no_voice_word' ? 'word' : 'lang' });
         if (following) moveOn(following, NO_VOICE_MS);
       };
       const speaker = h('button', { class: 'wv-quiz-speaker', type: 'button', 'data-action': 'speak', title: t('quizListenAgain'), 'aria-label': t('quizListenAgain'), onclick: play }, WV.icon(ICON_SPEAKER));
-      body.replaceChildren(
-        h('div', { class: 'wv-quiz-listen' }, blank, speaker),
-        h('div', { class: 'wv-quiz-prompt', text: t(question.choiceKind === 'spelling' ? 'quizListenPromptSpelling' : 'quizListenPrompt', [languages.name(question.targetLang)]) }),
-        notice,
-        h('div', { class: 'wv-quiz-choices' }, parts.buttons),
-        h('div', { class: 'wv-quiz-foot' }, parts.actions, parts.feedback),
-      );
       return {
-        ...parts,
+        row: h('div', { class: 'wv-quiz-listen' }, blank, speaker),
+        notice,
+        play,
+        /** The word that was only heard is shown. */
         unveil: () => {
           blank.textContent = question.word;
           blank.classList.add('wv-shown');
@@ -322,13 +321,31 @@
         },
         // Said once when the question appears, if that is wanted. A browser may refuse sound
         // nobody clicked for; the button is there either way.
-        onShown: () => question.autoplay !== false && play(),
+        autoplay: () => question.autoplay !== false && play(),
       };
     }
 
-    // --- Writing: the meaning is shown, the word is typed ----------------------------------------
+    function listeningBody(question) {
+      const parts = choiceParts(question);
+      const voice = voiceRow(question, () => {
+        for (const button of parts.buttons) button.disabled = true;
+        parts.actions.hidden = true;
+      });
+      body.replaceChildren(
+        voice.row,
+        h('div', { class: 'wv-quiz-prompt', text: t(question.choiceKind === 'spelling' ? 'quizListenPromptSpelling' : 'quizListenPrompt', [languages.name(question.targetLang)]) }),
+        voice.notice,
+        h('div', { class: 'wv-quiz-choices' }, parts.buttons),
+        h('div', { class: 'wv-quiz-foot' }, parts.actions, parts.feedback),
+      );
+      return { ...parts, unveil: voice.unveil, onShown: voice.autoplay };
+    }
+
+    // --- Writing: the meaning is shown, the word is typed. Expert: the word is said, and typed. ---
 
     function writingBody(question) {
+      // Expert: nothing is shown, neither the word nor what it means; it is heard.
+      const heard = question.mode === 'expert';
       const check = { lang: question.sourceLang, accentTolerant: question.accentTolerant === true };
       const accepted = Array.isArray(question.accept) && question.accept.length > 0 ? question.accept : [question.answer];
       const letters = WV.quizAnswers.letterCount(question.answer);
@@ -344,8 +361,16 @@
         spellcheck: 'false',
         dir: 'auto',
         lang: question.sourceLang || null,
-        'aria-label': t('quizWritePrompt', [languages.name(question.sourceLang)]),
+        'aria-label': t(heard ? 'quizExpertPrompt' : 'quizWritePrompt', [languages.name(question.sourceLang)]),
       });
+      const voice = heard
+        ? voiceRow(question, () => {
+            input.disabled = true;
+            submit.disabled = true;
+            actions.hidden = true;
+            hintLine.hidden = true;
+          })
+        : null;
       // What is typed here is for the quiz only: a page's own keyboard shortcuts must not see
       // it (a video player would pause on "k"). And typing keeps the question from timing out.
       for (const type of ['keydown', 'keyup', 'keypress']) input.addEventListener(type, (event) => event.stopPropagation());
@@ -383,6 +408,15 @@
           typed !== null && h('div', { class: 'wv-quiz-typed' }, t('quizWriteTyped'), ' ', h('span', { dir: 'auto', text: typed })),
         );
         result.hidden = false;
+        showMeaning();
+      }
+
+      /** Expert: now that the question is over, what the word means may be seen. */
+      function showMeaning() {
+        if (!heard) return;
+        voice.unveil();
+        if (question.meaning && !result.querySelector('.wv-quiz-meaning')) result.append(h('div', { class: 'wv-quiz-meaning', dir: 'auto', lang: question.targetLang || null, text: question.meaning }));
+        result.hidden = false;
       }
 
       function done(messageKey, correct) {
@@ -406,6 +440,7 @@
         const following = finish('answer', { correct, hints, letters, ms: current.stopwatch.elapsed() });
         if (correct) {
           input.classList.add('wv-right');
+          showMeaning();
           done(hints > 0 ? 'quizWriteCorrectHint' : 'quizCorrect', true);
         } else {
           input.classList.add('wv-wrong');
@@ -425,8 +460,9 @@
       }
 
       body.replaceChildren(
-        h('div', { class: 'wv-quiz-word', dir: 'auto', lang: question.targetLang || null, text: question.word }),
-        h('div', { class: 'wv-quiz-prompt', text: t('quizWritePrompt', [languages.name(question.sourceLang)]) }),
+        heard ? voice.row : h('div', { class: 'wv-quiz-word', dir: 'auto', lang: question.targetLang || null, text: question.word }),
+        h('div', { class: 'wv-quiz-prompt', text: t(heard ? 'quizExpertPrompt' : 'quizWritePrompt', [languages.name(question.sourceLang)]) }),
+        heard && voice.notice,
         hintLine,
         h(
           'form',
@@ -443,7 +479,15 @@
         result,
         h('div', { class: 'wv-quiz-foot' }, actions, feedback),
       );
-      return { buttons: [], actions, feedback, onShown: () => input.focus({ preventScroll: true }) };
+      return {
+        buttons: [],
+        actions,
+        feedback,
+        onShown: () => {
+          input.focus({ preventScroll: true });
+          voice?.autoplay();
+        },
+      };
     }
 
     /** Starts the time an unanswered question may stay (again, when the user is typing). */
@@ -460,7 +504,7 @@
       }, timeoutMs);
     }
 
-    const BODIES = { classic: classicBody, writing: writingBody, listening: listeningBody };
+    const BODIES = { classic: classicBody, writing: writingBody, listening: listeningBody, expert: writingBody };
 
     function showQuestion(question, index) {
       progress.textContent = total > 1 ? t('quizProgress', [String(index || 1), String(total)]) : '';

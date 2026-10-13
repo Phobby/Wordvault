@@ -12,6 +12,7 @@ const GRACE_MS = 20_000;
  * @typedef {Object} QuizSession
  * @property {string} id
  * @property {boolean} forced          Started by "Test now".
+ * @property {string} [mode]           The one way every question of it is asked ('' or missing: whatever the settings draw). Set for a quiz started by hand.
  * @property {number} total            How many questions this quiz is meant to ask.
  * @property {string[]} asked          Ids of the words asked so far, the current one last.
  * @property {import('./question.js').Question | null} question  The question on screen.

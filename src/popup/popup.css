@@ -254,3 +254,71 @@ body {
 .progress-freeze { grid-column: 1 / -1; display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 6px 10px; border-radius: 8px; background: var(--wv-tint); font-size: 12.5px; }
 
 .count { white-space: nowrap; }
+
+/* "Quiz": start button and difficulty selector (popup/quiz-starter.js) */
+.quiz-starter { padding: 8px 12px; border-bottom: 1px solid var(--wv-border); }
+.quiz-starter[hidden] { display: none; }
+.quiz-starter-row { display: flex; align-items: stretch; gap: 8px; }
+.quiz-start { flex: none; padding: 0 14px; font-weight: 650; }
+.quiz-start-message { margin: 8px 0 0; padding: 6px 10px; border-radius: 8px; background: color-mix(in srgb, var(--wv-danger) 12%, transparent); color: var(--wv-danger); font-size: 12.5px; font-weight: 600; }
+.quiz-start-message[hidden] { display: none; }
+
+.diff-button {
+  --diff: #16a34a;
+  --diff-soft: color-mix(in srgb, var(--diff) 14%, transparent);
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  padding: 5px 10px 5px 6px;
+  border: 1.5px solid var(--diff);
+  border-radius: 10px;
+  background: var(--diff-soft);
+  color: var(--wv-fg);
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+  transition: border-color 0.2s, background-color 0.2s;
+}
+.diff-button[data-level="easy"] { --diff: #16a34a; }
+.diff-button[data-level="medium"] { --diff: #ea580c; }
+.diff-button[data-level="hard"] { --diff: #dc2626; }
+.diff-button[data-level="expert"] { --diff: #7c3aed; background: linear-gradient(135deg, color-mix(in srgb, #7c3aed 22%, transparent), color-mix(in srgb, #0f0a1f 18%, transparent)); }
+.diff-button:hover { background: color-mix(in srgb, var(--diff) 22%, transparent); }
+.diff-button:focus-visible { outline: 2px solid var(--diff); outline-offset: 2px; }
+.diff-icon { flex: none; display: inline-flex; width: 30px; height: 30px; border-radius: 8px; background: color-mix(in srgb, var(--diff) 18%, var(--wv-bg)); overflow: hidden; }
+.diff-art { width: 30px; height: 30px; padding: 3px; box-sizing: border-box; fill: var(--diff); stroke: var(--diff); stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+.diff-text { min-width: 0; display: grid; line-height: 1.2; }
+.diff-name { font-size: 13.5px; font-weight: 700; color: var(--diff); }
+.diff-mode { font-size: 11.5px; color: var(--wv-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* parts that are lines, not shapes */
+.diff-art .d-stem, .diff-art .d-facet, .diff-art .d-glint { fill: none; }
+.diff-art .d-facet { stroke: var(--wv-bg); stroke-width: 1; opacity: 0.75; }
+.diff-art .d-ember { stroke: none; opacity: 0.8; }
+
+/* Each level's half second. Only with .diff-play (a click), never on the first paint. */
+.diff-play .d-stem { stroke-dasharray: 9; animation: diff-draw 0.5s ease-out both; }
+.diff-play .d-leaf { transform-origin: 12px 13px; animation: diff-unfold 0.5s cubic-bezier(0.2, 1.3, 0.4, 1) both; }
+.diff-play .d-leaf-b { animation-delay: 0.08s; }
+.diff-play .d-star { transform-origin: 12px 11px; animation: diff-rise 0.5s ease-out both; }
+.diff-play .d-ember { animation: diff-ember 0.5s ease-out both; }
+.diff-play .d-ember-b { animation-delay: 0.1s; }
+.diff-play .d-bolt { transform-origin: 12px 2px; animation: diff-strike 0.45s steps(1, end) both, diff-flash 0.45s linear both; }
+.diff-play .d-gem { transform-origin: 12px 12px; animation: diff-shine 0.55s ease-out both; }
+.diff-play .d-glint { transform-origin: 19px 4.5px; animation: diff-glint 0.55s ease-out both; }
+@keyframes diff-draw { from { stroke-dashoffset: 9; } to { stroke-dashoffset: 0; } }
+@keyframes diff-unfold { from { transform: scale(0.1) rotate(-25deg); opacity: 0; } to { transform: none; opacity: 1; } }
+@keyframes diff-rise { from { transform: translateY(9px) scale(0.3) rotate(-40deg); opacity: 0; } 70% { transform: translateY(-1px) scale(1.15) rotate(6deg); opacity: 1; } to { transform: none; } }
+@keyframes diff-ember { from { transform: translateY(5px); opacity: 0; } 50% { opacity: 1; } to { transform: translateY(-4px); opacity: 0.8; } }
+@keyframes diff-strike { 0% { transform: translateY(-14px) scaleY(0.4); } 25% { transform: translateY(0) scaleY(1.08); } 50% { transform: translate(1px, 0); } 75% { transform: translate(-1px, 0); } 100% { transform: none; } }
+@keyframes diff-flash { 0%, 20% { opacity: 0.2; } 25% { opacity: 1; filter: brightness(1.8); } 45% { opacity: 0.5; } 60% { opacity: 1; filter: brightness(1.4); } 100% { opacity: 1; filter: none; } }
+@keyframes diff-shine { from { transform: scale(0.6) rotate(-12deg); opacity: 0.3; filter: brightness(0.6); } 60% { transform: scale(1.1); filter: brightness(1.7) drop-shadow(0 0 3px var(--diff)); } to { transform: none; opacity: 1; filter: none; } }
+@keyframes diff-glint { 0%, 40% { transform: scale(0) rotate(0deg); opacity: 0; } 70% { transform: scale(1.4) rotate(45deg); opacity: 1; } to { transform: scale(1) rotate(90deg); opacity: 0.9; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .diff-button { transition: none; }
+  .diff-play .d-stem, .diff-play .d-leaf, .diff-play .d-star, .diff-play .d-ember, .diff-play .d-bolt, .diff-play .d-gem, .diff-play .d-glint { animation: none; }
+}

@@ -9,7 +9,7 @@ import { supportCard } from '../support/support.js';
 import { downloadBackup, restoreBackup } from '../lib/backup.js';
 import { DEFAULT_SETTINGS, getSettings, updateSettings } from '../lib/settings.js';
 import { getPreferences, setTargetLanguage } from '../lib/translator.js';
-import { INTERVAL_MINUTES, LEARNED_STREAK, TIMEOUT_SECONDS, getDiagnostics } from '../quiz/scheduler.js';
+import { INTERVAL_MINUTES, LEARNED_STREAK, TIMEOUT_SECONDS, getDiagnostics, isMixed, toggleMode } from '../quiz/scheduler.js';
 import { DAILY_GOAL } from '../quiz/streak.js';
 import { createProgressPanel } from '../quiz/progress-panel.js';
 import { createSyncControls } from './sync.js';
@@ -167,10 +167,33 @@ const quizAllowNotDue = h('input', { type: 'checkbox', onchange: () => saveQuiz(
 
 // The ways a word is asked: each on its own switch, and whether they are mixed.
 const quizSwitch = (key) => h('input', { type: 'checkbox', 'data-setting': key, onchange: (event) => saveQuiz({ [key]: event.target.checked }) });
-const quizModeClassic = quizSwitch('quizModeClassic');
-const quizModeWriting = quizSwitch('quizModeWriting');
-const quizModeListening = quizSwitch('quizModeListening');
-const quizModeMixed = quizSwitch('quizModeMixed');
+// The ways the quiz that comes by itself asks a word: four switches, any number of them on,
+// never none. All four on is "Mixed", which is shown as a label, not as a switch of its own.
+const quizModeNote = h('p', { class: 'ocr-warning', role: 'alert', hidden: true });
+const quizMixedBadge = h('span', { class: 'sync-badge on', hidden: true, text: t('optQuizModeMixed') });
+const quizModeSwitch = (mode, key) => {
+  const input = h('input', {
+    type: 'checkbox',
+    'data-setting': key,
+    onchange: async () => {
+      const after = toggleMode(await getSettings(), mode, input.checked);
+      if (!after) {
+        // the last one that is on stays on
+        input.checked = true;
+        quizModeNote.textContent = t('optQuizModeNone');
+        quizModeNote.hidden = false;
+        return;
+      }
+      quizModeNote.hidden = true;
+      await saveQuiz(after);
+    },
+  });
+  return input;
+};
+const quizModeClassic = quizModeSwitch('classic', 'quizModeClassic');
+const quizModeWriting = quizModeSwitch('writing', 'quizModeWriting');
+const quizModeListening = quizModeSwitch('listening', 'quizModeListening');
+const quizModeExpert = quizModeSwitch('expert', 'quizModeExpert');
 const quizAccentTolerant = quizSwitch('quizAccentTolerant');
 const quizListenAutoplay = quizSwitch('quizListenAutoplay');
 const quizListenChoices = h(
@@ -334,10 +357,12 @@ async function renderQuizSettings(rejected) {
   const free = (field) => field === rejected || document.activeElement !== field;
   quizEnabled.checked = settings.quizEnabled;
   quizAllowNotDue.checked = settings.quizAllowNotDue;
-  quizModeClassic.checked = settings.quizModeClassic === true;
   quizModeWriting.checked = settings.quizModeWriting === true;
   quizModeListening.checked = settings.quizModeListening === true;
-  quizModeMixed.checked = settings.quizModeMixed !== false;
+  quizModeExpert.checked = settings.quizModeExpert === true;
+  // none stored as on (it cannot be chosen, but data can come from anywhere): classic is what is used
+  quizModeClassic.checked = settings.quizModeClassic === true || !(quizModeWriting.checked || quizModeListening.checked || quizModeExpert.checked);
+  quizMixedBadge.hidden = !isMixed(settings);
   quizAccentTolerant.checked = settings.quizAccentTolerant === true;
   quizListenAutoplay.checked = settings.quizListenAutoplay !== false;
   quizListenChoices.value = settings.quizListenChoices === 'spelling' ? 'spelling' : 'meaning';
@@ -548,15 +573,17 @@ const quizSection = h(
     fieldRow('optQuizMinCards', 'optQuizMinCardsHelp', quizMinCards),
     fieldRow('optQuizTimeout', 'optQuizTimeoutHelp', h('span', { class: 'inline' }, quizTimeout, h('span', { class: 'unit', text: t('optSeconds') }))),
   ),
-  h('h3', { text: t('optQuizModes') }),
+  h('h3', { class: 'with-badge' }, t('optQuizModes'), ' ', quizMixedBadge),
   h('p', { class: 'help', text: t('optQuizModesHelp') }),
+  h('p', { class: 'help', text: t('optQuizModesManual') }),
+  quizModeNote,
   h(
     'div',
     { class: 'fields', id: 'quiz-modes' },
     switchRow(quizModeClassic, 'optQuizModeClassic', 'optQuizModeClassicHelp'),
     switchRow(quizModeWriting, 'optQuizModeWriting', 'optQuizModeWritingHelp'),
     switchRow(quizModeListening, 'optQuizModeListening', 'optQuizModeListeningHelp'),
-    switchRow(quizModeMixed, 'optQuizModeMixed', 'optQuizModeMixedHelp'),
+    switchRow(quizModeExpert, 'optQuizModeExpert', 'optQuizModeExpertHelp'),
     switchRow(quizAccentTolerant, 'optQuizAccentTolerant', 'optQuizAccentTolerantHelp'),
     switchRow(quizListenAutoplay, 'optQuizListenAutoplay', 'optQuizListenAutoplayHelp'),
     fieldRow('optQuizListenChoices', 'optQuizListenChoicesHelp', quizListenChoices),

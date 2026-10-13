@@ -124,15 +124,17 @@ test('a way that does not work for a word falls back to another that is switched
   assert.equal(questionInMode(CARDS[0], CARDS.slice(0, 2), 'classic', seeded(), { allowed: ['classic', 'writing'] }).mode, 'writing', 'too few choices: typed instead');
 });
 
-test('which way is used: the switches, mixed at random or taking turns', () => {
+test('which way the quiz that comes by itself uses: one of those switched on, drawn for each question', () => {
   assert.deepEqual(enabledModes({ quizModeClassic: true }), ['classic']);
   assert.deepEqual(enabledModes({}), ['classic'], 'none switched on: the classic way');
-  assert.deepEqual(enabledModes({ quizModeWriting: true, quizModeListening: true }), ['writing', 'listening']);
-  const all = { quizModeClassic: true, quizModeWriting: true, quizModeListening: true };
-  const drawn = new Set(Array.from({ length: 60 }, (_, index) => pickMode({ ...all, quizModeMixed: true }, {}, () => (index % 10) / 10)));
-  assert.deepEqual([...drawn].sort(), ['classic', 'listening', 'writing'], 'mixed: all of them come up');
-  assert.deepEqual([0, 1, 2, 3].map((turn) => pickMode({ ...all, quizModeMixed: false }, { modeTurn: turn })), ['classic', 'writing', 'listening', 'classic'], 'not mixed: in turn');
-  assert.equal(pickMode({ quizModeWriting: true, quizModeMixed: true }, {}), 'writing');
+  assert.deepEqual(enabledModes({ quizModeWriting: true, quizModeExpert: true }), ['writing', 'expert']);
+  const all = { quizModeClassic: true, quizModeWriting: true, quizModeListening: true, quizModeExpert: true };
+  const drawn = new Set(Array.from({ length: 80 }, (_, index) => pickMode(all, {}, () => (index % 20) / 20)));
+  assert.deepEqual([...drawn].sort(), ['classic', 'expert', 'listening', 'writing'], 'all four come up');
+  assert.equal(pickMode(all, {}, () => 0.999999), 'expert');
+  assert.equal(pickMode({ quizModeWriting: true }, {}), 'writing');
+  const two = { quizModeClassic: true, quizModeListening: true };
+  assert.ok(Array.from({ length: 40 }, (_, index) => pickMode(two, {}, () => index / 40)).every((mode) => mode === 'classic' || mode === 'listening'), 'never one that is switched off');
 });
 
 // --- through the scheduler ---
@@ -169,9 +171,10 @@ test('a typed answer is recorded for its way of asking; a hint makes it partly r
 });
 
 test('a word that cannot be said aloud: nothing is held against it, another word takes its place, and its language is not asked by ear again', async () => {
-  await updateSettings({ targetLang: 'tr', quizModeClassic: true, quizModeListening: true, quizModeMixed: false, quizQuestionsPerQuiz: 1 });
-  await chrome.storage.local.set({ quizState: { modeTurn: 1 } }); // the turn of listening
-  const shown = await testQuiz({ methods: ['card'] });
+  await updateSettings({ targetLang: 'tr', quizModeClassic: true, quizModeListening: true, quizQuestionsPerQuiz: 1 });
+  const realRandom = Math.random;
+  Math.random = () => 0.99; // of the two that are on, listening is drawn
+  const shown = await testQuiz({ methods: ['card'] }).finally(() => (Math.random = realRandom));
   assert.equal(shown.ok, true, shown.reason);
   const session = await readSession();
   assert.equal(session.question.mode, 'listening');

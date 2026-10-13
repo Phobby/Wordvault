@@ -102,11 +102,13 @@ test('each way of asking keeps its own count; the state of the word is one', () 
   assert.equal(typeof stats.i, 'number');
 });
 
-test('typing a word right is worth more than picking it: the next gap is longer', () => {
+test('the harder the way of asking, the more a right answer is worth: easy < medium < hard < expert', () => {
   const gapAfter = (mode) => run([[mode, true, 0], [mode, true, 1]]).stats.i;
-  assert.ok(gapAfter('writing') > gapAfter('listening') && gapAfter('listening') > gapAfter('classic'), [gapAfter('classic'), gapAfter('listening'), gapAfter('writing')].join(' '));
-  assert.equal(gapAfter('classic'), 1440);
-  assert.equal(run([['writing', false, 0]]).stats.i, TUNING.RELEARN_MINUTES, 'a wrong answer is a wrong answer in every mode');
+  const gaps = ['classic', 'writing', 'listening', 'expert'].map(gapAfter);
+  assert.ok(gaps[0] < gaps[1] && gaps[1] < gaps[2] && gaps[2] < gaps[3], gaps.join(' < '));
+  assert.equal(gaps[0], 1440, 'the classic way is the measure');
+  assert.deepEqual(TUNING.MODE_FACTOR, { classic: 1, writing: 1.15, listening: 1.3, expert: 1.5 });
+  for (const mode of ['classic', 'writing', 'listening', 'expert']) assert.equal(run([[mode, false, 0]]).stats.i, TUNING.RELEARN_MINUTES, `${mode}: a wrong answer is a wrong answer`);
 });
 
 test('how an answer is rated, by the way it was asked', () => {

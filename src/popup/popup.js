@@ -1,6 +1,7 @@
 // Toolbar popup: the vault. Lists the saved words, shows the details of one, and links to
 // export, import and the settings.
 
+import { createQuizStarter } from './quiz-starter.js';
 import { createProgressPanel } from '../quiz/progress-panel.js';
 import { supportLink } from '../support/support.js';
 import { looksDamaged } from '../lib/text-damage.js';
@@ -182,6 +183,8 @@ const languagesView = h(
 
 // Streak and rank, under the header. A new rank is celebrated over the whole popup.
 const progressPanel = createProgressPanel({ celebrateIn: document.getElementById('app') });
+// "Quiz": start one by hand, at the difficulty chosen with the button next to it.
+const quizStarter = createQuizStarter();
 
 document.getElementById('app').append(
   h(
@@ -195,6 +198,7 @@ document.getElementById('app').append(
     iconButton(ICON_SETTINGS, 'tbSettings', openSettings),
   ),
   progressPanel.element,
+  quizStarter.element,
   listView,
   detailView,
   languagesView,
@@ -433,6 +437,7 @@ function rerender() {
   renderFilters();
   renderTabs();
   progressPanel.render();
+  quizStarter.render(state.entries.length);
   renderDamaged();
   renderList();
   if (state.view === 'detail') renderDetail();

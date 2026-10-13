@@ -5,7 +5,6 @@
   "extDescription": {
     "message": "Web sayfalarındaki ve video altyazılarındaki kelimeleri çevir, kasana kaydet ve kısa quizlerle tekrar et."
   },
-
   "popupClose": {
     "message": "Kapat"
   },
@@ -33,7 +32,6 @@
   "popupRetry": {
     "message": "Tekrar dene"
   },
-
   "langAuto": {
     "message": "Otomatik algıla"
   },
@@ -67,7 +65,6 @@
   "firstRunChange": {
     "message": "Değiştir"
   },
-
   "speakNoRecording": {
     "message": "Bu kelimenin ses kaydı yok"
   },
@@ -80,7 +77,6 @@
   "optTtsFallbackHelp": {
     "message": "Bu tarayıcıda yerleşik ses her kelimenin sonunda yüksek bir çıtlama üretiyor; Wordvault bu yüzden Wikimedia Commons’taki ses kayıtlarını çalıyor. Kaydı olmayan kelimelerde yerleşik sesi (çıtlamasıyla birlikte) duymak istersen bunu aç."
   },
-
   "vaultAdd": {
     "message": "Kasaya ekle"
   },
@@ -102,7 +98,6 @@
   "vaultError": {
     "message": "Kaydedilemedi"
   },
-
   "tbCount": {
     "message": "$1 kelime"
   },
@@ -535,7 +530,6 @@
   "syncIcloudNote": {
     "message": "iCloud sunulmuyor: tarayıcı eklentilerinin iCloud Drive'a erişme yolu yok. Bunun yerine kasayı yukarıdan JSON olarak dışa aktarıp dosyayı iCloud Drive klasörüne kaydedebilirsin."
   },
-
   "quizTitle": {
     "message": "Quiz"
   },
@@ -887,7 +881,6 @@
   "quizTestFailed": {
     "message": "Arka plan betiği yanıt vermedi. Eklentiyi yeniden yükle."
   },
-
   "optionsTitle": {
     "message": "Wordvault ayarları"
   },
@@ -912,7 +905,6 @@
   "optSaved": {
     "message": "Kaydedildi"
   },
-
   "errNetwork": {
     "message": "Çeviri servisine ulaşılamadı. İnternet bağlantınızı kontrol edin."
   },
@@ -1600,40 +1592,37 @@
     "message": "Kelimeler nasıl sorulur"
   },
   "optQuizModesHelp": {
-    "message": "Yalnızca kasandaki kelimeler sorulur. Her yol ayrı ayrı açılıp kapatılabilir; hiçbiri açık değilse klasik yol kullanılır."
+    "message": "Yalnızca kasandaki kelimeler sorulur. İstediğin kadar yol aç; birden fazlası açıkken her soru için biri seçilir."
   },
   "optQuizModeClassic": {
-    "message": "Klasik"
+    "message": "Klasik (easy)"
   },
   "optQuizModeClassicHelp": {
     "message": "Kelime gösterilir; anlamını dört şıktan seçersin."
   },
   "optQuizModeWriting": {
-    "message": "Yazma"
+    "message": "Yazma (medium)"
   },
   "optQuizModeWritingHelp": {
-    "message": "Anlam gösterilir; kelimeyi yazarsın. Doğru cevap klasik yoldakinden daha ağır sayılır."
+    "message": "Anlam gösterilir; kelimeyi yazarsın."
   },
   "optQuizModeListening": {
-    "message": "Dinleme"
+    "message": "Dinleme (hard)"
   },
   "optQuizModeListeningHelp": {
     "message": "Kelime sesli okunur, gösterilmez; dört şıktan seçersin. Cihazının okuyamadığı kelimeler atlanır."
   },
   "optQuizModeMixed": {
-    "message": "Karışık"
-  },
-  "optQuizModeMixedHelp": {
-    "message": "Birden fazla yol açıkken: her soru için rastgele biri seçilir. Kapalıyken sırayla gelirler."
+    "message": "Mixed"
   },
   "optQuizAccentTolerant": {
-    "message": "Yazma: aksanlara toleranslı"
+    "message": "Yazarken: aksanlara toleranslı"
   },
   "optQuizAccentTolerantHelp": {
     "message": "\"cafe\", \"café\" yerine sayılır. Kapalıyken eksik ya da yanlış aksan yazım hatasıdır."
   },
   "optQuizListenAutoplay": {
-    "message": "Dinleme: soru açılınca kelimeyi oku"
+    "message": "Dinlerken: soru açılınca kelimeyi oku"
   },
   "optQuizListenAutoplayHelp": {
     "message": "Bazı sayfalar sesin kendiliğinden başlamasına izin vermez; hoparlör düğmesi her zaman çalışır."
@@ -1855,7 +1844,7 @@
     "message": "Öğrenmek için seçmek yetmez"
   },
   "optQuizLearnedOtherHelp": {
-    "message": "O doğru cevaplardan en az biri yazılmış ya da dinlenmiş olmalı. Yalnızca klasik yolu kullanıyorsan bunu kapat; yoksa hiçbir kelime öğrenilmiş sayılmaz."
+    "message": "O doğru cevaplardan en az biri easy'nin üstündeki bir seviyeden (yazılmış ya da dinlenmiş) olmalı. Yalnızca klasik yolu kullanıyorsan bunu kapat; yoksa hiçbir kelime öğrenilmiş sayılmaz."
   },
   "optQuizDailyGoal": {
     "message": "Günlük hedef"
@@ -1901,5 +1890,91 @@
   },
   "optQuizResetDone": {
     "message": "Quiz ayarları varsayılana döndü. Kelimelerine, serine ve rütbene dokunulmadı."
+  },
+  "quizExpertPrompt": {
+    "message": "Dinle ve kelimeyi yaz ($LANGUAGE$)",
+    "placeholders": {
+      "language": {
+        "content": "$1"
+      }
+    }
+  },
+  "quizStart": {
+    "message": "Quiz başlat"
+  },
+  "diffEasy": {
+    "message": "Easy"
+  },
+  "diffMedium": {
+    "message": "Medium"
+  },
+  "diffHard": {
+    "message": "Hard"
+  },
+  "diffExpert": {
+    "message": "Expert"
+  },
+  "diffEasyMode": {
+    "message": "Klasik: dört şıktan seç"
+  },
+  "diffMediumMode": {
+    "message": "Yazma: kelimeyi yaz"
+  },
+  "diffHardMode": {
+    "message": "Dinleme: dinle, dört şıktan seç"
+  },
+  "diffExpertMode": {
+    "message": "Dinleme + yazma: dinle ve yaz"
+  },
+  "diffLabel": {
+    "message": "Zorluk: $LEVEL$ ($MODE$). Değiştirmek için tıkla.",
+    "placeholders": {
+      "level": {
+        "content": "$1"
+      },
+      "mode": {
+        "content": "$2"
+      }
+    }
+  },
+  "quizStartNoWords": {
+    "message": "Kasanda sorulacak, çevirisi olan bir kelime henüz yok."
+  },
+  "quizStartFewWords": {
+    "message": "Bu seviye, şıklar için en az $NEEDED$ farklı anlam ister; kasanda $HAVE$ var. Birkaç kelime daha kaydet ya da yazarak cevapladığın bir seviye seç.",
+    "placeholders": {
+      "needed": {
+        "content": "$1"
+      },
+      "have": {
+        "content": "$2"
+      }
+    }
+  },
+  "quizStartNoFit": {
+    "message": "Kasanda şu an bu seviyeye uyan kelime yok ($MODE$).",
+    "placeholders": {
+      "mode": {
+        "content": "$1"
+      }
+    }
+  },
+  "quizStartNoVoice": {
+    "message": "Bu cihaz şu an kelimelerini sesli okuyamıyor. Dinleme olmayan bir seviye dene."
+  },
+  "quizStartFailed": {
+    "message": "Quiz başlatılamadı."
+  },
+  "optQuizModeExpert": {
+    "message": "Expert"
+  },
+  "optQuizModeExpertHelp": {
+    "message": "Kelime sesli okunur, hiçbir şey gösterilmez; duyduğunu yazarsın."
+  },
+  "optQuizModeNone": {
+    "message": "En az bir yol açık kalmalı."
+  },
+  "optQuizModesManual": {
+    "message": "Bunlar kendiliğinden açılan quiz içindir. Eklenti penceresinden başlattığın quiz, burada ne açık olursa olsun, orada seçtiğin zorluğu kullanır."
   }
 }

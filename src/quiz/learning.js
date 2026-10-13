@@ -62,10 +62,11 @@ export const TUNING = Object.freeze({
   // --- The three ways of asking ---------------------------------------------------------------
   /**
    * How much a right answer is worth, by how it was asked: the gap that follows is multiplied
-   * by this. Typing the word is recall, picking it from four is recognition; hearing it sits
-   * in between.
+   * by this. The four ways are the four levels of difficulty (SPEC-QUIZ-MODES.md), and a right
+   * answer weighs more the harder the way: easy (pick the meaning from four) < medium (type the
+   * word for its meaning) < hard (hear the word, pick from four) < expert (hear it, type it).
    */
-  MODE_FACTOR: Object.freeze({ classic: 1, listening: 1.15, writing: 1.35 }),
+  MODE_FACTOR: Object.freeze({ classic: 1, writing: 1.15, listening: 1.3, expert: 1.5 }),
 
   // --- "Learned" ------------------------------------------------------------------------------
   /** This many right answers in a row ... (the setting quizLearnedStreak overrides it) */
@@ -78,9 +79,9 @@ export const TUNING = Object.freeze({
   RUN_DAYS_KEPT: 5,
 });
 
-export const MODES = Object.freeze(['classic', 'writing', 'listening']);
-/** The letter a mode's counters are kept under: c1/c0, w1/w0, l1/l0 (right/wrong). */
-const MODE_LETTER = Object.freeze({ classic: 'c', writing: 'w', listening: 'l' });
+export const MODES = Object.freeze(['classic', 'writing', 'listening', 'expert']);
+/** The letter a mode's counters are kept under: c1/c0, w1/w0, l1/l0, x1/x0 (right/wrong). */
+const MODE_LETTER = Object.freeze({ classic: 'c', writing: 'w', listening: 'l', expert: 'x' });
 
 /**
  * What is kept about a word's history. Stored with the word (vault entry `quiz`) and
@@ -111,11 +112,12 @@ const MODE_LETTER = Object.freeze({ classic: 'c', writing: 'w', listening: 'l' }
  * @property {number} g  When the word became learned (ms since the epoch; 0 = it is not).
  * @property {number} c1 @property {number} c0  Right / wrong answers when asked the classic way.
  * @property {number} w1 @property {number} w0  ... when the word had to be typed.
- * @property {number} l1 @property {number} l0  ... when the word was heard.
+ * @property {number} l1 @property {number} l0  ... when the word was heard and picked from four.
+ * @property {number} x1 @property {number} x0  ... when the word was heard and had to be typed (expert).
  */
 
 const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
-const STAT_KEYS = new Set(['a', 'k', 's', 'e', 'i', 'l', 'm', 'd', 'x', 'n', 'y', 'o', 'g', 'c1', 'c0', 'w1', 'w0', 'l1', 'l0']);
+const STAT_KEYS = new Set(['a', 'k', 's', 'e', 'i', 'l', 'm', 'd', 'x', 'n', 'y', 'o', 'g', 'c1', 'c0', 'w1', 'w0', 'l1', 'l0', 'x1', 'x0']);
 const DAY = /^\d{4}-\d{2}-\d{2}$/;
 /** The days of a run from their stored form: valid ones, each once, in order, the newest few. */
 const runDays = (value) => [...new Set(String(value || '').split(',').filter((day) => DAY.test(day)))].sort().slice(-TUNING.RUN_DAYS_KEPT);
@@ -153,7 +155,7 @@ export function normalizeStats(raw, { keepUnknown = false } = {}) {
   // The fields of schema 2 are only there when they say something: a word that was never
   // typed carries no "typed" counters, on the device or on its way between devices. Data
   // written before schema 2 has none of them, which reads as: no run yet, not learned.
-  const later = { n: Math.min(a, count(raw.n)), y: runDays(raw.y).join(','), o: Math.min(a, count(raw.o)), g: count(raw.g), c1: count(raw.c1), c0: count(raw.c0), w1: count(raw.w1), w0: count(raw.w0), l1: count(raw.l1), l0: count(raw.l0) };
+  const later = { n: Math.min(a, count(raw.n)), y: runDays(raw.y).join(','), o: Math.min(a, count(raw.o)), g: count(raw.g), c1: count(raw.c1), c0: count(raw.c0), w1: count(raw.w1), w0: count(raw.w0), l1: count(raw.l1), l0: count(raw.l0), x1: count(raw.x1), x0: count(raw.x0) };
   for (const [key, value] of Object.entries(later)) if (value) stats[key] = value;
   return stats.a === 0 && stats.x === 0 ? null : stats;
 }
@@ -249,7 +251,7 @@ export function difficultyOf(stats, usual = TUNING.EXPECTED_MS_START) {
 }
 
 /** The fields of schema 2 and what a word without them has. */
-const LATER_FIELDS = Object.freeze({ n: 0, y: '', o: 0, g: 0, c1: 0, c0: 0, w1: 0, w0: 0, l1: 0, l0: 0 });
+const LATER_FIELDS = Object.freeze({ n: 0, y: '', o: 0, g: 0, c1: 0, c0: 0, w1: 0, w0: 0, l1: 0, l0: 0, x1: 0, x0: 0 });
 
 /** Whether a run of right answers makes a word learned. */
 export function runIsLearned(stats, { learnedStreak = TUNING.LEARNED_STREAK, learnedDays = TUNING.LEARNED_DAYS, requireOtherMode = true } = {}) {
@@ -260,7 +262,7 @@ export function runIsLearned(stats, { learnedStreak = TUNING.LEARNED_STREAK, lea
  * The word's history after an answer, and when it is due again.
  *
  * @param {CardStats | null} previous
- * @param {{ quality: number, correct: boolean, ms?: number, mode?: 'classic' | 'writing' | 'listening', hinted?: boolean }} answer
+ * @param {{ quality: number, correct: boolean, ms?: number, mode?: 'classic' | 'writing' | 'listening' | 'expert', hinted?: boolean }} answer
  *   `quality` from rateAnswer(). `mode`: how the word was asked. `hinted`: letters were given
  *   away first: the answer is right, but it is not part of a run of right answers.
  * @param {number} now

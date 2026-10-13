@@ -481,6 +481,7 @@
     .wv-quiz-answer { font-size: 17px; font-weight: 650; color: var(--wv-ok); overflow-wrap: anywhere; }
     /* a letter the typed answer got wrong or left out */
     .wv-quiz-answer .wv-miss { color: var(--wv-danger); text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 3px; }
+    .wv-quiz-meaning { margin-top: 2px; font-size: 13px; color: var(--wv-muted); overflow-wrap: anywhere; }
     .wv-quiz-typed { margin-top: 2px; font-size: 12px; color: var(--wv-muted); overflow-wrap: anywhere; }
     .wv-quiz-action:disabled { opacity: 0.45; cursor: default; }
 
