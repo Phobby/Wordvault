@@ -1,0 +1,11 @@
+{
+  "name": "wordvault-feedback-worker",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Receives feedback from the Wordvault extension and passes it on to Telegram or Discord. No dependencies.",
+  "scripts": {
+    "test": "node --test \"test/**/*.test.js\"",
+    "dev": "node dev-server.js"
+  }
+}

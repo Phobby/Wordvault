@@ -67,6 +67,7 @@ SPEC-QUIZ-POPUP.md,
 SPEC-CAPTIONS.md        Video altyazılarında kelimenin üzerine gelince çeviri
 SPEC-OCR.md             Ekrandan metin tarama (OCR) ve üzerine gelince çeviri
 SPEC-SUPPORT.md         Destek bağlantısı, iletişim/geri bildirim ve mağaza hazırlığı
+feedback-worker/        Geri bildirim alıcısı (Cloudflare Worker → Telegram/Discord), kendi README'siyle
 manifest.firefox.json   Firefox manifesti (background.scripts, gecko ayarları)
 manifest.chrome.json    Chrome manifesti (background.service_worker)
 build.js                dist/ klasörlerini üretir
@@ -299,8 +300,9 @@ gövde, önizlemede gösterilen nesnenin kendisidir; arka plan betiği gönderme
 daha denetler (`features/feedback/payload.js`: `checkPayload`) ve listede olmayan tek bir alan bile
 varsa göndermez.
 
-Alıcının adresi `src/config.js` içindeki `FEEDBACK_ENDPOINT` sabitidir (alıcı: `feedback-worker/`,
-3. aşama). Sabit boşken ya da yer tutucuyken form doldurulup önizlenebilir ama gönderilemez; ekran
+Alıcının adresi `src/config.js` içindeki `FEEDBACK_ENDPOINT` sabitidir. Alıcı `feedback-worker/`
+klasöründeki Cloudflare Worker'dır; kurulumu, hız sınırı ve spam durumunda yapılacaklar
+`feedback-worker/README.md` içindedir. Sabit boşken ya da yer tutucuyken form doldurulup önizlenebilir ama gönderilemez; ekran
 bunu söyler. Yalnızca `https` kabul edilir (yerelde deneme için `http://localhost` / `127.0.0.1` de).
 
 Gönderim arka plan betiğinden `fetch` ile yapılır: çerez ve yönlendiren adres gönderilmez, 12 sn zaman

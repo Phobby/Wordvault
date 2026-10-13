@@ -1,0 +1,36 @@
+# Wordvault's feedback receiver. See README.md for the steps.
+# No secret belongs in this file: the bot token and the chat id are Worker secrets
+# (wrangler secret put …).
+
+name = "wordvault-feedback"
+main = "src/index.js"
+compatibility_date = "2026-01-01"
+# Only the workers.dev address; no preview addresses.
+workers_dev = true
+preview_urls = false
+
+# Nothing is logged: the Worker has no console call, and Cloudflare's own log collection is off.
+[observability]
+enabled = false
+
+[vars]
+# "telegram" (default) or "discord"
+FEEDBACK_CHANNEL = "telegram"
+# Messages passed on per day, all senders together (needs the DAILY binding below).
+DAILY_LIMIT = "200"
+
+# Per sender (per Cloudflare location): 3 messages in 60 seconds.
+[[ratelimits]]
+name = "RATE_LIMITER"
+namespace_id = "1001"
+
+  [ratelimits.simple]
+  limit = 3
+  period = 60
+
+# The ceiling for a whole day. Create the namespace once and put its id here:
+#   npx wrangler kv namespace create DAILY
+# Until then leave this commented out: the Worker runs without a daily ceiling.
+# [[kv_namespaces]]
+# binding = "DAILY"
+# id = "PASTE_THE_ID_HERE"
