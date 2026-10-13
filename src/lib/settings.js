@@ -74,6 +74,12 @@ export const DEFAULT_SETTINGS = Object.freeze({
   /** No quiz and no reminder between these times of day ('HH:MM'; both empty: no quiet hours). */
   quizQuietStart: '',
   quizQuietEnd: '',
+  /** Phrases kept from translated selections are asked by the quiz like words. Off: only words are. */
+  quizIncludePhrases: false,
+  /** "Translate with Wordvault" in the right-click menu of selected text. */
+  contextMenuTranslate: true,
+  /** A small "Translate" button next to a selection of more than one word. */
+  selectionButton: true,
   /** Screen text scanning: start the next selection with the area that was scanned last. */
   ocrRememberArea: false,
   /** Screen text scanning: languages the text is read with: 'auto', or a language tag ('en', 'tr'). */

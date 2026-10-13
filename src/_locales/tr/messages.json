@@ -1976,5 +1976,8 @@
   },
   "optQuizModesManual": {
     "message": "Bunlar kendiliğinden açılan quiz içindir. Eklenti penceresinden başlattığın quiz, burada ne açık olursa olsun, orada seçtiğin zorluğu kullanır."
+  },
+  "tbPhraseBadge": {
+    "message": "İfade"
   }
 }

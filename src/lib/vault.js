@@ -15,12 +15,19 @@ export const TOMBSTONE_PREFIX = 'tomb:';
 const LIMITS = { text: 500, translation: 1000, alternative: 200, alternatives: 8, sentence: 600, url: 2000, title: 300, lang: 35, box: 20 };
 
 /** The fields that are synchronised between devices. Changing one of them is an edit. */
-const SYNCED_FIELDS = ['text', 'translation', 'sourceLang', 'targetLang', 'sentence', 'box', 'dueAt', 'quiz'];
+const SYNCED_FIELDS = ['text', 'translation', 'sourceLang', 'targetLang', 'sentence', 'box', 'dueAt', 'quiz', 'kind'];
+
+/** A sentence or phrase kept from a translated selection. Anything else in the vault is a word. */
+export const PHRASE = 'phrase';
+/** Whether an entry is a phrase rather than a word. */
+export const isPhrase = (entry) => entry?.kind === PHRASE;
 
 /**
  * @typedef {Object} VaultEntry
  * @property {string} id            See entryId().
  * @property {string} text          The word or phrase, as it was selected.
+ * @property {'phrase'} [kind]      Only on phrases (see PHRASE): they are not looked up in the dictionary and
+ *                                  stay out of the quiz unless the user wants them there.
  * @property {string} sourceLang    Language of `text` ('' if it could not be determined).
  * @property {string} targetLang    Language of `translation`.
  * @property {string} translation   '' when the word was saved without a translation.
@@ -99,6 +106,7 @@ export function normalizeEntry(raw) {
     dueAt: positive(raw.dueAt, 0),
     quiz: normalizeStats(raw.quiz),
     dictionary: normalizeDictionary(raw.dictionary),
+    ...(raw.kind === PHRASE ? { kind: PHRASE } : {}),
   };
 }
 

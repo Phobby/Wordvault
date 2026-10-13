@@ -287,6 +287,7 @@ function renderList() {
           h('span', { class: 'row-pair', text: [entry.sourceLang || '?', entry.targetLang || '?'].join(' → ').toUpperCase() }),
           h('span', { class: 'row-translation', dir: 'auto', lang: entry.targetLang || null, text: entry.translation || t('dtNoTranslation') }),
           // when it was learned, in "My vocabulary"; a small mark in the list of everything
+          entry.kind === 'phrase' && h('span', { class: 'row-badge row-phrase', text: t('tbPhraseBadge') }),
           learnedView ? h('span', { class: 'row-learned', text: t('tbLearnedOn', [learnedDate(entry.quiz.g)]) }) : isLearned(entry) && h('span', { class: 'row-badge', title: t('tbLearnedOn', [learnedDate(entry.quiz.g)]), text: t('tbLearnedBadge') }),
         ),
         confirming
@@ -325,6 +326,7 @@ function collectExamples(entry) {
 }
 
 function dictionarySection(entry) {
+  if (entry.kind === 'phrase') return []; // a phrase is not looked up
   const heading = h('h3', {}, t('dtMeanings'), ' ', h('small', { text: t('dtMeaningsSource') }));
   if (!entry.dictionary) {
     const body = state.failed.has(entry.id)
@@ -368,7 +370,7 @@ function renderDetail() {
     show('list'); // removed while it was open
     return;
   }
-  if (!entry.dictionary) loadDictionary(entry.id);
+  if (!entry.dictionary && entry.kind !== 'phrase') loadDictionary(entry.id);
 
   const examples = collectExamples(entry);
   const confirming = state.confirmId === entry.id;

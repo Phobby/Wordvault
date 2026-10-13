@@ -14,7 +14,7 @@ import { WordvaultError, serializeError } from '../lib/errors.js';
 import { fetchRecording } from '../lib/pronunciation.js';
 import { CLEANUP_ALARM, cleanupCache, ensureCacheCleanup } from '../lib/translation-cache.js';
 import { cancelTranslation, checkProvider, clearTranslationCaches, getPreferences, setSiteSourceLanguage, setTargetLanguage, translate, translatePassage, translationCacheStats } from '../lib/translator.js';
-import { ENTRY_PREFIX, TOMBSTONE_PREFIX, addEntry, entryId, getEntry, hasEntry, removeEntry, updateEntry } from '../lib/vault.js';
+import { ENTRY_PREFIX, TOMBSTONE_PREFIX, addEntry, entryId, getEntry, hasEntry, isPhrase, removeEntry, updateEntry } from '../lib/vault.js';
 import { NOTIFICATION_ID } from '../quiz/display.js';
 import { ackRank, freezeYesterday, getProgress } from '../quiz/progress-state.js';
 import { REMINDER_ALARM, REMINDER_NOTIFICATION, ensureReminder, runReminder } from '../quiz/reminder.js';
@@ -67,7 +67,8 @@ async function lookupPassage(payload, sender) {
  */
 async function enrich(id) {
   const entry = await getEntry(id);
-  if (!entry || entry.dictionary) return entry;
+  // A phrase is not a dictionary entry, and it is not sent anywhere to find out.
+  if (!entry || entry.dictionary || isPhrase(entry)) return entry;
   try {
     return await updateEntry(id, { dictionary: await lookupWord(entry.text, entry.sourceLang) });
   } catch {

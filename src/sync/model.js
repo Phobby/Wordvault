@@ -2,12 +2,13 @@
 //
 //   { v: 2, e: { "<id>": <record> | <tombstone>, ... }, s: { d: [...], f: [...] } }
 //
-//   record     a word in the vault        { w, t, sl, tl, c, b, n, q, u, r }
+//   record     a word in the vault        { w, t, sl, tl, c, b, n, q, u, r, k }
 //   tombstone  a word that was removed    { d, r }
 //
 //   w  word                  t  translation          sl / tl  source / target language
 //   c  context sentence      b  Leitner box          n  next review (ms since the epoch)
 //   u  updated at (ms)       d  deleted at (ms)      r  revision (see merge.js)
+//   k  kind: 'p' for a phrase (a translated selection kept as such); left out for a word
 //   q  quiz statistics: a summary of how the word has been answered (quiz/learning.js:
 //      CardStats); there is no answer history, so the document does not grow with use
 //
@@ -28,7 +29,7 @@
 // dictionary data of a word, the translation cache, settings, API keys and sign-in tokens.
 
 import { WordvaultError } from '../lib/errors.js';
-import { entryId } from '../lib/vault.js';
+import { PHRASE, entryId } from '../lib/vault.js';
 import { normalizeStats } from '../quiz/learning.js';
 import { cleanDays } from '../quiz/progress.js';
 
@@ -38,7 +39,7 @@ export const TOMBSTONE_TTL_MS = 90 * 24 * 60 * 60 * 1000;
 /** "A short context sentence": the full one stays on the device it was saved on. */
 const MAX_CONTEXT_CHARS = 160;
 
-const RECORD_KEYS = new Set(['w', 't', 'sl', 'tl', 'c', 'b', 'n', 'q', 'u', 'r']);
+const RECORD_KEYS = new Set(['w', 't', 'sl', 'tl', 'c', 'b', 'n', 'q', 'u', 'r', 'k']);
 
 const isObject = (value) => Boolean(value) && typeof value === 'object' && !Array.isArray(value);
 const isTime = (value) => Number.isFinite(value) && value > 0;
@@ -78,6 +79,7 @@ export function toRecord(entry) {
   if (entry.box > 0) record.b = entry.box;
   if (entry.dueAt > 0) record.n = entry.dueAt;
   if (entry.quiz) record.q = entry.quiz;
+  if (entry.kind === PHRASE) record.k = 'p';
   return record;
 }
 
@@ -117,6 +119,7 @@ export function fromRecord(id, record, existing) {
     quiz: normalizeStats(record.q, { keepUnknown: true }),
     dictionary: existing?.dictionary || null,
   };
+  if (record.k === 'p') entry.kind = PHRASE;
   if (Object.keys(extra).length > 0) entry.syncExtra = extra;
   return entry;
 }
@@ -127,7 +130,7 @@ function validRecord(id, value) {
     value.w.trim() !== '' &&
     isTime(value.u) &&
     isRevision(value.r) &&
-    ['t', 'sl', 'tl', 'c'].every((key) => value[key] === undefined || typeof value[key] === 'string') &&
+    ['t', 'sl', 'tl', 'c', 'k'].every((key) => value[key] === undefined || typeof value[key] === 'string') &&
     ['b', 'n'].every((key) => value[key] === undefined || (Number.isFinite(value[key]) && value[key] >= 0)) &&
     (value.q === undefined || isObject(value.q)) &&
     entryId({ text: value.w, sourceLang: value.sl, targetLang: value.tl }) === id

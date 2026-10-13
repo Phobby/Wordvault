@@ -2552,5 +2552,9 @@
   "optQuizModesManual": {
     "message": "These are for the quiz that appears by itself. A quiz you start from the toolbar popup uses the difficulty chosen there, whatever is switched on here.",
     "description": "Options: the popup selector is separate."
+  },
+  "tbPhraseBadge": {
+    "message": "Phrase",
+    "description": "Vault popup: mark on an entry that is a phrase or sentence kept from a translated selection, not a single word."
   }
 }

@@ -12,7 +12,7 @@
 
 import { getSettings } from '../lib/settings.js';
 import { resolveTargetLanguage } from '../lib/translator.js';
-import { getEntry, listEntries, updateEntry } from '../lib/vault.js';
+import { getEntry, isPhrase, listEntries, updateEntry } from '../lib/vault.js';
 import { MODES, applyAnswer, expectedMs, levelOf, postpone, rateAnswer, recordSpeed, statusOf, usualMs } from './learning.js';
 import { localDay } from './progress.js';
 import { inQuietHours } from './reminder.js';
@@ -159,7 +159,9 @@ export function ensureScheduled() {
 
 /** What the vault offers for a quiz. */
 async function vaultStatus() {
-  const entries = await listEntries();
+  // Phrases are in the vault to be read again, not to be asked, unless the user says otherwise.
+  const { quizIncludePhrases } = await getSettings();
+  const entries = (await listEntries()).filter((entry) => quizIncludePhrases === true || !isPhrase(entry));
   const targetLang = await resolveTargetLanguage();
   const cards = askableCards(entries, targetLang);
   const now = Date.now();
