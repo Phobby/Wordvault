@@ -390,6 +390,55 @@ anahtar (`translationCache`), `{ v, cleanedAt, entries: { anahtar: { seen, resul
 - **Kasa ayrıdır:** kasa `vault:` önekli başka anahtarlardadır; temizlik ve "önbelleği temizle" ona dokunmaz.
 - Yedeğe / JSON dışa aktarmaya, senkronizasyona ve geri bildirime girmez (`tests/translation-cache.test.js`).
 
+**Katmanlar.** Arama sırası 1 → 2 → 3 → servis; alt katmanda bulunan yanıt üst katmanlara da yazılır.
+
+| # | Katman | Nerede | Ne zaman boşalır |
+| --- | --- | --- | --- |
+| 1 | Sayfa belleği (LRU, 200 kayıt, 1 saat) | İçerik betiği, `shared/translate-client.js` | Sayfa kapanınca ya da yenilenince; ayar, kasa ya da site dili değişince |
+| 2 | Oturum (`chrome.storage.session`, 300 kayıt) | Arka plan betiği, `lib/session-cache.js` | Tarayıcı kapanınca (eklenti yeniden yüklenince de) |
+| 3 | Kalıcı (7 gün, 500 kayıt) | Arka plan betiği, `lib/translation-cache.js` | 7 gün sorulmayınca; "Önbelleği temizle" ile |
+
+- 2. ve 3. katmanın anahtarı aynıdır: sağlayıcı + kaynak dil + hedef dil + normalleştirilmiş metin; sağlayıcı
+  ya da dil değişince kayıtlar karışmaz. 1. katman yalnızca yanıtı belirleyen her şey aynıysa kullanılır
+  (metin, seçilen kaynak dil, sayfa dili, çevredeki metin).
+- İçerik betiklerine oturum deposu erişimi **verilmez** (`setAccessLevel` çağrılmaz): web sayfalarında
+  çalışan betikler arka plan betiğine sorar. Service worker değişkenleri önbellek olarak kullanılmaz.
+- `storage.session` Firefox'ta 115'ten beri var (eklentinin alt sınırı 142); olmayan tarayıcıda katman atlanır.
+- Ayarlardaki "Önbellek" bölümü katmanları açıklar, kalıcı katmanın boyutunu gösterir ve "Önbelleği temizle"
+  düğmesiyle üçünü de boşaltır (kasa etkilenmez).
+
+**İstek optimizasyonu** (`SPEC-CACHE.md` 4. aşama). Çift tıklama, altyazı ve ekran taraması baloncuğu aynı
+yoldan geçer: `WV.translateClient.translate()` → `wv:translate` → `lib/translator.js`.
+
+- **Anahtar normalizasyonu** (`lib/cache-key.js`): Unicode NFC, baştaki/sondaki boşluk ve noktalama atılır,
+  küçük harfe çevrilir; kaynak dil Türkçe ya da Azericeyse `I` → `ı`, `İ` → `i`. Yalnızca anahtarda:
+  servise giden, ekranda görünen ve kasaya yazılan metin kullanıcının seçtiği yazımdır.
+  ASSUMPTION (şartnameden): büyük/küçük harf aynı arama sayılır; "Polish"/"polish" gibi birkaç kelime
+  bu yüzden aynı yanıtı paylaşır (`FOLD_CASE` sabitiyle kapatılabilir).
+- **Tekilleştirme:** aynı anahtar için yolda bir istek varken ikincisi atılmaz, aynı sonuç paylaşılır
+  (sayfada ve arka planda).
+- **İptal:** başka kelimeye geçilince ya da baloncuk kapanınca önceki istek `AbortController` ile iptal
+  edilir (`wv:translate:cancel`); sonucu gösterilmez ve önbelleğe yazılmaz. Aynı isteği bekleyen başka
+  biri varsa istek sürer.
+- **Bekleme:** imleç bir kelimenin üstünde 150 ms durmadan istek atılmaz (`core/hover/tracker.js`:
+  `HOVER_DELAY_MS`; tek sabit). Çift tıklama ve tıklama bilinçli eylemlerdir, bekletilmez.
+- **Başarısız sonuç:** kota/hız sınırı, boş yanıt, servis hatası ve desteklenmeyen dil 90 saniye oturum
+  deposunda tutulur; aynı istek o sürede yeniden atılmaz ve aynı hata mesajı gösterilir. "Tekrar dene"
+  hemen sorar. Ağ hatası, zaman aşımı ve anahtar hataları tutulmaz.
+
+**Ölçüm** (2026-10-13, bu makinede, yüklü eklenti, kalıcı önbellekte 400 kayıt, 30 denemenin ortancası):
+
+| Yanıt nereden geldi | Chromium 141 | Firefox 157 |
+| --- | --- | --- |
+| Servis (MyMemory) | ≈ 345-440 ms | ≈ 420-490 ms |
+| Kalıcı önbellek (katmanlardan önce de böyleydi) | ≈ 2 ms | ≈ 1 ms |
+| Oturum katmanı | ≈ 0,7 ms | ≈ 1 ms |
+| Sayfa belleği | ≈ 0,001 ms | ≈ 0,002 ms |
+
+Kazancın tamamı servise gitmemekten gelir (yüzlerce ms → 1-2 ms). Yeni iki katmanın kalıcı önbelleğe göre
+kazancı 1-2 ms'dir, yani hissedilmez; bu yüzden ikisi de sade tutuldu (oturum katmanı sınırı aşınca
+tümden boşalır, sayfa belleği yalnızca birebir aynı istekte kullanılır).
+
 ### Hedef ve kaynak dil
 
 Hedef dil tek bir yerde durur: `chrome.storage.local` içindeki `settings.targetLang`. Çeviri penceresi,
