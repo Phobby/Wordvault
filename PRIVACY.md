@@ -1,9 +1,14 @@
 # Wordvault gizlilik politikası
 
-Wordvault bir tarayıcı eklentisidir. **Kendi sunucusu yoktur**: geliştirici hiçbir veriyi toplamaz,
-görmez ve saklamaz. Eklentide analitik, izleme, reklam ya da kullanım ölçümü bulunmaz.
+Wordvault bir tarayıcı eklentisidir. Kasan ve ayarların için **bir sunucu yoktur**: geliştirici
+kelimelerini, gezdiğin sayfaları ya da ayarlarını toplamaz, görmez ve saklamaz. Eklentide analitik,
+izleme, reklam ya da kullanım ölçümü bulunmaz.
+
+Geliştiriciye veri ulaşan **tek durum**, senin ayarlardaki "İletişim ve geri bildirim" formunu doldurup
+gönderilecek veriyi gördükten sonra "Gönder"e basmandır (aşağıda, "Geri bildirim").
 
 Bu belge, verinin tarayıcıdan ne zaman, neden ve nereye çıktığını eksiksiz sayar.
+İngilizcesi ve web sürümü: `docs/privacy.html`.
 
 ## Tarayıcıda kalanlar
 
@@ -15,6 +20,11 @@ Aşağıdakiler yalnızca kullandığın tarayıcıda (`chrome.storage.local`) d
 - **Senkronizasyon bilgileri:** hangi yolu seçtiğin, bağlandığın hesabın erişim token'ları, kendi
   sunucunun adresi, kullanıcı adı, parolası ya da anahtarı, şifreleme anahtarı (hatırlamasını
   istediysen).
+
+- **Geri bildirim taslağı:** forma yazdığın ama henüz göndermediğin metin (gönderince silinir).
+- **Yerel hata günlüğü:** eklentinin kendi hatalarından son 20 kayıt (hata mesajı, eklentinin hangi
+  bölümü, zaman, yığının eklenti dosyalarını gösteren ilk satırları). Sayfa adresi ya da içeriği
+  içermez. Formdaki "Kayıtları sil" ile silinir; sen eklemedikçe hiçbir yere gitmez.
 
 Eklentiyi kaldırdığında tarayıcı bunların hepsini siler.
 
@@ -80,6 +90,58 @@ saklanmaz. Parolayı kaybedersen uzaktaki kopya kurtarılamaz; cihazındaki kasa
 seçeneği uzaktaki dosyayı kaldırır. Dosyayı ilgili hizmetin kendi arayüzünden de silebilirsin (Google
 Drive: Ayarlar → Uygulamaları yönet → Wordvault; OneDrive ve Dropbox: Uygulamalar klasörü).
 
+### Geri bildirim (yalnızca sen gönderirsen)
+
+Ayarlardaki "İletişim ve geri bildirim" formu, sen "Gönder"e basmadıkça hiçbir şey göndermez. Önce
+"Gönderilecek veriyi göster" ile gidecek verinin **tamamını** görürsün; gönderilen, o ekranda
+gördüğünün aynısıdır.
+
+**Gönderilen (yalnızca bunlar):**
+
+- seçtiğin tür (hata / öneri / diğer) ve ilgili özellik,
+- yazdığın metin,
+- **yazdıysan** e-posta adresin (boş bırakırsan mesaj anonimdir),
+- **"Teknik bilgileri ekle" işaretliyse:** tarayıcının adı ve sürümü (ve üzerine kurulduğu motor),
+  işletim sisteminin adı, eklentinin sürümü, arayüz dili, hangi özelliklerin açık olduğu (yalnızca
+  evet/hayır) ve senkronizasyonun türü (kapalı / tarayıcı / bulut / kendi sunucu; hangi hizmet ya da
+  hesap olduğu değil),
+- **"Son hata kayıtlarını ekle" işaretliyse** (varsayılan kapalı): yukarıdaki yerel hata günlüğü.
+
+**Asla gönderilmeyen:** sayfa adresleri, sayfa içeriği, kasandaki kelimeler, bağlam cümleleri, API
+anahtarları, erişim token'ları, kullanıcı kimliği. Eklenti bir kurulum kimliği ya da başka bir kalıcı
+tanımlayıcı üretmez.
+
+**Nereye gider:** tarayıcından HTTPS ile geliştiricinin geri bildirim alıcısına
+(`wordvault-feedback.phoby.workers.dev`, Cloudflare Workers üzerinde çalışan küçük bir program). Alıcı
+mesajı denetler ve geliştiricinin Telegram hesabına, bir bot aracılığıyla iletir.
+
+**Ne saklanır:**
+
+- Alıcı mesajı **saklamaz** ve hiçbir şeyi günlüğe yazmaz. Tuttuğu tek şey, günde kaç mesaj
+  iletildiğini gösteren tek bir sayıdır (kötüye kullanıma karşı tavan); mesajla ya da gönderenle ilgili
+  hiçbir şey içermez ve iki gün sonra silinir.
+- **IP adresin:** her internet isteğinde olduğu gibi altyapı sağlayıcısı (Cloudflare) tarafından
+  görülür. Alıcı onu yalnızca dakikalık hız sınırı için Cloudflare'in sınırlayıcısına verir;
+  kaydetmez, iletmez, geliştirici onu görmez.
+- Firefox tabanlı tarayıcılar isteğe, eklentinin o kuruluma özgü iç adresini içeren bir `Origin`
+  başlığı ekler. Bunu tarayıcı yapar; alıcı bu başlığı okumaz, kaydetmez ve iletmez.
+- İletilen mesaj geliştiricinin **Telegram sohbetinde** durur (Telegram'ın sunucularında), geliştirici
+  silene kadar. Telegram'ın kendi gizlilik politikası geçerlidir.
+
+**Sildirmek:** gönderdiğin bir mesajın silinmesini istersen aynı formdan yaz (mesajı ayırt etmeye
+yetecek kadar: yaklaşık tarih ve saat, verdiysen e-posta adresi) ya da mağaza sayfasındaki geliştirici
+iletişim adresini kullan. Mesaj Telegram sohbetinden silinir; başka bir kopyası yoktur.
+
+Firefox'ta bu veri türleri (`personalCommunications`, `technicalAndInteraction`,
+`personallyIdentifyingInfo`) isteğe bağlı olarak beyan edilmiştir: kurulumda verilmez, ilk gönderimde
+tarayıcının kendi penceresi sorar.
+
+### Destek bağlantısı
+
+"Projeyi destekle" düğmesi sade bir bağlantıdır; basarsan destek sayfası (Buy Me a Coffee) yeni bir
+sekmede açılır. Basmadıkça o hizmete hiçbir istek gitmez: eklenti oradan betik, resim ya da yazı tipi
+yüklemez. Açılan sayfada o hizmetin kendi koşulları geçerlidir.
+
 ### Sistem bildirimi (yalnızca izin verirsen)
 
 Quiz başka hiçbir yolla gösterilemediğinde tarayıcının bildirim sistemi kullanılabilir. Bildirim
@@ -89,7 +151,8 @@ metninde kelime ya da kişisel veri bulunmaz.
 
 Eklentinin istediği her iznin gerekçesi `README.md` dosyasının "İzinler" bölümündedir. Tarayıcı
 hesabının e-posta adresi istenmez. Bulut ve sunucu adreslerine erişim izni kurulumda değil, o yolu
-seçip bağlandığın anda ve yalnızca o adres için istenir.
+seçip bağlandığın anda ve yalnızca o adres için istenir; geri bildirim alıcısının adresi için de izin
+ilk gönderimde ve yalnızca o adres için istenir. Mağaza için hazırlanmış gerekçeler: `store/permissions.md`.
 
 ## Üçüncü taraf hizmetlerin koşulları
 
@@ -100,7 +163,8 @@ reklam ya da profil çıkarma için kullanılmaz, insanlar tarafından okunmaz.
 
 ## Çocuklar
 
-Wordvault kimseden kişisel veri toplamaz; yaş sınırı gerektiren bir veri işleme yoktur.
+Wordvault kendiliğinden kimseden kişisel veri toplamaz. Geri bildirim formu çocuklara yönelik
+değildir; e-posta alanı isteğe bağlıdır.
 
 ## Değişiklikler
 

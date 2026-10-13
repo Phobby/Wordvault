@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<title>Wordvault: Privacy Policy / Gizlilik Politikası</title>
+<style>
+  :root { color-scheme: light dark; --fg: #1c1c22; --muted: #5d5d6b; --bg: #ffffff; --line: #e3e3ea; --accent: #4f46e5; --tint: #f3f2ff; }
+  @media (prefers-color-scheme: dark) { :root { --fg: #ececf1; --muted: #a2a2b0; --bg: #17171c; --line: #2e2e38; --accent: #a5a0ff; --tint: #22213a; } }
+  body { margin: 0; background: var(--bg); color: var(--fg); font: 16px/1.6 system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif; }
+  main { max-width: 720px; margin: 0 auto; padding: 40px 20px 80px; }
+  h1 { margin: 0 0 4px; font-size: 28px; }
+  h2 { margin: 36px 0 8px; font-size: 20px; }
+  h3 { margin: 24px 0 6px; font-size: 16px; }
+  p, ul { margin: 0 0 12px; }
+  li { margin-bottom: 4px; }
+  .muted { color: var(--muted); font-size: 14px; }
+  .note { padding: 12px 16px; border-radius: 10px; background: var(--tint); }
+  nav { margin: 16px 0 28px; padding-bottom: 16px; border-bottom: 1px solid var(--line); }
+  a { color: var(--accent); }
+  table { width: 100%; border-collapse: collapse; margin: 0 0 12px; font-size: 15px; }
+  th, td { padding: 6px 8px; border: 1px solid var(--line); text-align: left; vertical-align: top; }
+  code { font: 14px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; overflow-wrap: anywhere; }
+  section + section { margin-top: 56px; padding-top: 24px; border-top: 2px solid var(--line); }
+</style>
+</head>
+<body>
+<main>
+<h1>Wordvault</h1>
+<p class="muted">Privacy Policy · Gizlilik Politikası · Last updated / Son güncelleme: 2026-10-13</p>
+<nav><a href="#en">English</a> · <a href="#tr">Türkçe</a></nav>
+
+<section id="en" lang="en">
+<h2>Privacy Policy</h2>
+<p>Wordvault is a browser extension for learning vocabulary while you browse: translate a word, save it to your vault, review it with short quizzes.</p>
+<p class="note"><strong>In short:</strong> there is no server for your vault or your settings. The developer does not collect, see or store your words, the pages you visit or your settings. There are no analytics, no tracking and no ads. The only time anything reaches the developer is when you fill in the feedback form, look at exactly what will be sent, and press "Send".</p>
+
+<h3>What stays in your browser</h3>
+<ul>
+  <li><strong>Your vault:</strong> the words you saved, their translations, the sentence they came from, the address and title of the page, dictionary information, your review progress.</li>
+  <li><strong>Your settings</strong> and, if you use synchronisation, the access tokens or server credentials for the place you chose.</li>
+  <li><strong>A feedback draft</strong> you have not sent yet, and a <strong>local error log</strong>: the last 20 errors of the extension itself (message, part of the extension, time, top of the stack). It contains no page addresses or page content and goes nowhere unless you add it to a feedback message. You can delete it from the feedback form.</li>
+</ul>
+<p>Removing the extension deletes all of it.</p>
+
+<h3>What leaves your browser, and when</h3>
+<table>
+  <tr><th>When</th><th>What</th><th>Where</th></tr>
+  <tr><td>You ask for a translation (double-click, a word in a YouTube caption you point at, a word of a screen scan you click)</td><td>That word or selection and the language pair. Not the page, not its address.</td><td>The translation service (default: MyMemory, <code>api.mymemory.translated.net</code>)</td></tr>
+  <tr><td>You add a word to the vault</td><td>That word</td><td>Wiktionary (<code>en.wiktionary.org</code>), for its type, definitions and examples</td></tr>
+  <tr><td>You press the pronunciation button (Firefox-based browsers on macOS only)</td><td>That word</td><td>Wiktionary and Wikimedia Commons (<code>upload.wikimedia.org</code>), for a recording</td></tr>
+  <tr><td>You turn synchronisation on (off by default)</td><td>Your vault: words, translations, language pairs, a short context sentence, review progress. Never page addresses, settings, keys or tokens.</td><td>The place <em>you</em> chose: your browser's own sync, your Google Drive, OneDrive or Dropbox, or your own server. Optionally encrypted with your password before it leaves.</td></tr>
+  <tr><td>You send feedback</td><td>See below</td><td>The developer's feedback receiver, then the developer's Telegram</td></tr>
+</table>
+<p><strong>Screen text scanning</strong> (only when you start it): a picture of the tab is taken and the area you select is read <em>inside your browser</em>. The picture and the text read from it are not stored and never leave your device. There is no cloud text recognition.</p>
+<p><strong>Support link:</strong> "Support the project" is a plain link to a Buy Me a Coffee page. Nothing is loaded from that service unless you click it.</p>
+
+<h3>Feedback (only if you send it)</h3>
+<p>The form under Settings → "Contact and feedback" sends nothing until you press "Send". Before that, "Show the data to be sent" shows you everything that would go; what is sent is exactly what you saw.</p>
+<p><strong>Sent (only this):</strong></p>
+<ul>
+  <li>the type (bug / suggestion / other) and the feature it is about;</li>
+  <li>the text you wrote;</li>
+  <li>your e-mail address, <em>only if you entered one</em> (leave it empty and the message is anonymous);</li>
+  <li><em>if "Include technical information" is ticked:</em> browser name and version (and the engine it is built on), the name of the operating system, the extension's version, the interface language, which features are switched on (yes/no only) and the kind of synchronisation (off / browser / cloud / own server; not which service or account);</li>
+  <li><em>if "Include recent error records" is ticked</em> (off by default): the local error log described above.</li>
+</ul>
+<p><strong>Never sent:</strong> page addresses, page content, the words in your vault, context sentences, API keys, access tokens, a user ID. The extension creates no installation ID or other permanent identifier.</p>
+<p><strong>Where it goes:</strong> over HTTPS to the developer's feedback receiver (<code>wordvault-feedback.phoby.workers.dev</code>, a small program on Cloudflare Workers), which checks the message and passes it on to the developer's Telegram account through a bot.</p>
+<p><strong>What is kept:</strong></p>
+<ul>
+  <li>The receiver <strong>does not store</strong> the message and writes nothing to a log. The only thing it keeps is one number per day (how many messages were passed on, as a ceiling against abuse); it says nothing about any message or sender and is deleted after two days.</li>
+  <li><strong>Your IP address</strong> is seen by the infrastructure provider (Cloudflare), as with any request on the internet. The receiver hands it to Cloudflare's rate limiter for a per-minute limit and does nothing else with it: it is not recorded, not passed on, and the developer does not see it.</li>
+  <li>Firefox-based browsers add an <code>Origin</code> header to the request that contains the extension's internal address, which is specific to an installation. The browser does this; the receiver does not read, record or pass on that header.</li>
+  <li>The message that was passed on stays in the developer's <strong>Telegram chat</strong> (on Telegram's servers) until the developer deletes it. Telegram's own privacy policy applies.</li>
+</ul>
+<p><strong>Deletion:</strong> to have a message you sent deleted, write through the same form (with enough to find it: the approximate date and time, and the e-mail address if you gave one) or use the developer contact address on the extension's store page. The message is deleted from the Telegram chat; there is no other copy.</p>
+
+<h3>Use of data</h3>
+<p>Data is used only to provide the feature you asked for. It is not sold, not transferred to anyone except as described above, not used for advertising or profiling, and not used to determine creditworthiness. Data obtained from Google, Microsoft and Dropbox APIs is used only to synchronise your vault, in line with the Google API Services User Data Policy (including the Limited Use requirements), the Microsoft API Terms of Use and the Dropbox Developer Terms; it is not read by humans.</p>
+
+<h3>Permissions</h3>
+<p>The extension asks for no access to your browser account's e-mail address. Access to a cloud service, your own server or the feedback receiver is not granted at installation: the browser asks at the moment you connect or send, and only for that address.</p>
+
+<h3>Children</h3>
+<p>Wordvault collects no personal data on its own. The feedback form is not directed at children; the e-mail field is optional.</p>
+
+<h3>Changes</h3>
+<p>This policy is versioned with the extension. A change to what leaves the browser is stated here and in the release notes.</p>
+</section>
+
+<section id="tr" lang="tr">
+<h2>Gizlilik Politikası</h2>
+<p>Wordvault, gezinirken kelime öğrenmek için bir tarayıcı eklentisidir: bir kelimeyi çevir, kasana kaydet, kısa quizlerle tekrar et.</p>
+<p class="note"><strong>Kısaca:</strong> kasan ve ayarların için bir sunucu yoktur. Geliştirici kelimelerini, gezdiğin sayfaları ya da ayarlarını toplamaz, görmez ve saklamaz. Analitik, izleme ve reklam yoktur. Geliştiriciye bir şeyin ulaştığı tek durum, senin geri bildirim formunu doldurup gidecek veriyi gördükten sonra "Gönder"e basmandır.</p>
+
+<h3>Tarayıcında kalanlar</h3>
+<ul>
+  <li><strong>Kasan:</strong> kaydettiğin kelimeler, çevirileri, alındıkları cümle, sayfanın adresi ve başlığı, sözlük bilgisi, tekrar ilerlemen.</li>
+  <li><strong>Ayarların</strong> ve, eşitleme kullanıyorsan, seçtiğin yerin erişim token'ları ya da sunucu bilgileri.</li>
+  <li>Henüz göndermediğin <strong>geri bildirim taslağı</strong> ve <strong>yerel hata günlüğü</strong>: eklentinin kendi hatalarından son 20 kayıt (mesaj, eklentinin hangi bölümü, zaman, yığının başı). Sayfa adresi ya da içeriği içermez ve sen bir geri bildirime eklemedikçe hiçbir yere gitmez. Formdan silebilirsin.</li>
+</ul>
+<p>Eklentiyi kaldırdığında bunların hepsi silinir.</p>
+
+<h3>Tarayıcından çıkanlar ve ne zaman çıktıkları</h3>
+<table>
+  <tr><th>Ne zaman</th><th>Ne</th><th>Nereye</th></tr>
+  <tr><td>Çeviri istediğinde (çift tıklama, YouTube altyazısında üzerinde durduğun kelime, ekran taramasında tıkladığın kelime)</td><td>O kelime ya da seçim ve dil çifti. Sayfa ya da adresi değil.</td><td>Çeviri servisi (varsayılan: MyMemory, <code>api.mymemory.translated.net</code>)</td></tr>
+  <tr><td>Kasaya kelime eklediğinde</td><td>O kelime</td><td>Wiktionary (<code>en.wiktionary.org</code>): türü, tanımları ve örnekleri için</td></tr>
+  <tr><td>Telaffuz düğmesine bastığında (yalnızca macOS'te Firefox tabanlı tarayıcılarda)</td><td>O kelime</td><td>Wiktionary ve Wikimedia Commons (<code>upload.wikimedia.org</code>): ses kaydı için</td></tr>
+  <tr><td>Eşitlemeyi açtığında (varsayılan kapalı)</td><td>Kasan: kelimeler, çeviriler, dil çiftleri, kısa bağlam cümlesi, tekrar ilerlemesi. Sayfa adresleri, ayarlar, anahtarlar ve token'lar asla.</td><td><em>Senin</em> seçtiğin yer: tarayıcının kendi senkronu, Google Drive, OneDrive ya da Dropbox hesabın, ya da kendi sunucun. İstersen çıkmadan önce parolanla şifrelenir.</td></tr>
+  <tr><td>Geri bildirim gönderdiğinde</td><td>Aşağıda</td><td>Geliştiricinin geri bildirim alıcısı, oradan geliştiricinin Telegram'ı</td></tr>
+</table>
+<p><strong>Ekrandan metin tarama</strong> (yalnızca sen başlattığında): sekmenin görüntüsü alınır ve seçtiğin alan <em>tarayıcının içinde</em> okunur. Görüntü ve okunan metin saklanmaz, cihazından çıkmaz. Bulut metin tanıma yoktur.</p>
+<p><strong>Destek bağlantısı:</strong> "Projeyi destekle" bir Buy Me a Coffee sayfasına giden sade bir bağlantıdır. Tıklamadıkça o hizmetten hiçbir şey yüklenmez.</p>
+
+<h3>Geri bildirim (yalnızca sen gönderirsen)</h3>
+<p>Ayarlar → "İletişim ve geri bildirim" formu, sen "Gönder"e basmadıkça hiçbir şey göndermez. Ondan önce "Gönderilecek veriyi göster" gidecek olanın tamamını gösterir; gönderilen, gördüğünün aynısıdır.</p>
+<p><strong>Gönderilen (yalnızca bunlar):</strong></p>
+<ul>
+  <li>tür (hata / öneri / diğer) ve ilgili özellik;</li>
+  <li>yazdığın metin;</li>
+  <li><em>yazdıysan</em> e-posta adresin (boş bırakırsan mesaj anonimdir);</li>
+  <li><em>"Teknik bilgileri ekle" işaretliyse:</em> tarayıcının adı ve sürümü (ve motoru), işletim sisteminin adı, eklentinin sürümü, arayüz dili, hangi özelliklerin açık olduğu (yalnızca evet/hayır) ve eşitlemenin türü (kapalı / tarayıcı / bulut / kendi sunucu; hangi hizmet ya da hesap olduğu değil);</li>
+  <li><em>"Son hata kayıtlarını ekle" işaretliyse</em> (varsayılan kapalı): yukarıdaki yerel hata günlüğü.</li>
+</ul>
+<p><strong>Asla gönderilmeyen:</strong> sayfa adresleri, sayfa içeriği, kasandaki kelimeler, bağlam cümleleri, API anahtarları, erişim token'ları, kullanıcı kimliği. Eklenti kurulum kimliği ya da başka bir kalıcı tanımlayıcı üretmez.</p>
+<p><strong>Nereye gider:</strong> HTTPS ile geliştiricinin geri bildirim alıcısına (<code>wordvault-feedback.phoby.workers.dev</code>, Cloudflare Workers üzerinde küçük bir program); alıcı mesajı denetler ve bir bot aracılığıyla geliştiricinin Telegram hesabına iletir.</p>
+<p><strong>Ne saklanır:</strong></p>
+<ul>
+  <li>Alıcı mesajı <strong>saklamaz</strong> ve hiçbir şeyi günlüğe yazmaz. Tuttuğu tek şey gün başına bir sayıdır (kaç mesaj iletildiği; kötüye kullanıma karşı tavan). Mesajla ya da gönderenle ilgili hiçbir şey içermez, iki gün sonra silinir.</li>
+  <li><strong>IP adresin</strong>, her internet isteğinde olduğu gibi altyapı sağlayıcısı (Cloudflare) tarafından görülür. Alıcı onu dakikalık sınır için Cloudflare'in hız sınırlayıcısına verir, başka hiçbir şey yapmaz: kaydedilmez, iletilmez, geliştirici görmez.</li>
+  <li>Firefox tabanlı tarayıcılar isteğe, eklentinin kuruluma özgü iç adresini içeren bir <code>Origin</code> başlığı ekler. Bunu tarayıcı yapar; alıcı bu başlığı okumaz, kaydetmez, iletmez.</li>
+  <li>İletilen mesaj, geliştirici silene kadar geliştiricinin <strong>Telegram sohbetinde</strong> (Telegram'ın sunucularında) durur. Telegram'ın kendi gizlilik politikası geçerlidir.</li>
+</ul>
+<p><strong>Sildirmek:</strong> gönderdiğin bir mesajın silinmesi için aynı formdan yaz (bulmaya yetecek kadar: yaklaşık tarih ve saat, verdiysen e-posta adresi) ya da eklentinin mağaza sayfasındaki geliştirici iletişim adresini kullan. Mesaj Telegram sohbetinden silinir; başka kopyası yoktur.</p>
+
+<h3>Verinin kullanımı</h3>
+<p>Veri yalnızca istediğin özelliği sağlamak için kullanılır. Satılmaz, yukarıda anlatılanlar dışında kimseye aktarılmaz, reklam ya da profil çıkarma için kullanılmaz, kredi değerliliği belirlemek için kullanılmaz. Google, Microsoft ve Dropbox API'lerinden alınan veri yalnızca kasanı eşitlemek için kullanılır (Google API Services User Data Policy ve "Limited Use" gerekleri, Microsoft API Terms of Use, Dropbox Developer Terms); insanlar tarafından okunmaz.</p>
+
+<h3>İzinler</h3>
+<p>Eklenti tarayıcı hesabının e-posta adresine erişim istemez. Bir bulut hizmetine, kendi sunucuna ya da geri bildirim alıcısına erişim kurulumda verilmez: tarayıcı, bağlandığın ya da gönderdiğin anda ve yalnızca o adres için sorar.</p>
+
+<h3>Çocuklar</h3>
+<p>Wordvault kendiliğinden kişisel veri toplamaz. Geri bildirim formu çocuklara yönelik değildir; e-posta alanı isteğe bağlıdır.</p>
+
+<h3>Değişiklikler</h3>
+<p>Bu politika eklentiyle birlikte sürümlenir. Tarayıcıdan çıkan veride bir değişiklik olursa burada ve sürüm notlarında belirtilir.</p>
+</section>
+</main>
+</body>
+</html>

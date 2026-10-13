@@ -74,7 +74,8 @@ build.js                dist/ klasörlerini üretir
 tools/make-icons.js     src/icons altındaki PNG'leri üretir (yalnızca tasarım değişince)
 tools/self-hosted-server.js  "Kendi sunucum" için tek dosyalık örnek sunucu (bkz. docs/self-hosted.md)
 docs/self-hosted.md     Kendi sunucu modu: WebDAV, HTTP uç noktasının protokolü, örnek sunucu
-docs/store-listing.md   Mağaza açıklaması ve veri beyanları
+store/                  Mağaza hazırlığı: açıklamalar, izin gerekçeleri, veri beyanı, test talimatı, görseller
+docs/privacy.html       Gizlilik politikasının web sürümü (en + tr), GitHub Pages için
 SETUP-OAUTH.md          Bulut sağlayıcıları için bir kez yapılan geliştirici kurulumu
 PRIVACY.md              Gizlilik politikası: tarayıcıdan ne, ne zaman, nereye çıkar
 tests/                  node:test testleri (tarayıcı API'leri bellek içi bir taklitle sağlanır)
