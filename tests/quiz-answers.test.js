@@ -143,9 +143,13 @@ test('words answered wrongly come up more often than words that are known', asyn
   // Much later everything is due again.
   at(t, now + 400 * DAY);
   const counts = {};
+  // The draws come from a fixed sequence: the same 600 questions every run. (Drawn from
+  // Math.random, this test failed about one run in twenty: the ratio it checks is near its limit.)
+  let seed = 20261013;
+  const random = () => ((seed = (seed * 16807) % 2147483647) - 1) / 2147483646;
   for (let round = 0; round < 600; round++) {
     await clearSession();
-    await showQuiz();
+    await showQuiz({ random });
     const id = device.lastQuestion().id;
     counts[id] = (counts[id] || 0) + 1;
   }

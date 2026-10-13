@@ -125,8 +125,86 @@ function pickDistractors(card, cards, random) {
     .map(({ other }) => other.translation);
 }
 
+/** Words longer than this are not asked for in writing: a sentence is not something to type from memory. */
+const MAX_WRITING_CHARS = 40;
+
+/**
+ * A question that has the word typed: the meaning is shown, the saved word is the answer.
+ *
+ * The vault's main translation is what is shown. Where several saved words have that same
+ * translation ("big" and "large" for "büyük"), each of them is accepted: the meaning alone
+ * cannot tell them apart.
+ * @returns {Question | null} null for a word that is not fit for typing.
+ */
+export function writingQuestion(card, cards) {
+  if (!card.translation || card.text.length > MAX_WRITING_CHARS) return null;
+  const same = cards.filter((other) => other.id !== card.id && sameLanguage(other.sourceLang, card.sourceLang) && fold(other.translation) === fold(card.translation)).map((other) => other.text);
+  return {
+    mode: 'writing',
+    id: card.id,
+    word: card.translation,
+    answer: card.text,
+    accept: [card.text, ...same],
+    sourceLang: card.sourceLang,
+    targetLang: card.targetLang,
+    letters: [...card.text].filter((char) => !/[\s\-'’]/.test(char)).length,
+    chars: card.translation.length + card.text.length,
+  };
+}
+
+/** Other saved words as wrong choices for "which word did you hear": never one that could be the answer. */
+function pickSpellings(card, cards, random) {
+  const candidates = [];
+  for (const other of shuffle(cards, random)) {
+    if (other.id === card.id || !sameLanguage(other.sourceLang, card.sourceLang)) continue;
+    if (tooSimilar(other.text, card.text) || fold(other.translation) === fold(card.translation)) continue;
+    if (candidates.some((chosen) => fold(chosen.text) === fold(other.text))) continue;
+    candidates.push(other);
+  }
+  if (candidates.length < CHOICE_COUNT - 1) return null;
+  const length = fold(card.text).length;
+  // about as long as the word that is heard, so that length alone gives nothing away
+  return candidates
+    .map((other) => ({ other, score: -Math.abs(fold(other.text).length - length) }))
+    .sort((a, b) => b.score - a.score)
+    .slice(0, CANDIDATE_POOL)
+    .map(({ other }) => other.text)
+    .slice(0, CHOICE_COUNT - 1);
+}
+
+/**
+ * A question that has the word heard: it is said aloud and not shown; the choices are four
+ * meanings (the default) or four spellings.
+ * @param {'meaning' | 'spelling'} [kind]
+ * @returns {Question | null} null if the word has no language to say it in, or the vault no choices.
+ */
+export function listeningQuestion(card, cards, random = Math.random, kind = 'meaning') {
+  if (!card.sourceLang) return null;
+  const spelling = kind === 'spelling';
+  const wrong = spelling ? pickSpellings(card, cards, random) : pickDistractors(card, cards, random);
+  if (!wrong) return null;
+  const right = spelling ? card.text : card.translation;
+  const choices = shuffle([right, ...wrong], random);
+  return {
+    mode: 'listening',
+    id: card.id,
+    word: card.text,
+    sourceLang: card.sourceLang,
+    targetLang: card.targetLang,
+    choices,
+    answer: choices.indexOf(right),
+    choiceKind: spelling ? 'spelling' : 'meaning',
+    chars: choices.reduce((sum, choice) => sum + choice.length, 0),
+  };
+}
+
 /**
  * @typedef {Object} Question
+ * @property {'classic' | 'writing' | 'listening'} [mode]  How the word is asked (missing: classic).
+ *   classic    `word` is shown, `choices` are four meanings, `answer` the index of the right one;
+ *   writing    `word` is the meaning; `answer` is the word to type, `accept` every saved word
+ *              that is right, `letters` how many letters a hint can give away;
+ *   listening  `word` is said aloud and not shown; `choices` are meanings or spellings (`choiceKind`).
  * @property {string} id          Vault id of the word being asked.
  * @property {string} word
  * @property {string} sourceLang
@@ -148,6 +226,7 @@ export function questionFor(card, cards, random = Math.random) {
   if (!distractors) return null;
   const choices = shuffle([card.translation, ...distractors], random);
   return {
+    mode: 'classic',
     id: card.id,
     word: card.text,
     sourceLang: card.sourceLang,
@@ -173,4 +252,29 @@ export function buildQuestion(entries, targetLang, random = Math.random) {
     if (question) return { ok: true, question };
   }
   return { ok: false, reason: 'not_enough_choices' };
+}
+
+/**
+ * A question about a card in one of the three ways. When the way that was wanted does not
+ * work for this word (too long to type, no language to say it in, too few choices), the
+ * others that are switched on are tried, the classic way first.
+ *
+ * @param {'classic' | 'writing' | 'listening'} mode
+ * @param {{ listenChoices?: 'meaning' | 'spelling', allowed?: string[], without?: string[] }} [options]
+ *        allowed: the ways that are switched on (others are never fallen back to).
+ *        without: ways that must not be used for this word (listening, where it has no voice).
+ * @returns {Question | null}
+ */
+export function questionInMode(card, cards, mode, random = Math.random, { listenChoices = 'meaning', allowed = ['classic', 'writing', 'listening'], without = [] } = {}) {
+  const build = {
+    classic: () => questionFor(card, cards, random),
+    writing: () => writingQuestion(card, cards),
+    listening: () => listeningQuestion(card, cards, random, listenChoices),
+  };
+  const order = [mode, 'classic', 'writing', 'listening'].filter((way, index, all) => build[way] && all.indexOf(way) === index && allowed.includes(way) && !without.includes(way));
+  for (const way of order) {
+    const question = build[way]();
+    if (question) return question;
+  }
+  return null;
 }

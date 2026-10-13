@@ -1541,5 +1541,116 @@
   },
   "optCacheCleared": {
     "message": "Temizlendi. Kasana dokunulmadı."
+  },
+  "quizWritePrompt": {
+    "message": "Kelimeyi $LANGUAGE$ dilinde yaz",
+    "placeholders": {
+      "language": {
+        "content": "$1"
+      }
+    }
+  },
+  "quizWriteCheck": {
+    "message": "Kontrol et"
+  },
+  "quizWriteTyped": {
+    "message": "Yazdığın:"
+  },
+  "quizWriteWrong": {
+    "message": "Hatalı. İşaretli harfler yanlış ya da eksikti."
+  },
+  "quizWriteCorrectHint": {
+    "message": "Doğru, ipucuyla."
+  },
+  "quizHint": {
+    "message": "İpucu"
+  },
+  "quizHintHint": {
+    "message": "Bir harf daha gösterir. Cevap o zaman kısmen doğru sayılır."
+  },
+  "quizSkip": {
+    "message": "Geç"
+  },
+  "quizSkipHint": {
+    "message": "Cevabı gösterir, bilinmedi sayılır."
+  },
+  "quizListenPrompt": {
+    "message": "Dinle. $LANGUAGE$ dilinde ne demek?",
+    "placeholders": {
+      "language": {
+        "content": "$1"
+      }
+    }
+  },
+  "quizListenPromptSpelling": {
+    "message": "Dinle. Hangi kelimeyi duydun?"
+  },
+  "quizListenAgain": {
+    "message": "Kelimeyi yeniden oku"
+  },
+  "quizNoVoice": {
+    "message": "Bu cihaz bu kelimeyi sesli okuyamıyor ($LANGUAGE$). Başka bir kelimeye geçiliyor.",
+    "placeholders": {
+      "language": {
+        "content": "$1"
+      }
+    }
+  },
+  "optQuizModes": {
+    "message": "Kelimeler nasıl sorulur"
+  },
+  "optQuizModesHelp": {
+    "message": "Yalnızca kasandaki kelimeler sorulur. Her yol ayrı ayrı açılıp kapatılabilir; hiçbiri açık değilse klasik yol kullanılır."
+  },
+  "optQuizModeClassic": {
+    "message": "Klasik"
+  },
+  "optQuizModeClassicHelp": {
+    "message": "Kelime gösterilir; anlamını dört şıktan seçersin."
+  },
+  "optQuizModeWriting": {
+    "message": "Yazma"
+  },
+  "optQuizModeWritingHelp": {
+    "message": "Anlam gösterilir; kelimeyi yazarsın. Doğru cevap klasik yoldakinden daha ağır sayılır."
+  },
+  "optQuizModeListening": {
+    "message": "Dinleme"
+  },
+  "optQuizModeListeningHelp": {
+    "message": "Kelime sesli okunur, gösterilmez; dört şıktan seçersin. Cihazının okuyamadığı kelimeler atlanır."
+  },
+  "optQuizModeMixed": {
+    "message": "Karışık"
+  },
+  "optQuizModeMixedHelp": {
+    "message": "Birden fazla yol açıkken: her soru için rastgele biri seçilir. Kapalıyken sırayla gelirler."
+  },
+  "optQuizAccentTolerant": {
+    "message": "Yazma: aksanlara toleranslı"
+  },
+  "optQuizAccentTolerantHelp": {
+    "message": "\"cafe\", \"café\" yerine sayılır. Kapalıyken eksik ya da yanlış aksan yazım hatasıdır."
+  },
+  "optQuizListenAutoplay": {
+    "message": "Dinleme: soru açılınca kelimeyi oku"
+  },
+  "optQuizListenAutoplayHelp": {
+    "message": "Bazı sayfalar sesin kendiliğinden başlamasına izin vermez; hoparlör düğmesi her zaman çalışır."
+  },
+  "optQuizListenChoices": {
+    "message": "Dinleme: şıklar"
+  },
+  "optQuizListenChoicesHelp": {
+    "message": "Anlamlar anlamayı, yazılışlar duymayı sınar."
+  },
+  "optQuizListenMeaning": {
+    "message": "Anlamlar"
+  },
+  "optQuizListenSpelling": {
+    "message": "Yazılışlar"
+  },
+  "quizSkipFeedback": {
+    "message": "Kelime buydu."
   }
 }

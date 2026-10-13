@@ -2005,5 +2005,148 @@
   "optCacheCleared": {
     "message": "Cleared. Your vault was not touched.",
     "description": "Options: after clearing."
+  },
+  "quizWritePrompt": {
+    "message": "Type the word in $LANGUAGE$",
+    "description": "Quiz, writing: prompt under the meaning.",
+    "placeholders": {
+      "language": {
+        "content": "$1"
+      }
+    }
+  },
+  "quizWriteCheck": {
+    "message": "Check",
+    "description": "Quiz, writing: submits the typed answer."
+  },
+  "quizWriteTyped": {
+    "message": "You typed:",
+    "description": "Quiz, writing: label before what the user typed."
+  },
+  "quizWriteWrong": {
+    "message": "Not quite. The marked letters were wrong or missing.",
+    "description": "Quiz, writing: wrong answer."
+  },
+  "quizWriteCorrectHint": {
+    "message": "Correct, with a hint.",
+    "description": "Quiz, writing: right answer after a hint."
+  },
+  "quizHint": {
+    "message": "Hint",
+    "description": "Quiz, writing: reveals one more letter."
+  },
+  "quizHintHint": {
+    "message": "Shows one more letter. The answer then counts as partly right.",
+    "description": "Quiz, writing: tooltip."
+  },
+  "quizSkip": {
+    "message": "Skip",
+    "description": "Quiz, writing: shows the answer, counts as wrong."
+  },
+  "quizSkipHint": {
+    "message": "Shows the answer and counts as not known.",
+    "description": "Quiz, writing: tooltip."
+  },
+  "quizListenPrompt": {
+    "message": "Listen. What does it mean in $LANGUAGE$?",
+    "description": "Quiz, listening: prompt, choices are meanings.",
+    "placeholders": {
+      "language": {
+        "content": "$1"
+      }
+    }
+  },
+  "quizListenPromptSpelling": {
+    "message": "Listen. Which word did you hear?",
+    "description": "Quiz, listening: prompt, choices are spellings."
+  },
+  "quizListenAgain": {
+    "message": "Say the word again",
+    "description": "Quiz, listening: speaker button."
+  },
+  "quizNoVoice": {
+    "message": "This device cannot say this word aloud ($LANGUAGE$). Moving on to another word.",
+    "description": "Quiz, listening: no voice.",
+    "placeholders": {
+      "language": {
+        "content": "$1"
+      }
+    }
+  },
+  "optQuizModes": {
+    "message": "How words are asked",
+    "description": "Options: heading of the quiz modes."
+  },
+  "optQuizModesHelp": {
+    "message": "Only words in your vault are asked. Each way can be switched on and off; with none on, the classic way is used.",
+    "description": "Options: quiz modes help."
+  },
+  "optQuizModeClassic": {
+    "message": "Classic",
+    "description": "Options: quiz mode."
+  },
+  "optQuizModeClassicHelp": {
+    "message": "The word is shown; pick its meaning from four.",
+    "description": "Options: quiz mode help."
+  },
+  "optQuizModeWriting": {
+    "message": "Writing",
+    "description": "Options: quiz mode."
+  },
+  "optQuizModeWritingHelp": {
+    "message": "The meaning is shown; type the word. A right answer counts for more than in the classic way.",
+    "description": "Options: quiz mode help."
+  },
+  "optQuizModeListening": {
+    "message": "Listening",
+    "description": "Options: quiz mode."
+  },
+  "optQuizModeListeningHelp": {
+    "message": "The word is said aloud and not shown; pick from four. Words your device cannot say are skipped.",
+    "description": "Options: quiz mode help."
+  },
+  "optQuizModeMixed": {
+    "message": "Mixed",
+    "description": "Options: quiz mode."
+  },
+  "optQuizModeMixedHelp": {
+    "message": "With several ways switched on: pick one at random for each question. Off: they take turns.",
+    "description": "Options: quiz mode help."
+  },
+  "optQuizAccentTolerant": {
+    "message": "Writing: tolerate accents",
+    "description": "Options: accent tolerance."
+  },
+  "optQuizAccentTolerantHelp": {
+    "message": "\"cafe\" counts for \"café\". Off: an accent that is missing or wrong is a spelling mistake.",
+    "description": "Options: accent tolerance help."
+  },
+  "optQuizListenAutoplay": {
+    "message": "Listening: say the word when the question appears",
+    "description": "Options: listening autoplay."
+  },
+  "optQuizListenAutoplayHelp": {
+    "message": "Some pages do not let sound start by itself; the speaker button always works.",
+    "description": "Options: listening autoplay help."
+  },
+  "optQuizListenChoices": {
+    "message": "Listening: the choices are",
+    "description": "Options: listening choices."
+  },
+  "optQuizListenChoicesHelp": {
+    "message": "Meanings test understanding; spellings test hearing.",
+    "description": "Options: listening choices help."
+  },
+  "optQuizListenMeaning": {
+    "message": "Meanings",
+    "description": "Options: listening choices."
+  },
+  "optQuizListenSpelling": {
+    "message": "Spellings",
+    "description": "Options: listening choices."
+  },
+  "quizSkipFeedback": {
+    "message": "This was the word.",
+    "description": "Quiz, writing: shown with the answer after \"Skip\"."
   }
 }

@@ -5,12 +5,16 @@
 // is used as a card on web pages (content/quiz.js), in the toolbar popup and in the quiz window
 // (quiz/page.js).
 //
-// A question ends in exactly one of five ways, reported once through `report`:
-//   answer    a choice was picked (right or wrong, with the time it took)
+// A word is asked in one of three ways (quiz/question.js): shown with four meanings to pick
+// from, as a meaning for which the word is typed, or said aloud with four choices.
+//
+// A question ends in exactly one of these ways, reported once through `report`:
+//   answer    a choice was picked or a word typed (right or wrong, with the time it took)
 //   unknown   "I don't know": counts as wrong, the right answer is shown
 //   later     "Ask later"                    \
 //   timeout   nobody answered in time         } nothing is held against the word
 //   closed    the quiz was closed            /
+//   no_voice  the word could not be said aloud here: another word takes its place
 // What comes next is not decided here: the reply to the report is the next question, the
 // summary, or nothing (the quiz is over).
 
@@ -21,6 +25,13 @@
   /** How long the result of a question stays on screen before the quiz moves on. */
   const RIGHT_MS = 2000;
   const WRONG_MS = 3500;
+  /** A typed answer that was wrong: there is a correction to read. */
+  const WRITE_WRONG_MS = 5000;
+  /** "This word cannot be said here" stays this long before the next word comes. */
+  const NO_VOICE_MS = 2600;
+  /** How long the browser's list of voices is waited for before a language counts as having none. */
+  const VOICES_WAIT_MS = 1200;
+  const ICON_SPEAKER = 'M11 5L6 9H3v6h3l5 4zM15.5 8.5a5 5 0 0 1 0 7M18.5 5.5a9 9 0 0 1 0 13';
   /** How long the summary stays before the quiz closes by itself. */
   const SUMMARY_MS = 6000;
   /** How long closing waits for the last report to be on its way before the place goes away. */
@@ -93,7 +104,7 @@
       current.countdown?.cancel();
       timerBar.hidden = true;
       stopwatch.stop();
-      const result = { sessionId: quiz.sessionId, id: question.id, outcome, chars: question.chars, ...details };
+      const result = { sessionId: quiz.sessionId, id: question.id, outcome, mode: question.mode || 'classic', chars: question.chars, ...details };
       // Reported right here, not a moment later: when the place showing the quiz is going away
       // (a popup the user clicked away from), a moment later is too late.
       let reported;
@@ -154,6 +165,8 @@
       feedback.textContent = t(messageKey);
       feedback.classList.add(correct ? 'wv-right' : 'wv-wrong');
       feedback.hidden = false;
+      // The word that was only heard is shown now.
+      current.unveil?.();
     }
 
     function answer(index) {
@@ -179,48 +192,265 @@
       if (following) moveOn(following, 0);
     }
 
-    function showQuestion(question, index) {
+    const laterButton = () => h('button', { class: 'wv-quiz-action', type: 'button', 'data-action': 'later', title: t('quizLaterHint'), text: t('quizLater'), onclick: later });
+
+    /** The four choices and what is under them: the same for a word that is shown and one that is heard. */
+    function choiceParts(question) {
+      const lang = question.choiceKind === 'spelling' ? question.sourceLang : question.targetLang;
       const buttons = question.choices.map((choice, choiceIndex) =>
-        h('button', { class: 'wv-quiz-choice', type: 'button', dir: 'auto', lang: question.targetLang || null, text: choice, onclick: () => answer(choiceIndex) }),
+        h('button', { class: 'wv-quiz-choice', type: 'button', dir: 'auto', lang: lang || null, text: choice, onclick: () => answer(choiceIndex) }),
       );
       const actions = h(
         'div',
         { class: 'wv-quiz-actions' },
         h('button', { class: 'wv-quiz-action', type: 'button', 'data-action': 'unknown', title: t('quizUnknownHint'), text: t('quizUnknown'), onclick: unknown }),
-        h('button', { class: 'wv-quiz-action', type: 'button', 'data-action': 'later', title: t('quizLaterHint'), text: t('quizLater'), onclick: later }),
+        laterButton(),
       );
       const feedback = h('div', { class: 'wv-quiz-feedback', role: 'status', hidden: true });
-      progress.textContent = total > 1 ? t('quizProgress', [String(index || 1), String(total)]) : '';
+      return { buttons, actions, feedback };
+    }
+
+    /** Classic: the word, and four meanings to pick from. */
+    function classicBody(question) {
+      const parts = choiceParts(question);
       body.replaceChildren(
         h('div', { class: 'wv-quiz-word', dir: 'auto', lang: question.sourceLang || null, text: question.word }),
         h('div', { class: 'wv-quiz-prompt', text: t('quizPrompt', [languages.name(question.targetLang)]) }),
-        h('div', { class: 'wv-quiz-choices' }, buttons),
+        h('div', { class: 'wv-quiz-choices' }, parts.buttons),
+        h('div', { class: 'wv-quiz-foot' }, parts.actions, parts.feedback),
+      );
+      return parts;
+    }
+
+    // --- Listening: the word is said, not shown ------------------------------------------------
+
+    /**
+     * Says the word with whatever this browser has (shared/speech.js: a voice of the system,
+     * or a recording where the system's voice cannot be used). Nothing is ever cut off: the
+     * speech module hands the engine one word at a time and never cancels one, which is what
+     * keeps playback from ending in a click.
+     * @returns {Promise<'said' | 'no_voice_lang' | 'no_voice_word'>}
+     */
+    async function say(question) {
+      const speech = WV.speech;
+      if (!speech || !question.sourceLang) return 'no_voice_lang';
+      if (!speech.usesRecordings) {
+        // The list of voices may still be loading; it is given a moment before "none" is believed.
+        if (!speech.pickVoice(question.sourceLang).listed) {
+          await new Promise((resolve) => {
+            const timer = setTimeout(resolve, VOICES_WAIT_MS);
+            speech.onVoicesChanged(() => {
+              clearTimeout(timer);
+              resolve();
+            });
+          });
+        }
+        if (!speech.pickVoice(question.sourceLang).voice) return 'no_voice_lang';
+      }
+      const played = await speech.pronounce(question.word, question.sourceLang).catch(() => ({ via: null }));
+      // Where recordings are used there is one per word or none: that says nothing about the language.
+      return played.via ? 'said' : speech.usesRecordings ? 'no_voice_word' : 'no_voice_lang';
+    }
+
+    function listeningBody(question) {
+      const parts = choiceParts(question);
+      const blank = h('div', { class: 'wv-quiz-blank', 'aria-hidden': 'true', text: '?' });
+      const notice = h('div', { class: 'wv-quiz-notice', role: 'status', hidden: true });
+      const asked = () => current && current.question === question && !current.outcome;
+      const play = async () => {
+        if (!asked()) return;
+        speaker.classList.add('wv-busy');
+        const result = await say(question);
+        speaker.classList.remove('wv-busy');
+        if (result === 'said' || !asked()) return;
+        // No way to say it here: said so, and the quiz goes on with another word. Nothing is
+        // held against this one.
+        for (const button of parts.buttons) button.disabled = true;
+        parts.actions.hidden = true;
+        notice.textContent = t('quizNoVoice', [languages.name(question.sourceLang)]);
+        notice.hidden = false;
+        const following = finish('no_voice', { scope: result === 'no_voice_word' ? 'word' : 'lang' });
+        if (following) moveOn(following, NO_VOICE_MS);
+      };
+      const speaker = h('button', { class: 'wv-quiz-speaker', type: 'button', 'data-action': 'speak', title: t('quizListenAgain'), 'aria-label': t('quizListenAgain'), onclick: play }, WV.icon(ICON_SPEAKER));
+      body.replaceChildren(
+        h('div', { class: 'wv-quiz-listen' }, blank, speaker),
+        h('div', { class: 'wv-quiz-prompt', text: t(question.choiceKind === 'spelling' ? 'quizListenPromptSpelling' : 'quizListenPrompt', [languages.name(question.targetLang)]) }),
+        notice,
+        h('div', { class: 'wv-quiz-choices' }, parts.buttons),
+        h('div', { class: 'wv-quiz-foot' }, parts.actions, parts.feedback),
+      );
+      return {
+        ...parts,
+        unveil: () => {
+          blank.textContent = question.word;
+          blank.classList.add('wv-shown');
+          blank.removeAttribute('aria-hidden');
+          if (question.sourceLang) blank.lang = question.sourceLang;
+        },
+        // Said once when the question appears, if that is wanted. A browser may refuse sound
+        // nobody clicked for; the button is there either way.
+        onShown: () => question.autoplay !== false && play(),
+      };
+    }
+
+    // --- Writing: the meaning is shown, the word is typed ----------------------------------------
+
+    function writingBody(question) {
+      const check = { lang: question.sourceLang, accentTolerant: question.accentTolerant === true };
+      const accepted = Array.isArray(question.accept) && question.accept.length > 0 ? question.accept : [question.answer];
+      const letters = WV.quizAnswers.letterCount(question.answer);
+      let hints = 0;
+
+      const hintLine = h('div', { class: 'wv-quiz-hint', dir: 'auto', lang: question.sourceLang || null, hidden: true });
+      const input = h('input', {
+        class: 'wv-quiz-input',
+        type: 'text',
+        autocomplete: 'off',
+        autocapitalize: 'off',
+        autocorrect: 'off',
+        spellcheck: 'false',
+        dir: 'auto',
+        lang: question.sourceLang || null,
+        'aria-label': t('quizWritePrompt', [languages.name(question.sourceLang)]),
+      });
+      // What is typed here is for the quiz only: a page's own keyboard shortcuts must not see
+      // it (a video player would pause on "k"). And typing keeps the question from timing out.
+      for (const type of ['keydown', 'keyup', 'keypress']) input.addEventListener(type, (event) => event.stopPropagation());
+      input.addEventListener('input', () => restartTimeout());
+      const submit = h('button', { class: 'wv-quiz-submit', type: 'submit', 'data-action': 'check', text: t('quizWriteCheck') });
+      const result = h('div', { class: 'wv-quiz-result', role: 'status', hidden: true });
+      const feedback = h('div', { class: 'wv-quiz-feedback', role: 'status', hidden: true });
+      const hintButton = h('button', { class: 'wv-quiz-action', type: 'button', 'data-action': 'hint', title: t('quizHintHint'), text: t('quizHint'), onclick: () => hint() });
+      const actions = h(
+        'div',
+        { class: 'wv-quiz-actions' },
+        hintButton,
+        h('button', { class: 'wv-quiz-action', type: 'button', 'data-action': 'skip', title: t('quizSkipHint'), text: t('quizSkip'), onclick: () => skip() }),
+        laterButton(),
+      );
+      const asked = () => current && current.question === question && !current.outcome;
+
+      /** One more letter of the answer. The last one is never given away: that would be the answer. */
+      function hint() {
+        if (!asked() || hints >= letters - 1) return;
+        hints += 1;
+        hintLine.textContent = WV.quizAnswers.hintMask(question.answer, hints);
+        hintLine.hidden = false;
+        hintButton.disabled = hints >= letters - 1;
+        restartTimeout();
+        input.focus();
+      }
+
+      /** The right answer, with the letters the typed one missed marked. */
+      function showAnswer(typed) {
+        const parts = typed === null ? [...question.answer].map((char) => ({ char, ok: true })) : WV.quizAnswers.diff(typed, question.answer, check);
+        const word = h('div', { class: 'wv-quiz-answer', dir: 'auto', lang: question.sourceLang || null }, parts.map((part) => h('span', { class: part.ok ? null : 'wv-miss', text: part.char })));
+        result.replaceChildren(
+          word,
+          typed !== null && h('div', { class: 'wv-quiz-typed' }, t('quizWriteTyped'), ' ', h('span', { dir: 'auto', text: typed })),
+        );
+        result.hidden = false;
+      }
+
+      function done(messageKey, correct) {
+        input.disabled = true;
+        submit.disabled = true;
+        actions.hidden = true;
+        hintLine.hidden = true;
+        feedback.textContent = t(messageKey);
+        feedback.classList.add(correct ? 'wv-right' : 'wv-wrong');
+        feedback.hidden = false;
+      }
+
+      function send() {
+        if (!asked()) return;
+        const typed = input.value;
+        if (typed.trim() === '') {
+          input.focus();
+          return;
+        }
+        const correct = WV.quizAnswers.isCorrect(typed, accepted, check);
+        const following = finish('answer', { correct, hints, letters, ms: current.stopwatch.elapsed() });
+        if (correct) {
+          input.classList.add('wv-right');
+          done(hints > 0 ? 'quizWriteCorrectHint' : 'quizCorrect', true);
+        } else {
+          input.classList.add('wv-wrong');
+          showAnswer(typed);
+          done('quizWriteWrong', false);
+        }
+        moveOn(following, correct ? RIGHT_MS : WRITE_WRONG_MS);
+      }
+
+      /** "Skip": the answer is shown, the question counts as not known. */
+      function skip() {
+        const following = finish('unknown', { hints, letters });
+        if (!following) return;
+        showAnswer(null);
+        done('quizSkipFeedback', false);
+        moveOn(following, WRONG_MS);
+      }
+
+      body.replaceChildren(
+        h('div', { class: 'wv-quiz-word', dir: 'auto', lang: question.targetLang || null, text: question.word }),
+        h('div', { class: 'wv-quiz-prompt', text: t('quizWritePrompt', [languages.name(question.sourceLang)]) }),
+        hintLine,
+        h(
+          'form',
+          {
+            class: 'wv-quiz-write',
+            onsubmit: (event) => {
+              event.preventDefault();
+              send();
+            },
+          },
+          input,
+          submit,
+        ),
+        result,
         h('div', { class: 'wv-quiz-foot' }, actions, feedback),
       );
+      return { buttons: [], actions, feedback, onShown: () => input.focus({ preventScroll: true }) };
+    }
 
-      const asked = { question, buttons, actions, feedback, stopwatch: WV.createStopwatch(), outcome: '', countdown: null, timeoutTimer: 0 };
+    /** Starts the time an unanswered question may stay (again, when the user is typing). */
+    function restartTimeout() {
+      const asked = current;
+      if (!timeoutMs || !asked || asked.outcome) return;
+      clearTimeout(asked.timeoutTimer);
+      asked.countdown?.cancel();
+      timerBar.hidden = false;
+      asked.countdown = startCountdown(bar, timeoutMs);
+      asked.timeoutTimer = setTimeout(() => {
+        // Nobody is there: the rest of the quiz is not asked either.
+        if (current === asked && !asked.outcome) close(finish('timeout'));
+      }, timeoutMs);
+    }
+
+    const BODIES = { classic: classicBody, writing: writingBody, listening: listeningBody };
+
+    function showQuestion(question, index) {
+      progress.textContent = total > 1 ? t('quizProgress', [String(index || 1), String(total)]) : '';
+      const asked = { question, buttons: [], actions: null, feedback: null, stopwatch: WV.createStopwatch(), outcome: '', countdown: null, timeoutTimer: 0 };
       current = asked;
+      Object.assign(asked, (BODIES[question.mode] || classicBody)(question));
 
-      // The answer time starts when the choices are on screen: after the first frame with them
+      // The answer time starts when the question is on screen: after the first frame with it
       // in it has been painted. In a tab that is not visible no frame is painted, and the
       // stopwatch waits with it.
       requestAnimationFrame(() =>
         requestAnimationFrame(() => {
-          if (current === asked && !asked.outcome) asked.stopwatch.start();
+          if (current !== asked || asked.outcome) return;
+          asked.stopwatch.start();
+          asked.onShown?.();
         }),
       );
 
       // ASSUMPTION: the timeout runs in real time, also while the tab is hidden; only the answer
       // time is paused there. A quiz nobody is looking at then goes away by itself instead of
       // waiting in a background tab while the next one appears somewhere else.
-      if (timeoutMs) {
-        timerBar.hidden = false;
-        asked.countdown = startCountdown(bar, timeoutMs);
-        asked.timeoutTimer = setTimeout(() => {
-          // Nobody is there: the rest of the quiz is not asked either.
-          if (current === asked && !asked.outcome) close(finish('timeout'));
-        }, timeoutMs);
-      }
+      restartTimeout();
     }
 
     /**

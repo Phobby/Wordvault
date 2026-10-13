@@ -17,7 +17,7 @@ import { MODES, applyAnswer, expectedMs, levelOf, postpone, rateAnswer, recordSp
 import { localDay } from './progress.js';
 import { countAnswer, dailyGoal } from './streak.js';
 import { METHODS, NOTIFICATION_ID, PREFERENCES, display, methodOrder, notificationsAllowed, sessionClaimed } from './display.js';
-import { CHOICE_COUNT, askableCards, countMeanings, questionFor } from './question.js';
+import { CHOICE_COUNT, askableCards, countMeanings, questionInMode } from './question.js';
 import { isDue, selectCard } from './selection.js';
 import { clearSession, isOnScreen, newSession, readSession, summaryOf, updateSession, viewOf, writeSession } from './session.js';
 
@@ -55,7 +55,9 @@ const TRANSIENT = new Set([
 ]);
 /** Ways a question can end without an answer: nothing is held against the word.
  *  ASSUMPTION: closing the card counts as "ask later", not as a wrong answer. */
-const UNANSWERED = new Set(['later', 'timeout', 'closed']);
+const UNANSWERED = new Set(['later', 'timeout', 'closed', 'no_voice']);
+/** A language found to have no voice is not asked for by ear again for this long (voices get installed, browsers differ). */
+const NO_VOICE_MS = 24 * 60 * 60 * 1000;
 
 /**
  * @typedef {Object} QuizState
@@ -73,6 +75,8 @@ const UNANSWERED = new Set(['later', 'timeout', 'closed']);
  * @property {number} roundStartedAt     When the current round of questions began (selection.js).
  * @property {{ at: number, id: string, outcome: string, correct: boolean, quality: number | null } | null} lastAnswer
  * @property {string[]} recent   Ids of the words asked most recently, newest last.
+ * @property {number} modeTurn   Counts questions, for taking the ways of asking in turn.
+ * @property {Record<string, number>} noVoice  Languages this device could not say a word in, with the time until which listening is not tried for them.
  * @property {number[]} speed    The user's pace: times of recent right answers (learning.js: recordSpeed).
  *                               ASSUMPTION: kept on this device and not synchronised; a phone, a
  *                               trackpad and a mouse give different times for the same knowledge.
@@ -81,7 +85,7 @@ const UNANSWERED = new Set(['later', 'timeout', 'closed']);
 /** @returns {Promise<QuizState>} */
 export async function getQuizState() {
   const stored = (await chrome.storage.local.get(STATE_KEY))[STATE_KEY];
-  const defaults = { sonrakiQuizZamani: 0, planInterval: 0, mutedUntil: 0, lastAttempt: null, lastShown: null, lastSkip: null, lastAnswer: null, roundStartedAt: 0, recent: [], speed: [] };
+  const defaults = { sonrakiQuizZamani: 0, planInterval: 0, mutedUntil: 0, lastAttempt: null, lastShown: null, lastSkip: null, lastAnswer: null, roundStartedAt: 0, recent: [], speed: [], modeTurn: 0, noVoice: {} };
   return { ...defaults, ...(stored && typeof stored === 'object' ? stored : {}) };
 }
 
@@ -192,7 +196,8 @@ function standingReason(settings, status, state, now) {
   if (!settings.quizEnabled) return 'disabled';
   if (state.mutedUntil > now) return 'muted';
   if (status.total < settings.quizMinCards) return 'below_min_cards';
-  if (status.meanings < CHOICE_COUNT) return 'not_enough_choices';
+  // Four meanings are needed wherever there are choices; a quiz that only has words typed needs none.
+  if (status.meanings < CHOICE_COUNT && enabledModes(settings).some((mode) => mode !== 'writing')) return 'not_enough_choices';
   if (status.due === 0 && !settings.quizAllowNotDue) return 'nothing_due';
   return '';
 }
@@ -207,18 +212,43 @@ function standingReason(settings, status, state, now) {
  * @returns {{ ok: true, question: import('./question.js').Question, roundStartedAt: number } | { ok: false, reason: string }}
  *   `roundStartedAt`: to be stored once the question has really been asked.
  */
-function nextQuestion(status, state, { allowNotDue, exclude = [], random }) {
+function nextQuestion(status, state, { allowNotDue, exclude = [], random, settings = {} }) {
   if (status.askable === 0) return { ok: false, reason: 'no_cards' };
   const now = Date.now();
   const roundStartedAt = state.roundStartedAt || now;
   const skipped = new Set(exclude);
+  const mode = pickMode(settings, state, random);
   for (;;) {
     const pick = selectCard(status.cards.filter((card) => !skipped.has(card.id)), { now, random, recent: state.recent, allowNotDue, roundStartedAt });
     if (!pick) return { ok: false, reason: skipped.size > exclude.length || status.meanings < CHOICE_COUNT ? 'not_enough_choices' : 'nothing_due' };
-    const question = questionFor(pick.card, status.cards, random);
-    if (question) return { ok: true, question, roundStartedAt: pick.newRound ? now : roundStartedAt };
+    // A language this device has no voice for is not asked by ear.
+    const silent = [String(pick.card.sourceLang || '').toLowerCase(), `id:${pick.card.id}`].some((key) => (state.noVoice?.[key] || 0) > now);
+    const question = questionInMode(pick.card, status.cards, mode, random, { listenChoices: settings.quizListenChoices === 'spelling' ? 'spelling' : 'meaning', allowed: enabledModes(settings), without: silent ? ['listening'] : [] });
+    if (question) {
+      // what the card needs to know from the settings travels with the question
+      if (question.mode === 'writing') question.accentTolerant = settings.quizAccentTolerant === true;
+      if (question.mode === 'listening') question.autoplay = settings.quizListenAutoplay !== false;
+      return { ok: true, question, roundStartedAt: pick.newRound ? now : roundStartedAt };
+    }
     skipped.add(pick.card.id);
   }
+}
+
+/** The ways of asking that are switched on; the classic way when none is. */
+export function enabledModes(settings) {
+  const on = MODES.filter((mode) => settings[{ classic: 'quizModeClassic', writing: 'quizModeWriting', listening: 'quizModeListening' }[mode]] === true);
+  return on.length > 0 ? on : ['classic'];
+}
+
+/**
+ * How the next word is asked: one of the ways that are switched on, at random when they are
+ * mixed, otherwise each in its turn.
+ */
+export function pickMode(settings, state, random = Math.random) {
+  const modes = enabledModes(settings);
+  if (modes.length === 1) return modes[0];
+  if (settings.quizModeMixed !== false) return modes[Math.floor(random() * modes.length)];
+  return modes[(Number(state.modeTurn) || 0) % modes.length];
 }
 
 const remember = (state, id) => [...state.recent, id].slice(-REMEMBERED_QUESTIONS);
@@ -268,7 +298,7 @@ export async function showQuiz({ forced = false, methods, random } = {}) {
     // One quiz at a time. ("Test now" takes the place of whatever is there.)
     if (!reason && !forced && isOnScreen(running, now)) reason = 'already_showing';
     if (!reason) {
-      const built = nextQuestion(status, state, { allowNotDue: forced || settings.quizAllowNotDue, random });
+      const built = nextQuestion(status, state, { allowNotDue: forced || settings.quizAllowNotDue, random, settings });
       const scene = built.ok ? await lookAround(forced) : { reason: built.reason };
       reason = scene.reason || '';
       if (!reason) {
@@ -279,7 +309,7 @@ export async function showQuiz({ forced = false, methods, random } = {}) {
         if (method) {
           reason = 'shown';
           await updateSession(session.id, { method });
-          await saveQuizState({ recent: remember(state, built.question.id), roundStartedAt: built.roundStartedAt });
+          await saveQuizState({ recent: remember(state, built.question.id), roundStartedAt: built.roundStartedAt, modeTurn: (Number(state.modeTurn) || 0) + 1 });
         } else {
           reason = 'no_display';
           if ((await readSession())?.id === session.id) await clearSession();
@@ -379,25 +409,25 @@ export async function answerQuestion(answer) {
 
   const outcome = outcomeOf(answer);
   const counted = !UNANSWERED.has(outcome);
+  // A word that could not be said aloud was not really asked: another takes its place.
+  const replaced = outcome === 'no_voice';
+  const asked = replaced ? session.asked.slice(0, -1) : session.asked;
   const after = {
     ...session,
+    asked,
     question: null,
     answered: session.answered + (counted ? 1 : 0),
     right: session.right + (outcome === 'answer' && answer.correct === true ? 1 : 0),
     skipped: session.skipped + (outcome === 'later' ? 1 : 0),
     touchedAt: Date.now(),
   };
-  // ASSUMPTION: a question nobody answered in time, or closing the quiz, ends the whole quiz:
-  // there is nobody there to ask the rest. "Ask later" only skips the one question.
-  const over = outcome === 'timeout' || outcome === 'closed' || session.asked.length >= session.total;
+  const over = outcome === 'timeout' || outcome === 'closed' || asked.length >= session.total;
   if (!over) {
     const [settings, status, state] = await Promise.all([getSettings(), vaultStatus(), getQuizState()]);
-    // ASSUMPTION: a quiz never asks the same word twice. If the vault runs out of other words
-    // (or, with "not due yet" switched off, of due ones) the quiz ends early.
-    const built = nextQuestion(status, state, { allowNotDue: session.forced || settings.quizAllowNotDue, exclude: session.asked });
+    const built = nextQuestion(status, state, { allowNotDue: session.forced || settings.quizAllowNotDue, exclude: session.asked, settings });
     if (built.ok) {
-      const next = await writeSession({ ...after, question: built.question, asked: [...session.asked, built.question.id] });
-      await saveQuizState({ recent: remember(state, built.question.id), roundStartedAt: built.roundStartedAt });
+      const next = await writeSession({ ...after, question: built.question, asked: [...asked, built.question.id] });
+      await saveQuizState({ recent: remember(state, built.question.id), roundStartedAt: built.roundStartedAt, modeTurn: (Number(state.modeTurn) || 0) + 1 });
       return { next: { question: next.question, index: next.asked.length }, summary: null };
     }
   }
@@ -454,7 +484,7 @@ export async function unmute() {
 }
 
 /** The way a question ended, as one of the five known outcomes. */
-const outcomeOf = (answer) => (['unknown', 'later', 'timeout', 'closed'].includes(answer?.outcome) ? answer.outcome : 'answer');
+const outcomeOf = (answer) => (['unknown', 'later', 'timeout', 'closed', 'no_voice'].includes(answer?.outcome) ? answer.outcome : 'answer');
 
 /**
  * What became of a question: the word's statistics and its next date are updated.
@@ -488,6 +518,13 @@ export async function recordAnswer(answer) {
   const hints = Math.max(0, Math.floor(Number(answer.hints) || 0));
   if (UNANSWERED.has(outcome)) {
     result = postpone(entry.quiz, now);
+    // This device could not say the word: its language is left out of listening for a day.
+    // (Where recordings stand in for the voice, it is this word that has none, not the language.)
+    if (outcome === 'no_voice') {
+      const key = answer.scope === 'word' ? `id:${id}` : String(entry.sourceLang || '').toLowerCase();
+      const fresh = Object.entries(state.noVoice || {}).filter(([, until]) => until > now).slice(-200);
+      if (key) state.noVoice = { ...Object.fromEntries(fresh), [key]: now + NO_VOICE_MS };
+    }
   } else {
     const settings = await getSettings();
     const ms = outcome === 'answer' ? Number(answer.ms) : NaN;
@@ -503,7 +540,7 @@ export async function recordAnswer(answer) {
     day = await countAnswer(now, dailyGoal(settings));
   }
   await updateEntry(id, { quiz: result.stats, dueAt: result.dueAt, box: levelOf(result.stats) });
-  await saveQuizState({ speed, lastAnswer: { at: now, id, outcome, correct, quality } });
+  await saveQuizState({ speed, noVoice: state.noVoice, lastAnswer: { at: now, id, outcome, correct, quality } });
   return { quality, dueAt: result.dueAt, status: statusOf(result.stats), ...(result.learnedNow ? { learnedNow: true } : {}), ...(result.unlearned ? { unlearned: true } : {}), ...(day?.completedNow ? { dayCompleted: true } : {}) };
 }
 

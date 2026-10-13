@@ -443,6 +443,86 @@
     .wv-quiz-feedback.wv-right { color: var(--wv-ok); }
     .wv-quiz-feedback.wv-wrong { color: var(--wv-danger); }
 
+    /* Writing: the meaning is shown, the word is typed. */
+    .wv-quiz-write { display: flex; gap: 6px; }
+    .wv-quiz-input {
+      flex: 1 1 auto;
+      min-width: 0;
+      box-sizing: border-box;
+      height: 34px;
+      padding: 0 10px;
+      border: 1px solid var(--wv-border);
+      border-radius: 8px;
+      background: var(--wv-bg);
+      color: var(--wv-fg);
+      font: inherit;
+      font-size: 14px;
+    }
+    .wv-quiz-input:focus-visible { outline: 2px solid var(--wv-accent); outline-offset: 1px; }
+    .wv-quiz-input.wv-right { border-color: var(--wv-ok); color: var(--wv-ok); font-weight: 600; opacity: 1; }
+    .wv-quiz-input.wv-wrong { border-color: var(--wv-danger); color: var(--wv-danger); text-decoration: line-through; opacity: 1; }
+    .wv-quiz-submit {
+      flex: none;
+      margin: 0;
+      padding: 0 12px;
+      border: 0;
+      border-radius: 8px;
+      background: var(--wv-accent);
+      color: var(--wv-accent-fg);
+      font: inherit;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .wv-quiz-submit:disabled { opacity: 0.5; cursor: default; }
+    .wv-quiz-submit:focus-visible { outline: 2px solid var(--wv-accent); outline-offset: 2px; }
+    .wv-quiz-hint { margin: -4px 0 8px; font: 600 15px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; letter-spacing: 0.02em; color: var(--wv-muted); overflow-wrap: anywhere; }
+    .wv-quiz-result { margin-top: 8px; }
+    .wv-quiz-answer { font-size: 17px; font-weight: 650; color: var(--wv-ok); overflow-wrap: anywhere; }
+    /* a letter the typed answer got wrong or left out */
+    .wv-quiz-answer .wv-miss { color: var(--wv-danger); text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 3px; }
+    .wv-quiz-typed { margin-top: 2px; font-size: 12px; color: var(--wv-muted); overflow-wrap: anywhere; }
+    .wv-quiz-action:disabled { opacity: 0.45; cursor: default; }
+
+    /* Listening: a blank where the word would be, and the button that says it. */
+    .wv-quiz-listen { display: flex; align-items: center; gap: 8px; }
+    .wv-quiz-blank {
+      flex: 1 1 auto;
+      min-width: 0;
+      min-height: 36px;
+      box-sizing: border-box;
+      display: flex;
+      align-items: center;
+      padding: 4px 12px;
+      border: 1px dashed var(--wv-border);
+      border-radius: 8px;
+      color: var(--wv-muted);
+      font-size: 18px;
+      font-weight: 650;
+      overflow-wrap: anywhere;
+    }
+    .wv-quiz-blank.wv-shown { border-style: solid; color: var(--wv-fg); }
+    .wv-quiz-speaker {
+      flex: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 36px;
+      height: 36px;
+      margin: 0;
+      padding: 0;
+      border: 1px solid var(--wv-border);
+      border-radius: 50%;
+      background: var(--wv-tint);
+      color: var(--wv-accent);
+      cursor: pointer;
+    }
+    .wv-quiz-speaker svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+    .wv-quiz-speaker:hover { background: var(--wv-hover); }
+    .wv-quiz-speaker:focus-visible { outline: 2px solid var(--wv-accent); outline-offset: 2px; }
+    .wv-quiz-speaker.wv-busy { opacity: 0.6; }
+    .wv-quiz-notice { margin: 0 0 8px; padding: 6px 10px; border-radius: 8px; background: var(--wv-tint); font-size: 12.5px; }
+
     /* Always there: "Not today" and "Close". */
     .wv-quiz-bottom {
       display: flex;

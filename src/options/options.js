@@ -163,6 +163,21 @@ function numberIn(input, min, max) {
 const quizEnabled = h('input', { type: 'checkbox', onchange: () => saveQuiz({ quizEnabled: quizEnabled.checked }) });
 const quizAllowNotDue = h('input', { type: 'checkbox', onchange: () => saveQuiz({ quizAllowNotDue: quizAllowNotDue.checked }) });
 
+// The ways a word is asked: each on its own switch, and whether they are mixed.
+const quizSwitch = (key) => h('input', { type: 'checkbox', 'data-setting': key, onchange: (event) => saveQuiz({ [key]: event.target.checked }) });
+const quizModeClassic = quizSwitch('quizModeClassic');
+const quizModeWriting = quizSwitch('quizModeWriting');
+const quizModeListening = quizSwitch('quizModeListening');
+const quizModeMixed = quizSwitch('quizModeMixed');
+const quizAccentTolerant = quizSwitch('quizAccentTolerant');
+const quizListenAutoplay = quizSwitch('quizListenAutoplay');
+const quizListenChoices = h(
+  'select',
+  { 'aria-label': t('optQuizListenChoices'), 'data-setting': 'quizListenChoices', onchange: () => saveQuiz({ quizListenChoices: quizListenChoices.value }) },
+  h('option', { value: 'meaning', text: t('optQuizListenMeaning') }),
+  h('option', { value: 'spelling', text: t('optQuizListenSpelling') }),
+);
+
 const quizIntervalCustom = h('input', {
   type: 'number',
   inputmode: 'numeric',
@@ -271,6 +286,13 @@ async function renderQuizSettings(rejected) {
   const free = (field) => field === rejected || document.activeElement !== field;
   quizEnabled.checked = settings.quizEnabled;
   quizAllowNotDue.checked = settings.quizAllowNotDue;
+  quizModeClassic.checked = settings.quizModeClassic === true;
+  quizModeWriting.checked = settings.quizModeWriting === true;
+  quizModeListening.checked = settings.quizModeListening === true;
+  quizModeMixed.checked = settings.quizModeMixed !== false;
+  quizAccentTolerant.checked = settings.quizAccentTolerant === true;
+  quizListenAutoplay.checked = settings.quizListenAutoplay !== false;
+  quizListenChoices.value = settings.quizListenChoices === 'spelling' ? 'spelling' : 'meaning';
 
   const minutes = d.intervalMinutes;
   const offered = [...(developmentInstall ? [INTERVAL_TESTING] : []), ...INTERVAL_PRESETS];
@@ -463,6 +485,19 @@ const quizSection = h(
     switchRow(quizAllowNotDue, 'optQuizAllowNotDue', 'optQuizAllowNotDueHelp'),
     fieldRow('optQuizMinCards', 'optQuizMinCardsHelp', quizMinCards),
     fieldRow('optQuizTimeout', 'optQuizTimeoutHelp', h('span', { class: 'inline' }, quizTimeout, h('span', { class: 'unit', text: t('optSeconds') }))),
+  ),
+  h('h3', { text: t('optQuizModes') }),
+  h('p', { class: 'help', text: t('optQuizModesHelp') }),
+  h(
+    'div',
+    { class: 'fields', id: 'quiz-modes' },
+    switchRow(quizModeClassic, 'optQuizModeClassic', 'optQuizModeClassicHelp'),
+    switchRow(quizModeWriting, 'optQuizModeWriting', 'optQuizModeWritingHelp'),
+    switchRow(quizModeListening, 'optQuizModeListening', 'optQuizModeListeningHelp'),
+    switchRow(quizModeMixed, 'optQuizModeMixed', 'optQuizModeMixedHelp'),
+    switchRow(quizAccentTolerant, 'optQuizAccentTolerant', 'optQuizAccentTolerantHelp'),
+    switchRow(quizListenAutoplay, 'optQuizListenAutoplay', 'optQuizListenAutoplayHelp'),
+    fieldRow('optQuizListenChoices', 'optQuizListenChoicesHelp', quizListenChoices),
   ),
   h('h3', { text: t('quizDiagTitle') }),
   quizVerdict,

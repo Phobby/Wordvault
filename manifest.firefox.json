@@ -54,6 +54,7 @@
         "shared/language-list.js",
         "shared/speech.js",
         "shared/stopwatch.js",
+        "shared/quiz-answers.js",
         "shared/quiz-card.js",
         "content/selection.js",
         "shared/translate-client.js",
