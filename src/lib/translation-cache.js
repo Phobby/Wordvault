@@ -10,6 +10,8 @@
 // answers of two services for the same text never mix. It lives in chrome.storage.local under
 // one key and is part of neither the backup, nor synchronisation, nor feedback.
 
+import { normalizeText } from './cache-key.js';
+
 export const CACHE_KEY = 'translationCache';
 /** An entry nobody asked for in this long is deleted. */
 export const MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
@@ -24,10 +26,11 @@ const VERSION = 2;
 
 /**
  * @param {{ provider: string, source: string | null, target: string, text: string }} request
- * @returns {string} One key per service, language pair and text.
+ * @returns {string} One key per service, language pair and (normalised) text.
  */
 export function cacheKey({ provider, source, target, text }) {
-  return [provider, source || 'auto', target, text].join('\u0001');
+  // the text in one spelling (lib/cache-key.js): case, surrounding punctuation and Unicode form do not make another entry
+  return [provider, source || 'auto', target, normalizeText(text, source)].join('\u0001');
 }
 
 const alive = (entry, now) => Boolean(entry) && Number.isFinite(entry.seen) && entry.seen <= now && now - entry.seen < MAX_AGE_MS;

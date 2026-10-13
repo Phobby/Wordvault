@@ -95,10 +95,10 @@ export const deepl = {
     return LANGUAGES;
   },
 
-  async translate({ text, source, target }, config) {
+  async translate({ text, source, target }, config, { signal = null } = {}) {
     const body = { text: [text], target_lang: toDeeplTarget(target) };
     if (source) body.source_lang = toDeeplSource(source);
-    const data = await call(config, '/v2/translate', { method: 'POST', body: JSON.stringify(body) });
+    const data = await call(config, '/v2/translate', { method: 'POST', body: JSON.stringify(body), signal });
     const [first] = Array.isArray(data?.translations) ? data.translations : [];
     if (typeof first?.text !== 'string' || !first.text.trim()) throw new WordvaultError('no_result');
     return { translation: first.text.trim(), detectedSource: source || fromDeepl(first.detected_source_language) || null, alternatives: [] };

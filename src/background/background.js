@@ -12,7 +12,7 @@ import { registerScreenOcr, screenOcrHandlers } from '../features/screen-ocr/bac
 import { WordvaultError, serializeError } from '../lib/errors.js';
 import { fetchRecording } from '../lib/pronunciation.js';
 import { CLEANUP_ALARM, cleanupCache, ensureCacheCleanup } from '../lib/translation-cache.js';
-import { checkProvider, clearTranslationCaches, getPreferences, setSiteSourceLanguage, setTargetLanguage, translate, translationCacheStats } from '../lib/translator.js';
+import { cancelTranslation, checkProvider, clearTranslationCaches, getPreferences, setSiteSourceLanguage, setTargetLanguage, translate, translationCacheStats } from '../lib/translator.js';
 import { ENTRY_PREFIX, TOMBSTONE_PREFIX, addEntry, entryId, getEntry, hasEntry, removeEntry, updateEntry } from '../lib/vault.js';
 import { NOTIFICATION_ID } from '../quiz/display.js';
 import { ensureSyncScheduled, onSyncAlarm, syncInBackground, turnOffEncryption, unlockEncryption, vaultChanged } from '../sync/engine.js';
@@ -79,6 +79,8 @@ function fromOwnPage(handler) {
 /** Message handlers, keyed by message type. Each returns (a promise of) the response data. */
 const handlers = {
   'wv:translate': lookup,
+  // The user moved on to another word before the answer came.
+  'wv:translate:cancel': (payload) => cancelTranslation(payload?.requestId),
   'wv:prefs': (payload, sender) => getPreferences(hostOf(sender)),
   'wv:setTargetLang': (payload) => setTargetLanguage(payload?.code),
   'wv:setSiteSource': (payload, sender) => setSiteSourceLanguage(hostOf(sender), payload?.lang),

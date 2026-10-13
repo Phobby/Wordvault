@@ -374,7 +374,7 @@
     const { result, error, saved, saving } = session;
     const children = [];
     if (error && RETRYABLE.has(error.code)) {
-      children.push(h('button', { class: 'wv-btn', type: 'button', text: t('popupRetry'), onclick: () => lookup() }));
+      children.push(h('button', { class: 'wv-btn', type: 'button', text: t('popupRetry'), onclick: () => lookup({ fresh: true }) }));
     }
     // The chosen service failed: the default one is offered for this lookup. The setting stays.
     const fallback = error?.context?.fallback;
@@ -460,8 +460,12 @@
   }
 
   /** Translates the session's text, with the source language the user fixed (if any). */
-  async function lookup() {
+  /** @param {{ fresh?: boolean }} [options]  fresh: "Try again": ask even if this just failed. */
+  async function lookup({ fresh = false } = {}) {
     const current = session;
+    // The answer to what was asked before is not wanted any more: that request is given up.
+    current.controller?.abort();
+    const controller = (current.controller = new AbortController());
     const requestId = ++current.requestId;
     const isStale = () => session !== current || current.requestId !== requestId;
     current.result = null;
@@ -478,7 +482,8 @@
         pageLang: current.pageLang,
         source: current.source,
         provider: current.provider || undefined,
-      });
+        fresh,
+      }, { signal: controller.signal });
       if (isStale()) return;
       current.result = data;
       current.sourceLang = data.sourceLang;
@@ -488,7 +493,7 @@
       if (prefs) prefs.targetLang = data.targetLang;
       showResult(data);
     } catch (error) {
-      if (isStale()) return;
+      if (isStale() || error?.code === 'aborted') return;
       current.error = { code: 'internal', ...error };
       current.sourceLang = current.source || error?.context?.sourceLang || '';
       current.saved = Boolean(error?.context?.saved);
@@ -606,6 +611,8 @@
     if (!session) {
       for (const [type, listener, options] of LISTENERS) window.addEventListener(type, listener, options);
     }
+    // Opened for another word while the last one was still being asked for.
+    session?.controller?.abort();
     // Selections inside shadow trees and replaced elements can report an empty rectangle.
     const rect = range?.getBoundingClientRect();
     const pinned = rect && (rect.width > 0 || rect.height > 0) ? null : lastRect || new DOMRect(point.x, point.y, 0, 0);
@@ -632,6 +639,7 @@
       sheet: null, // 'source' or 'target' while the language sheet is open
       below: null, // which side of the selection the card is on
       requestId: 0,
+      controller: null, // gives up the lookup that is under way
       prefsReady: null,
     };
 
@@ -649,6 +657,7 @@
 
   function close() {
     if (!session) return;
+    session.controller?.abort();
     session = null;
     for (const [type, listener, options] of LISTENERS) window.removeEventListener(type, listener, options);
     cancelAnimationFrame(frame);

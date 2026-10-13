@@ -52,24 +52,24 @@ function withoutRepeats(value) {
  * letter is put back the way the query had it.
  * @returns {Promise<string | null>} A clean translation, or null.
  */
-async function askRecased(text, target) {
+async function askRecased(text, target, signal) {
   const [first] = text;
   if (!first) return null;
   const upper = first.toLocaleUpperCase();
   const lower = first.toLocaleLowerCase();
   if (upper === lower) return null; // no case to change
   const wasLower = first === lower;
-  const again = await request((wasLower ? upper : lower) + text.slice(first.length), null, target).catch(() => null);
+  const again = await request((wasLower ? upper : lower) + text.slice(first.length), null, target, signal).catch(() => null);
   if (!again || looksDamaged(again.translation, text)) return null;
   const [head] = again.translation;
   return (wasLower ? head.toLocaleLowerCase() : head.toLocaleUpperCase()) + again.translation.slice(head.length);
 }
 
-async function request(text, source, target) {
+async function request(text, source, target, signal = null) {
   const url = new URL(ENDPOINT);
   url.searchParams.set('q', text);
   url.searchParams.set('langpair', `${source || AUTODETECT}|${target}`);
-  const { status, data } = await fetchJson(url);
+  const { status, data } = await fetchJson(url, { signal });
 
   // Errors usually arrive as HTTP 200 with the real status (sometimes a string) in the body.
   const responseStatus = Number(data?.responseStatus) || status;
@@ -128,15 +128,15 @@ export const mymemory = {
     return LANGUAGES;
   },
 
-  async translate({ text, source, target }) {
+  async translate({ text, source, target }, config, { signal = null } = {}) {
     if (!source) {
-      const detected = await request(text, null, target);
+      const detected = await request(text, null, target, signal);
       if (!looksDamaged(detected.translation, text)) {
         return { translation: detected.translation, detectedSource: detected.detectedSource, alternatives: [] };
       }
       // Letters were lost on the service's side: ask again another way before showing that.
-      const memory = detected.detectedSource ? await request(text, detected.detectedSource, target).catch(() => null) : null;
-      const repaired = memory && !looksDamaged(memory.translation, text) ? withoutRepeats(memory.translation) : await askRecased(text, target);
+      const memory = detected.detectedSource ? await request(text, detected.detectedSource, target, signal).catch(() => null) : null;
+      const repaired = memory && !looksDamaged(memory.translation, text) ? withoutRepeats(memory.translation) : await askRecased(text, target, signal);
       return { translation: repaired || detected.translation, detectedSource: detected.detectedSource, alternatives: [], damaged: !repaired };
     }
 
@@ -148,8 +148,8 @@ export const mymemory = {
     // alternatives. Longer text gets a single request; there the memory rarely has exact hits.
     const isShort = text.length <= SHORT_TEXT_CHARS;
     const [memory, machine] = await Promise.all([
-      request(text, source, target).catch((error) => error),
-      isShort ? request(text, null, target).catch(() => null) : null,
+      request(text, source, target, signal).catch((error) => error),
+      isShort ? request(text, null, target, signal).catch(() => null) : null,
     ]);
     const machineAgrees = Boolean(machine) && sameLanguage(machine.detectedSource, source);
 
@@ -168,7 +168,7 @@ export const mymemory = {
     let translation = candidates.find((candidate) => !looksDamaged(candidate, text));
     let damaged = false;
     if (!translation) {
-      translation = (isShort && (await askRecased(text, target))) || candidates[0];
+      translation = (isShort && (await askRecased(text, target, signal))) || candidates[0];
       damaged = looksDamaged(translation, text);
     }
     const alternatives = isShort

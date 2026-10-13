@@ -51,12 +51,47 @@ export async function putSession(key, result, touched = Date.now()) {
   }
 }
 
+// --- Failures, for a moment ------------------------------------------------------------------
+// A request that just failed in a way that asking again will not change (the quota is used
+// up, the service has no answer) is not sent again for a short while. The error the user saw
+// is what they see again.
+
+const FAIL_PREFIX = 'tn\u0001';
+export const FAILURE_MS = 90_000;
+/** Failures worth remembering. Not: no network (it may be back any second), a missing or wrong key (the user is about to fix it), a cancelled request. */
+export const REMEMBERED_FAILURES = new Set(['rate_limit', 'quota', 'no_result', 'provider_error', 'unsupported_language']);
+
+/** @returns {Promise<{ code: string, detail: string } | null>} */
+export async function getFailure(key, now = Date.now()) {
+  const storage = area();
+  if (!storage) return null;
+  try {
+    const entry = (await storage.get(FAIL_PREFIX + key))[FAIL_PREFIX + key];
+    if (!entry) return null;
+    if (entry.until > now && entry.until - now <= FAILURE_MS) return entry.error;
+    await storage.remove(FAIL_PREFIX + key);
+  } catch {
+    // treated as not remembered
+  }
+  return null;
+}
+
+export async function putFailure(key, error, now = Date.now()) {
+  const storage = area();
+  if (!storage || !REMEMBERED_FAILURES.has(error?.code)) return;
+  await storage.set({ [FAIL_PREFIX + key]: { until: now + FAILURE_MS, error: { code: error.code, detail: String(error.detail || '') } } }).catch(() => {});
+}
+
+export async function forgetFailure(key) {
+  await area()?.remove(FAIL_PREFIX + key).catch(() => {});
+}
+
 /** Empties the layer (and only it: other things kept for the session stay). */
 export async function clearSession() {
   const storage = area();
   if (!storage) return;
   try {
-    const keys = Object.keys(await storage.get(null)).filter((key) => key.startsWith(PREFIX) || key === COUNT_KEY);
+    const keys = Object.keys(await storage.get(null)).filter((key) => key.startsWith(PREFIX) || key.startsWith(FAIL_PREFIX) || key === COUNT_KEY);
     if (keys.length > 0) await storage.remove(keys);
   } catch {
     // nothing to do

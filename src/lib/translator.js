@@ -5,7 +5,7 @@ import { DEFAULT_PROVIDER_ID, getProvider } from '../providers/index.js';
 import { WordvaultError } from './errors.js';
 import { matchSupported, normalizeLang, sameLanguage } from './languages.js';
 import { getSettings, getSiteSource, setSiteSource, updateSettings } from './settings.js';
-import { clearSession, getSession, hasSessionCache, putSession, sessionCount } from './session-cache.js';
+import { clearSession, forgetFailure, getFailure, getSession, hasSessionCache, putFailure, putSession, sessionCount } from './session-cache.js';
 import { TOUCH_AFTER_MS, cacheKey, cacheStats, clearCache, getCached, putCached, touchCached } from './translation-cache.js';
 
 const FALLBACK_TARGET = 'en';
@@ -142,12 +142,73 @@ async function remember(request, result, now = Date.now()) {
   await putSession(cacheKey(request), result, now);
 }
 
+// --- Requests under way ---------------------------------------------------------------------
+// Not a cache: an entry is there only while its request is on the way and is gone the moment
+// the request ends. If this script is stopped, so are its requests, and there is nothing to lose.
+
+/** key -> { promise, controller, waiters }: one request per key, however many ask at once. */
+const underWay = new Map();
+/** requestId -> a function that takes that one asker out. */
+const leaving = new Map();
+/** Requests that were given up before they got as far as the service. */
+const gaveUpEarly = new Set();
+
+/**
+ * Asks the service once per key: whoever asks for the same thing while a request is on the
+ * way gets that request's answer. Each asker can leave (cancelTranslation); when the last one
+ * has left, the request itself is given up.
+ * @param {string} key
+ * @param {(signal: AbortSignal) => Promise<Object>} run
+ * @param {string} [requestId]
+ */
+function askOnce(key, run, requestId) {
+  if (requestId && gaveUpEarly.delete(requestId)) return Promise.reject(new WordvaultError('aborted', 'given up before it was sent'));
+  let flight = underWay.get(key);
+  if (!flight) {
+    const controller = new AbortController();
+    flight = { controller, waiters: 0, promise: null };
+    flight.promise = run(controller.signal).finally(() => {
+      if (underWay.get(key) === flight) underWay.delete(key);
+    });
+    flight.promise.catch(() => {}); // every asker handles it; this copy must not count as unhandled
+    underWay.set(key, flight);
+  }
+  flight.waiters += 1;
+  return new Promise((resolve, reject) => {
+    if (requestId) {
+      leaving.set(requestId, () => {
+        leaving.delete(requestId);
+        flight.waiters -= 1;
+        if (flight.waiters <= 0) flight.controller.abort();
+        reject(new WordvaultError('aborted', 'given up'));
+      });
+    }
+    flight.promise.then(resolve, reject).finally(() => requestId && leaving.delete(requestId));
+  });
+}
+
+/** The user moved on: the request with this id is not waited for any more. */
+export function cancelTranslation(requestId) {
+  if (typeof requestId !== 'string' || !requestId) return false;
+  const leave = leaving.get(requestId);
+  if (leave) {
+    leave();
+    return true;
+  }
+  // not at the service yet (languages are still being worked out): stopped when it gets there
+  gaveUpEarly.add(requestId);
+  if (gaveUpEarly.size > 50) gaveUpEarly.delete(gaveUpEarly.values().next().value);
+  return false;
+}
+
 /**
  * @param {Object} request
  * @param {string} request.text       Selected text. The only thing that is sent to the provider.
  * @param {string} [request.sample]   Text around the selection, used for local language detection.
  * @param {string} [request.pageLang] `lang` attribute closest to the selection.
  * @param {string} [request.source]   Source language picked by the user in the popup.
+ * @param {string} [request.requestId] Lets the asker give the request up (cancelTranslation).
+ * @param {boolean} [request.fresh]   "Try again": a failure remembered for this request is forgotten first.
  * @param {string} [request.provider] Use this service for this request ("continue with …"
  *                                    after the chosen one failed); the setting is not changed.
  * @param {string} [host]             Host name of the page the text is on.
@@ -206,12 +267,30 @@ export async function translate(request, host) {
 
   // Asked for before, of this service, for this language pair: not asked for again.
   const remembered = { provider: provider.id, source: sourceLang, target: targetLang, text };
+  const key = cacheKey(remembered);
   let result = await recall(remembered);
   try {
     if (!result) {
-      result = await provider.translate({ text, source: sourceLang, target: targetLang }, config);
-      // an answer that lost letters is not worth remembering: next time may be better
-      if (result.damaged !== true) await remember(remembered, { translation: result.translation, detectedSource: result.detectedSource || null, alternatives: result.alternatives || [] });
+      // It failed a moment ago in a way that asking again does not change: the same error,
+      // without another request. "Try again" asks anyway.
+      if (request.fresh) await forgetFailure(key);
+      const failed = request.fresh ? null : await getFailure(key);
+      if (failed) throw new WordvaultError(failed.code, failed.detail);
+      result = await askOnce(
+        key,
+        async (signal) => {
+          try {
+            const answer = await provider.translate({ text, source: sourceLang, target: targetLang }, config, { signal });
+            // an answer that lost letters is not worth remembering: next time may be better
+            if (answer.damaged !== true) await remember(remembered, { translation: answer.translation, detectedSource: answer.detectedSource || null, alternatives: answer.alternatives || [] });
+            return answer;
+          } catch (error) {
+            await putFailure(key, error); // only the kinds worth it; never a request that was given up
+            throw error;
+          }
+        },
+        request.requestId,
+      );
     }
   } catch (error) {
     // The provider found the text to be in the target language: that is information for the

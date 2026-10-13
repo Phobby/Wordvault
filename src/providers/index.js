@@ -34,8 +34,9 @@ import { mymemory } from './mymemory.js';
  * @property {ProviderConfigField[]} configFields
  * @property {(config: Record<string, string>) => Promise<string[]>} getLanguages
  *   Language codes the provider can translate from and to.
- * @property {(request: TranslationRequest, config: Record<string, string>) => Promise<TranslationResult>} translate
- *   Rejects with a WordvaultError (lib/errors.js) describing what went wrong.
+ * @property {(request: TranslationRequest, config: Record<string, string>, options?: { signal?: AbortSignal | null }) => Promise<TranslationResult>} translate
+ *   Rejects with a WordvaultError (lib/errors.js) describing what went wrong; with code 'aborted'
+ *   when `signal` gave the request up.
  * @property {(config: Record<string, string>) => Promise<Object>} [check]
  *   Tries the configuration (the key) without translating anything; rejects like translate().
  */

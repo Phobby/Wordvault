@@ -210,12 +210,13 @@ test('a translation is remembered per service: the same text is not asked for tw
   assert.notEqual(cacheKey({ provider: 'deepl', source: null, target: 'tr', text: 'a' }), cacheKey({ provider: 'deepl', source: 'en', target: 'tr', text: 'a' }));
 });
 
-test('a failure is not remembered', async () => {
+test('a failure is never remembered as an answer', async () => {
   await useDeepl();
   deeplAnswers = { status: 429 };
   await assert.rejects(translate({ text: 'later', source: 'en' }, 'example.com'), { code: 'rate_limit' });
   deeplAnswers = { status: 200 };
-  assert.equal((await translate({ text: 'later', source: 'en' }, 'example.com')).translation, 'later/deepl>TR');
+  // "Try again" asks the service again at once (see tests/request-optimisation.test.js for the short memory of failures)
+  assert.equal((await translate({ text: 'later', source: 'en', fresh: true }, 'example.com')).translation, 'later/deepl>TR');
 });
 
 // --- where the key never goes ---
