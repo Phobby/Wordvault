@@ -159,3 +159,18 @@ test('text in the language translations are made into: a note, not an error', as
   assert.equal(automatic.sameLanguage, true);
   assert.equal(automatic.sourceLang, 'tr');
 });
+
+// --- one word, or more? ---------------------------------------------------------------------
+
+test('one word is looked up as a word, more than one is a passage', async () => {
+  const { loadScripts } = await import('./helpers/hover.js');
+  const { passageText } = loadScripts(['shared/passage-text.js']);
+  for (const word of ['serendipity', ' book ', 'ice-cream', "don't", '3.5', 'e-mail,', '«kitap»', 'İstanbul', 'كتاب', '学生', '']) {
+    assert.equal(passageText.isPassage(word), false, `"${word}" is one word (or none)`);
+  }
+  for (const passage of ['New York', 'the quick brown fox', 'Bugün hava güzel.', 'الطقس جميل اليوم', '私は学生です', 'line one\nline two', 'a – b']) {
+    assert.equal(passageText.isPassage(passage), true, `"${passage}" is a passage`);
+  }
+  assert.equal(passageText.wordCount('  one   two\tthree  '), 3);
+  assert.equal(passageText.wordCount('… — !'), 0);
+});

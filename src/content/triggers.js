@@ -21,6 +21,7 @@
 
   function applySettings(stored) {
     settings.doubleClick = stored?.doubleClick !== false;
+    WV.translateButton?.setEnabled(stored?.selectionButton !== false);
     WV.speech.options.ttsFallback = stored?.ttsFallback === true;
   }
 
@@ -60,6 +61,9 @@
     const selection = window.getSelection();
     const text = WV.selection.tidyWord(selection?.toString());
     if (!text || text.length > MAX_WORD_CHARS || !/\p{L}/u.test(text)) return;
+    // More than one word is a passage: that is what the "Translate" button, the right-click menu
+    // and the shortcut are for (content/translate-button.js), not the word lookup.
+    if (WV.passageText.isPassage(text)) return;
 
     const range = selection.rangeCount > 0 ? selection.getRangeAt(0).cloneRange() : null;
     if (range && !isOnSelection(range, event.clientX, event.clientY)) return;

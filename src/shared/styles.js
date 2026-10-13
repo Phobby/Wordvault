@@ -362,6 +362,30 @@
     .wv-foot { display: flex; flex-wrap: wrap; gap: 2px 10px; margin-top: 10px; font-size: 11px; color: var(--wv-muted); }
     .wv-foot a { color: inherit; }
     .wv-foot:empty { display: none; }
+
+    /* A passage (a selected sentence or paragraph): wider, the selection as small text cut
+       after three lines, the translation with its line breaks and a scroll bar of its own. */
+    .wv-card.wv-passage { width: min(380px, calc(100vw - 16px)); max-height: min(540px, calc(100vh - 16px)); }
+    .wv-passage .wv-word { font-size: 13px; font-weight: 400; line-height: 1.45; color: var(--wv-muted); white-space: pre-line; }
+    .wv-passage .wv-word.wv-expanded { display: block; max-height: min(160px, 30vh); overflow: hidden auto; overscroll-behavior: contain; }
+    .wv-more { display: block; margin-top: 2px; font-size: 12px; }
+    .wv-passage-text { max-height: min(240px, 40vh); overflow: hidden auto; overscroll-behavior: contain; white-space: pre-line; }
+    .wv-passage-text + .wv-loading, .wv-partial { margin-top: 8px; }
+    .wv-btn .wv-icon { width: 14px; height: 14px; vertical-align: -2px; }
+    .wv-offscreen { position: fixed; left: -9999px; top: 0; width: 1px; height: 1px; opacity: 0; }
+    /* Alone in a window of its own: it is the window. */
+    .wv-card.wv-standalone {
+      position: fixed;
+      inset: 0;
+      width: 100vw;
+      height: 100vh;
+      max-height: none;
+      border: 0;
+      border-radius: 0;
+      box-shadow: none;
+      animation: none;
+    }
+    .wv-standalone .wv-passage-text { max-height: none; }
   `;
 
   /** The quiz: as a card in the top right corner of a page (.wv-quiz-floating), or filling the

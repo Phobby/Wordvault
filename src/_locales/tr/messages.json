@@ -1979,5 +1979,47 @@
   },
   "tbPhraseBadge": {
     "message": "İfade"
+  },
+  "selTranslate": {
+    "message": "Çevir"
+  },
+  "selTranslateHint": {
+    "message": "Seçimi Wordvault ile çevir"
+  },
+  "passageShowAll": {
+    "message": "Tümünü göster"
+  },
+  "passageShowLess": {
+    "message": "Daha az göster"
+  },
+  "passageCopy": {
+    "message": "Kopyala"
+  },
+  "passageCopied": {
+    "message": "Kopyalandı"
+  },
+  "passageCopyFailed": {
+    "message": "Kopyalanamadı"
+  },
+  "passageProgress": {
+    "message": "Çevriliyor… ($1/$2 parça)"
+  },
+  "passagePartial": {
+    "message": "Metnin yalnızca bir kısmı çevrilebildi ($1/$2 parça). $3"
+  },
+  "errPassageTooLong": {
+    "message": "Seçim çok uzun: bir kerede en çok $1 karakter çevrilir (seçilen: $2)."
+  },
+  "vaultAddPhrase": {
+    "message": "İfade olarak kasaya ekle"
+  },
+  "vaultAddPhraseHint": {
+    "message": "Kelime kartlarından ayrı, ifade olarak saklanır. Ayarlardan açmadıkça quiz'de sorulmaz."
+  },
+  "menuTranslate": {
+    "message": "Wordvault ile çevir"
+  },
+  "cmdTranslateSelection": {
+    "message": "Seçili metni çevir"
   }
 }

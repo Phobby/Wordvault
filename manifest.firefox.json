@@ -59,8 +59,10 @@
         "shared/quiz-card.js",
         "content/selection.js",
         "shared/translate-client.js",
+        "shared/passage-text.js",
         "ui/popup/popup.js",
         "content/quiz.js",
+        "content/translate-button.js",
         "content/triggers.js"
       ],
       "run_at": "document_idle",

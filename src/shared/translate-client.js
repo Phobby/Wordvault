@@ -49,7 +49,9 @@
    * service are not in the key: the memory is emptied when the settings change.
    */
   function memoryKey(request) {
-    return JSON.stringify([normalizeText(request.text, request.source), request.source || '', request.pageLang || '', request.provider || '', request.sample || '']);
+    // a passage keeps its line breaks and is another request than the same words looked up as a word
+    const text = request.passage ? String(request.text) : normalizeText(request.text, request.source);
+    return JSON.stringify([text, request.source || '', request.pageLang || '', request.provider || '', request.sample || '', request.passage ? 'passage' : '']);
   }
 
   function recall(key, now) {
@@ -75,16 +77,30 @@
 
   const aborted = () => ({ code: 'aborted', detail: 'given up' });
 
+  /** A passage is translated in pieces; what there is so far is passed on: request id -> listeners. */
+  const watching = new Map();
+  try {
+    chrome.runtime.onMessage.addListener((message, sender) => {
+      if (message?.type !== 'wv:passage:progress' || sender.id !== chrome.runtime.id) return;
+      for (const listener of watching.get(message.requestId) || []) listener({ done: message.done, total: message.total, translation: message.translation });
+    });
+  } catch {
+    // no messages here: the answer still comes, all at once
+  }
+
   /**
-   * @param {{ text: string, sample?: string, pageLang?: string, source?: string | null, provider?: string, fresh?: boolean }} request
+   * @param {{ text: string, sample?: string, pageLang?: string, source?: string | null, provider?: string, fresh?: boolean, passage?: boolean }} request
    *        fresh: "Try again": nothing remembered about a failure is used.
-   * @param {{ signal?: AbortSignal }} [options]  Gives the request up: the user moved on to
+   *        passage: a selected sentence or paragraph rather than a word (lib/translator.js: translatePassage).
+   * @param {{ signal?: AbortSignal, onProgress?: (progress: { done: number, total: number, translation: string }) => void }} [options]
+   *        onProgress: for a passage, called with what is translated so far.
+   *        signal gives the request up: the user moved on to
    *        another word. The promise then rejects with code 'aborted' and what comes back
    *        later is neither shown nor kept.
    * @returns {Promise<Object>} What the background script answers to 'wv:translate'; rejects
    *          with `{ code, detail, context }` like WV.send.
    */
-  function translate(request, { signal } = {}) {
+  function translate(request, { signal, onProgress } = {}) {
     if (signal && signal.aborted) return Promise.reject(aborted());
     const key = memoryKey(request);
     if (!request.fresh) {
@@ -97,11 +113,12 @@
     if (!flight) {
       const id = newId();
       flight = { id, askers: 0, promise: null };
-      flight.promise = WV.send('wv:translate', { ...request, requestId: id }).then(
+      flight.promise = WV.send(request.passage ? 'wv:translate:passage' : 'wv:translate', { ...request, requestId: id }).then(
         (data) => {
           if (pending.get(key) === flight) pending.delete(key);
           // Nobody is waiting any more: it is not kept either. Text that looks damaged is asked for again next time.
-          if (flight.askers > 0 && data && data.translation && data.damaged !== true) remember(key, data, Date.now());
+          // (Nor is a passage of which only a part could be translated.)
+          if (flight.askers > 0 && data && data.translation && data.damaged !== true && !data.partial) remember(key, data, Date.now());
           return data;
         },
         (error) => {
@@ -114,11 +131,22 @@
     }
     flight.askers += 1;
 
+    const listeners = watching.get(flight.id) || new Set();
+    if (onProgress) {
+      listeners.add(onProgress);
+      watching.set(flight.id, listeners);
+    }
+    const unwatch = () => {
+      listeners.delete(onProgress);
+      if (listeners.size === 0) watching.delete(flight.id);
+    };
+
     return new Promise((resolve, reject) => {
       let done = false;
       const giveUp = () => {
         if (done) return;
         done = true;
+        unwatch();
         flight.askers -= 1;
         // the last one to leave tells the background script, which stops the request itself
         if (flight.askers <= 0) {
@@ -132,11 +160,13 @@
         (data) => {
           if (done) return;
           done = true;
+          unwatch();
           resolve(data);
         },
         (error) => {
           if (done) return;
           done = true;
+          unwatch();
           reject(error);
         },
       );

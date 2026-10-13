@@ -2,6 +2,10 @@
 
 // The translation popup: a small card anchored to a piece of text: what the user selected, or
 // the word a word source (core/hover/word-source.js) found under the pointer.
+//
+// It has two modes. For a word: the word, its translation and alternatives, and the vault. For
+// a passage (a selected sentence or paragraph; `mode: 'passage'`): the text, shortened, its
+// translation with the line breaks it had, a copy button, and keeping it as a phrase.
 
 (function (WV) {
   if (!WV.supported || WV.popup) return;
@@ -13,9 +17,17 @@
   const GAP = 6;
   /** Translations longer than this are sentences rather than words and get body-text styling. */
   const LONG_TRANSLATION_CHARS = 60;
+  /** A passage up to this long can be kept in the vault as a phrase (the vault's limit for a text). */
+  const PHRASE_MAX_CHARS = 500;
+  /**
+   * ASSUMPTION: a passage up to this long can be read aloud (about a minute). A reading cannot
+   * be stopped once it has begun (shared/speech.js says why), so there is none for more.
+   */
+  const SPEAK_MAX_CHARS = 1000;
 
   const ICON_CLOSE = 'M6 6l12 12M18 6L6 18';
   const ICON_BACK = 'M15 6l-6 6 6 6';
+  const ICON_COPY = 'M9 9h10v11H9zM5 15V4h10';
   const ICON_SPEAKER = 'M11 5L6 9H3v6h3l5 4zM15.5 8.5a5 5 0 0 1 0 7M18.5 5.5a9 9 0 0 1 0 13';
 
   const ERROR_MESSAGES = {
@@ -33,6 +45,7 @@
     no_key: 'errNoKey',
     provider_permission: 'errProviderPermission',
     provider_language: 'errProviderLanguage',
+    passage_too_long: 'errPassageTooLong',
   };
   const RETRYABLE = new Set(['network', 'timeout', 'provider_error', 'internal']);
   /** Failures of the translation itself: the word can still be saved, just without one. */
@@ -88,6 +101,8 @@
         h('button', { class: 'wv-btn wv-btn-sm', type: 'button', text: t('firstRunChange'), onclick: () => openSheet('target') }),
       ),
     );
+    // Passage mode: the selected text is shown shortened; this shows all of it (and less again).
+    const more = h('button', { class: 'wv-link wv-more', type: 'button', hidden: true, onclick: toggleSource });
     const body = h('div', { class: 'wv-body', 'aria-live': 'polite' });
     const actions = h('div', { class: 'wv-actions' });
     const foot = h('div', { class: 'wv-foot' });
@@ -95,6 +110,7 @@
       'div',
       { class: 'wv-main' },
       h('div', { class: 'wv-head' }, word, speakButton, iconButton(ICON_CLOSE, 'popupClose', close)),
+      more,
       h('div', { class: 'wv-langs' }, source.button, h('span', { class: 'wv-arrow', 'aria-hidden': 'true', text: '→' }), target.button),
       pinRow,
       setup,
@@ -125,6 +141,7 @@
       card,
       main,
       word,
+      more,
       speakButton,
       sourceLabel: source.label,
       targetLabel: target.label,
@@ -267,12 +284,27 @@
   /** The button is only offered when the word can be pronounced in its language. */
   function updateSpeakButton() {
     if (!ui || !session) return;
-    ui.speakButton.hidden = !speech.available(session.sourceLang);
+    ui.speakButton.hidden = !(session.mode === 'passage' ? canReadPassage() : speech.available(session.sourceLang));
+  }
+
+  /**
+   * A passage is read by the browser's own voice: there are recordings of words, not of
+   * sentences. Where recordings stand in for that voice (shared/speech.js: usesRecordings) it
+   * is only used if the user has allowed it there.
+   */
+  function canReadPassage() {
+    const { text, sourceLang } = session;
+    if (!sourceLang || text.length > SPEAK_MAX_CHARS || !speech.canSpeak(sourceLang)) return false;
+    return !speech.usesRecordings || speech.options.ttsFallback === true;
   }
 
   async function speak() {
     const current = session;
     if (!current?.sourceLang || current.speaking) return;
+    if (current.mode === 'passage') {
+      if (canReadPassage()) speech.speak(current.text, current.sourceLang);
+      return;
+    }
     current.speaking = true;
     ui.speakButton.classList.add('wv-busy');
     const outcome = await speech.pronounce(current.text, current.sourceLang).catch(() => ({ via: null }));
@@ -314,9 +346,52 @@
     renderFoot();
   }
 
+  /** The note under a result that turned out to be in the language translations are made into. */
+  function sameLanguageNote(data) {
+    return h(
+      'div',
+      { class: 'wv-note' },
+      t('noteSameLanguage', [languages.name(data.targetLang)]),
+      ' ',
+      linkButton('linkChangeSource', () => openSheet('source')),
+      ' · ',
+      linkButton('linkChangeTarget', () => openSheet('target')),
+    );
+  }
+
+  /** What an error is called, in the user's language. */
+  function errorText(error) {
+    const code = error?.code || 'internal';
+    if (code === 'passage_too_long') return t('errPassageTooLong', [Number(error.detail).toLocaleString(), Number(error.context?.length || 0).toLocaleString()]);
+    const service = error?.context?.provider?.name || session?.result?.provider?.name || '';
+    return t(ERROR_MESSAGES[code] || 'errUnknown', [service, code === 'provider_language' ? languages.name(error.detail) : '']);
+  }
+
+  /** A passage: its translation with the line breaks of the selection; a part of it, with what went wrong, if that is all there is. */
+  function showPassage(data) {
+    setBody(
+      data.translation && h('div', { class: 'wv-translation wv-long wv-passage-text', dir: 'auto', lang: data.targetLang, tabindex: '0', text: data.translation }),
+      data.partial && h('div', { class: 'wv-error wv-partial', role: 'alert', text: t('passagePartial', [String(data.partial.done), String(data.pieces), errorText({ ...data.partial, context: { provider: data.provider } })]) }),
+      data.sameLanguage && sameLanguageNote(data),
+    );
+    renderFoot();
+  }
+
+  /** A passage on its way: what is translated so far, and how far that is. */
+  function showProgress({ done, total, translation }) {
+    setBody(
+      h('div', { class: 'wv-translation wv-long wv-passage-text', dir: 'auto', lang: prefs?.targetLang || null, text: translation }),
+      h('div', { class: 'wv-loading' }, h('span', { class: 'wv-spinner' }), t('passageProgress', [String(done), String(total)])),
+    );
+  }
+
   function showResult(data) {
     if (!data.translation && !data.sameLanguage) {
       showError({ code: 'no_result' });
+      return;
+    }
+    if (session.mode === 'passage') {
+      showPassage(data);
       return;
     }
     const long = data.translation.length > LONG_TRANSLATION_CHARS;
@@ -334,16 +409,7 @@
       // The service lost letters on its side ("e?itle"): said, not hidden; saving still works.
       data.damaged && h('div', { class: 'wv-note', text: t('noteDamaged', [data.provider.name]) }),
       // Informational only: it never replaces the result above.
-      data.sameLanguage &&
-        h(
-          'div',
-          { class: 'wv-note' },
-          t('noteSameLanguage', [languages.name(data.targetLang)]),
-          ' ',
-          linkButton('linkChangeSource', () => openSheet('source')),
-          ' · ',
-          linkButton('linkChangeTarget', () => openSheet('target')),
-        ),
+      data.sameLanguage && sameLanguageNote(data),
     );
     renderFoot();
   }
@@ -354,7 +420,7 @@
     const service = error?.context?.provider?.name || '';
     const fallback = error?.context?.fallback;
     setBody(
-      h('div', { class: 'wv-error', role: 'alert', text: t(known || 'errUnknown', [service, code === 'provider_language' ? languages.name(error.detail) : '']) }),
+      h('div', { class: 'wv-error', role: 'alert', text: errorText(error) }),
       // For errors we have no message for, the provider's own wording is better than nothing.
       !known && error?.detail && h('div', { class: 'wv-error-detail', text: error.detail }),
       // Not the default service: said by name, and nothing is switched unless the user asks.
@@ -372,8 +438,10 @@
    */
   function renderActions(status) {
     const { result, error, saved, saving } = session;
+    const passage = session.mode === 'passage';
     const children = [];
-    if (error && RETRYABLE.has(error.code)) {
+    // (A passage of which a part is missing can be asked for again: what there is is remembered.)
+    if ((error && RETRYABLE.has(error.code)) || result?.partial) {
       children.push(h('button', { class: 'wv-btn', type: 'button', text: t('popupRetry'), onclick: () => lookup({ fresh: true }) }));
     }
     // The chosen service failed: the default one is offered for this lookup. The setting stays.
@@ -392,7 +460,25 @@
         }),
       );
     }
-    if (result || (error && SAVEABLE_ERRORS.has(error.code))) {
+    if (passage && result?.translation) {
+      children.push(h('button', { class: 'wv-btn', type: 'button', 'data-action': 'copy', onclick: copyTranslation }, icon(ICON_COPY), ' ', t('passageCopy')));
+    }
+    // A passage is never put into the vault by itself; short enough, it can be kept as a phrase.
+    if (passage && result?.translation && !result.partial && session.text.length <= PHRASE_MAX_CHARS) {
+      children.push(
+        h('button', {
+          class: saved ? 'wv-btn wv-btn-saved' : 'wv-btn',
+          type: 'button',
+          'data-action': 'phrase',
+          disabled: saving,
+          title: saved ? t('vaultRemoveHint') : t('vaultAddPhraseHint'),
+          'aria-pressed': String(saved),
+          text: saved ? t('vaultSaved') : t('vaultAddPhrase'),
+          onclick: toggleSaved,
+        }),
+      );
+    }
+    if (!passage && (result || (error && SAVEABLE_ERRORS.has(error.code)))) {
       const translated = Boolean(result?.translation);
       children.push(
         h('button', {
@@ -446,8 +532,10 @@
           translation: current.result?.translation || '',
           alternatives: current.result?.alternatives || [],
           sentence: current.sentence,
-          url: location.href,
-          title: document.title,
+          // (the window that stands in for a page has no page of its own to name)
+          url: current.standalone ? '' : location.href,
+          title: current.standalone ? '' : document.title,
+          ...(current.mode === 'passage' ? { kind: 'phrase' } : {}),
         });
       }
       current.saved = !wasSaved;
@@ -457,6 +545,57 @@
     }
     current.saving = false;
     if (session === current) flashStatus(status);
+  }
+
+  /**
+   * Puts the translation on the clipboard. Pages that are not served securely have no
+   * clipboard API; there the old way is used, on a field of our own that is gone at once, and
+   * the page's selection is put back.
+   */
+  async function copyTranslation() {
+    const current = session;
+    const text = current.result?.translation || '';
+    let copied = false;
+    try {
+      await navigator.clipboard.writeText(text);
+      copied = true;
+    } catch {
+      const field = h('textarea', { class: 'wv-offscreen', 'aria-hidden': 'true', tabindex: '-1' });
+      field.value = text;
+      ui.card.append(field);
+      const selection = window.getSelection();
+      const kept = selection && selection.rangeCount > 0 ? selection.getRangeAt(0).cloneRange() : null;
+      try {
+        field.select();
+        copied = document.execCommand('copy');
+      } catch {
+        copied = false;
+      }
+      field.remove();
+      if (kept) {
+        selection.removeAllRanges();
+        selection.addRange(kept);
+      }
+    }
+    if (session === current) flashStatus(copied ? { text: t('passageCopied') } : { text: t('passageCopyFailed'), error: true });
+  }
+
+  /** "Show all" / "Show less" for the selected text of a passage. */
+  function toggleSource() {
+    const expanded = ui.word.classList.toggle('wv-expanded');
+    ui.more.textContent = t(expanded ? 'passageShowLess' : 'passageShowAll');
+    position();
+  }
+
+  /** The link is only there when the text does not fit in the lines it is given. */
+  function updateMore() {
+    if (session?.mode !== 'passage') {
+      ui.more.hidden = true;
+      return;
+    }
+    const expanded = ui.word.classList.contains('wv-expanded');
+    ui.more.hidden = !expanded && ui.word.scrollHeight <= ui.word.clientHeight + 1;
+    ui.more.textContent = t(expanded ? 'passageShowLess' : 'passageShowAll');
   }
 
   /** Translates the session's text, with the source language the user fixed (if any). */
@@ -483,7 +622,13 @@
         source: current.source,
         provider: current.provider || undefined,
         fresh,
-      }, { signal: controller.signal });
+        passage: current.mode === 'passage' || undefined,
+      }, {
+        signal: controller.signal,
+        onProgress: (progress) => {
+          if (!isStale()) showProgress(progress);
+        },
+      });
       if (isStale()) return;
       current.result = data;
       current.sourceLang = data.sourceLang;
@@ -521,6 +666,7 @@
 
   function position() {
     if (!session) return;
+    if (session.standalone) return; // it fills its window (see the styles)
     const rect = anchorRect();
     const viewportWidth = Math.min(window.innerWidth, document.documentElement.clientWidth || Infinity);
     const viewportHeight = window.innerHeight;
@@ -558,7 +704,7 @@
   // --- Open / close ----------------------------------------------------------------------------
 
   function onPointerDown(event) {
-    if (!ui.surface.containsEvent(event)) close();
+    if (!session.standalone && !ui.surface.containsEvent(event)) close();
   }
 
   function swallowEscape(event) {
@@ -577,7 +723,7 @@
   }
 
   function onScroll(event) {
-    if (ui.surface.containsEvent(event)) return; // scrolling inside the card (the language list)
+    if (session.standalone || ui.surface.containsEvent(event)) return; // scrolling inside the card (the language list)
     // A selection range follows the page; a bare point cannot, so that popup closes instead.
     if (session.pinned) close();
     else schedulePosition();
@@ -605,8 +751,12 @@
    *                                    at this place instead of closing.
    * @param {DOMRect} [request.avoid]   The block the text is part of, which the popup should
    *                                    not cover; it then goes above it when there is room.
+   * @param {'word' | 'passage'} [request.mode]  'passage': a selected sentence or paragraph.
+   * @param {boolean} [request.standalone]  The popup is all there is in its window (the window
+   *                                    that stands in on pages nothing can be drawn on):
+   *                                    it fills it, and closing it closes the window.
    */
-  function open({ text, range, point, sentence = '', sample = '', pageLang = '', rect: lastRect = null, avoid = null }) {
+  function open({ text, range, point, sentence = '', sample = '', pageLang = '', rect: lastRect = null, avoid = null, mode = 'word', standalone = false }) {
     ui ||= build();
     if (!session) {
       for (const [type, listener, options] of LISTENERS) window.addEventListener(type, listener, options);
@@ -615,8 +765,10 @@
     session?.controller?.abort();
     // Selections inside shadow trees and replaced elements can report an empty rectangle.
     const rect = range?.getBoundingClientRect();
-    const pinned = rect && (rect.width > 0 || rect.height > 0) ? null : lastRect || new DOMRect(point.x, point.y, 0, 0);
+    const pinned = rect && (rect.width > 0 || rect.height > 0) ? null : lastRect || new DOMRect(point?.x || 0, point?.y || 0, 0, 0);
     session = {
+      mode: mode === 'passage' ? 'passage' : 'word',
+      standalone: standalone === true,
       text,
       range,
       pinned,
@@ -644,12 +796,16 @@
     };
 
     ui.word.textContent = text;
+    ui.word.classList.remove('wv-expanded');
+    ui.card.classList.toggle('wv-passage', session.mode === 'passage');
+    ui.card.classList.toggle('wv-standalone', session.standalone);
     ui.speakButton.hidden = true;
     ui.speakButton.classList.remove('wv-busy');
     ui.actions.replaceChildren();
     ui.sheet.hidden = true;
     ui.main.hidden = false;
     ui.surface.mount(range?.commonAncestorContainer);
+    updateMore();
     session.prefsReady = loadPrefs();
     lookup();
     position();
@@ -658,12 +814,14 @@
   function close() {
     if (!session) return;
     session.controller?.abort();
+    const { standalone } = session;
     session = null;
     for (const [type, listener, options] of LISTENERS) window.removeEventListener(type, listener, options);
     cancelAnimationFrame(frame);
     clearTimeout(statusTimer);
     frame = 0;
     ui.surface.unmount();
+    if (standalone) window.close();
   }
 
   /**
@@ -691,6 +849,8 @@
     openForHit,
     close,
     isOpen: () => Boolean(session),
+    /** Whether a passage (rather than a word) is on screen. */
+    showsPassage: () => session?.mode === 'passage',
     containsEvent: (event) => Boolean(ui) && ui.surface.containsEvent(event),
     /** Settings changed somewhere (options page, another tab): show the current values. */
     settingsChanged: () => {

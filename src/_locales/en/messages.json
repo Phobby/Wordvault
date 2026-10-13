@@ -2556,5 +2556,56 @@
   "tbPhraseBadge": {
     "message": "Phrase",
     "description": "Vault popup: mark on an entry that is a phrase or sentence kept from a translated selection, not a single word."
+  },
+  "selTranslate": {
+    "message": "Translate",
+    "description": "The small button that appears next to selected text on a page. Keep it to one short word."
+  },
+  "selTranslateHint": {
+    "message": "Translate the selection with Wordvault",
+    "description": "Tooltip of that button."
+  },
+  "passageShowAll": {
+    "message": "Show all",
+    "description": "Translation popup, sentence mode: shows the whole selected text, which is cut after three lines."
+  },
+  "passageShowLess": {
+    "message": "Show less"
+  },
+  "passageCopy": {
+    "message": "Copy",
+    "description": "Translation popup, sentence mode: copies the translation."
+  },
+  "passageCopied": {
+    "message": "Copied"
+  },
+  "passageCopyFailed": {
+    "message": "Could not copy"
+  },
+  "passageProgress": {
+    "message": "Translating… ($1 of $2 parts)",
+    "description": "A long selection is translated in parts. $1: parts done, $2: all parts."
+  },
+  "passagePartial": {
+    "message": "Only part of the text could be translated ($1 of $2 parts). $3",
+    "description": "$3 is the error message for the part that failed."
+  },
+  "errPassageTooLong": {
+    "message": "The selection is too long: at most $1 characters are translated at once (selected: $2)."
+  },
+  "vaultAddPhrase": {
+    "message": "Add to vault as phrase",
+    "description": "Translation popup, sentence mode."
+  },
+  "vaultAddPhraseHint": {
+    "message": "Kept as a phrase, apart from the word cards. The quiz does not ask phrases unless you switch that on in the settings."
+  },
+  "menuTranslate": {
+    "message": "Translate with Wordvault",
+    "description": "Right-click menu of selected text."
+  },
+  "cmdTranslateSelection": {
+    "message": "Translate the selected text",
+    "description": "Name of the keyboard shortcut, as the browser lists it."
   }
 }
