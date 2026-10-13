@@ -117,6 +117,7 @@ export function createAiSection({ flashSaved, switchRow, fieldRow }) {
     panel,
     h('h3', { text: t('optAiPrivacyTitle') }),
     h('p', { class: 'help', text: t('optAiPrivacy') }),
+    h('p', { class: 'help', 'data-ai': 'summary-note', text: t('aiSummaryNote') }),
     h('div', { class: 'buttons' }, consent, withdraw),
     switchRow(cache, 'optAiCache', 'optAiCacheHelp'),
     listRow('optAiBlocked', 'optAiBlockedHelp', blocked),

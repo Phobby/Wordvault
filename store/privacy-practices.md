@@ -34,7 +34,7 @@ eklentinin kendisiyle ilgilidir.
 | Location | Hayır | IP adresi toplanmaz; altyapı sağlayıcısı görür, alıcı kaydetmez. |
 | Web history | Hayır | |
 | User activity | Hayır | Tıklama, kaydırma, tuş kaydı tutulmaz; analitik yok. |
-| Website content | **Evet** | Kullanıcının çevirisini istediği metin (çift tıkladığı kelime ya da seçip sağ tık menüsü, "Çevir" düğmesi veya kısayolla çevirdiği cümle/paragraf) yalnızca seçili çeviri servisine gider, başka hiçbir yere gitmez; kullanıcı kendi yapay zekâ sağlayıcısını bağlayıp "Yapay zekâ ile açıkla"ya basarsa kelime, cümlesi ve sayfa başlığı (ya da seçtiği metin) yalnızca o sağlayıcıya gider (varsayılan kapalı, her istek elle); kaydettiği kelimeler, eşitleme açılırsa, kullanıcının seçtiği hesaba gider. |
+| Website content | **Evet** | Kullanıcının çevirisini istediği metin (çift tıkladığı kelime ya da seçip sağ tık menüsü, "Çevir" düğmesi veya kısayolla çevirdiği cümle/paragraf) yalnızca seçili çeviri servisine gider, başka hiçbir yere gitmez; kullanıcı kendi yapay zekâ sağlayıcısını bağlayıp "Yapay zekâ ile açıkla"ya basarsa kelime, cümlesi ve sayfa başlığı (ya da seçtiği metin), "Sayfayı özetle"yi isteyip kartta onaylarsa sayfanın ana metni ve başlığı (form alanları, gizli bölümler ve kullanıcının yazdıkları hariç; en çok 120.000 karakter) yalnızca o sağlayıcıya gider (varsayılan kapalı, her istek elle ve onaydan sonra); kaydettiği kelimeler, eşitleme açılırsa, kullanıcının seçtiği hesaba gider. |
 
 > ASSUMPTION: Geri bildirim metni "Personal communications", isteğe bağlı e-posta "Personally
 > identifiable information" sayıldı. İkisi de yalnızca kullanıcı formu gönderirse geçerlidir; temkinli

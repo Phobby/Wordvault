@@ -2345,5 +2345,74 @@
   },
   "optAiPromptSiteHelp": {
     "message": "Sağlayıcı bağlı değilken hangi sohbet sitesinin açılacağı. İstem panondadır; Wordvault hiçbir şey göndermez."
+  },
+  "sumMenu": {
+    "message": "Sayfayı özetle"
+  },
+  "sumTitle": {
+    "message": "Sayfa özeti"
+  },
+  "sumReading": {
+    "message": "Sayfa okunuyor…"
+  },
+  "sumNoText": {
+    "message": "Wordvault bu sayfada özetlenecek bir ana metin bulamadı."
+  },
+  "sumNotHere": {
+    "message": "Wordvault bu sayfayı okuyamaz (tarayıcının kendi sayfaları, PDF görüntüleyici ve eklenti mağazaları eklentilere kapalıdır)."
+  },
+  "sumSize": {
+    "message": "Ana metin: yaklaşık $1 karakter"
+  },
+  "sumOnePart": {
+    "message": "1 istekte gönderilir"
+  },
+  "sumParts": {
+    "message": "$1 parçada gönderilir: $2 istek (parça başına bir, birleştirmek için bir)"
+  },
+  "sumTruncated": {
+    "message": "Sayfa çok uzun: $2 karakterin yalnızca ilk $1 karakteri özetlenecek."
+  },
+  "sumWasTruncated": {
+    "message": "Sayfanın yalnızca ilk $1 karakteri özetlendi."
+  },
+  "sumSendsTo": {
+    "message": "Bu metin ve sayfanın başlığı $1 ($2) sağlayıcısına gider, başka hiçbir yere gitmez. Yazı alanları, gizli bölümler ve senin yazdıkların dışarıda bırakılır."
+  },
+  "sumConsent": {
+    "message": "Bu sayfanın ana metni ve başlığı $1 ($2) sağlayıcısına gönderilecek, başka hiçbir yere gönderilmeyecek. Yazı alanları, gizli bölümler ve senin yazdıkların dışarıda bırakılır. Metinle ne yaptığı kendi koşullarına bağlıdır. Bu bir kez sorulur."
+  },
+  "sumLength": {
+    "message": "Uzunluk"
+  },
+  "sumShort": {
+    "message": "Kısa"
+  },
+  "sumMedium": {
+    "message": "Orta"
+  },
+  "sumDetailed": {
+    "message": "Ayrıntılı"
+  },
+  "sumGo": {
+    "message": "Özetle"
+  },
+  "sumAgreeGo": {
+    "message": "Onayla ve özetle"
+  },
+  "sumWorking": {
+    "message": "$1 özetliyor…"
+  },
+  "sumWorkingParts": {
+    "message": "$1 özetliyor… (istek $2 / $3)"
+  },
+  "sumAgain": {
+    "message": "Başka uzunluk"
+  },
+  "sumAgainHint": {
+    "message": "Uzunluk seçimine döner. “Özetle”ye basana kadar hiçbir şey gönderilmez."
+  },
+  "aiSummaryNote": {
+    "message": "“Sayfayı özetle”, bir sağlayıcı ayarlıyken sayfanın sağ tık menüsünde ve Wordvault penceresinde durur. Sayfanın ana metnini yalnızca sen isteyince okur, ne kadar olduğunu gösterir ve sen onaylayınca gönderir. Uzun sayfa birkaç parçada gider (en çok 120.000 karakter)."
   }
 }

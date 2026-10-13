@@ -53,10 +53,9 @@ function check(manifests) {
   }
   // Both browsers run the same code, so everything except the background declaration and the
   // browser-specific keys has to stay in sync between the two manifests.
-  // Exceptions: what only Chrome needs. Its service worker cannot run text recognition, so that
-  // happens in an offscreen document; and Chrome does not put content scripts into tabs that
-  // were already open, so they are injected on demand.
-  const CHROME_ONLY_PERMISSIONS = ['offscreen', 'scripting'];
+  // Exception: what only Chrome needs. Its service worker cannot run text recognition, so that
+  // happens in an offscreen document.
+  const CHROME_ONLY_PERMISSIONS = ['offscreen'];
   const shared = ['permissions', 'optional_permissions', 'host_permissions', 'optional_host_permissions', 'content_scripts', 'content_security_policy', 'commands'];
   if (manifests.firefox && manifests.chrome) {
     const comparable = (target, key) => {

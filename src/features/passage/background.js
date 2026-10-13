@@ -39,7 +39,7 @@ async function askPage(tabId, message, frameId) {
  * installed, updated or reloaded. Such a tab gets them now, in the frame that was asked for
  * (or, for the shortcut, in every frame the browser lets us into).
  */
-async function inject(tabId, frameId) {
+export async function inject(tabId, frameId) {
   if (!chrome.scripting) return false;
   const entries = (chrome.runtime.getManifest().content_scripts || []).filter((entry) => entry.matches.includes('<all_urls>'));
   const everyFrame = entries.filter((entry) => entry.all_frames).flatMap((entry) => entry.js);
@@ -70,7 +70,7 @@ async function inject(tabId, frameId) {
 }
 
 /** Says on the toolbar button why nothing happened; it has no other place to say it. */
-async function sayOnButton(tab, messageKey) {
+export async function sayOnButton(tab, messageKey) {
   try {
     await chrome.action.setBadgeBackgroundColor({ tabId: tab.id, color: '#b42318' });
     await chrome.action.setBadgeText({ tabId: tab.id, text: '!' });

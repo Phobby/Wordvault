@@ -12,6 +12,7 @@ import { lookupWord } from '../lib/dictionary.js';
 import { ensureSchema } from '../lib/schema.js';
 import { passageHandlers, registerPassage } from '../features/passage/background.js';
 import { registerScreenOcr, screenOcrHandlers } from '../features/screen-ocr/background.js';
+import { registerSummary, summaryHandlers } from '../features/summary/background.js';
 import { rebuildMenus } from './menus.js';
 import { WordvaultError, serializeError } from '../lib/errors.js';
 import { fetchRecording } from '../lib/pronunciation.js';
@@ -142,6 +143,7 @@ const handlers = {
   'wv:feedback:send': fromOwnPage((payload) => sendFeedback(payload)),
   ...screenOcrHandlers,
   ...passageHandlers,
+  ...summaryHandlers,
   ...aiHandlers,
 };
 
@@ -178,14 +180,15 @@ chrome.runtime.onInstalled.addListener(async ({ reason }) => {
   chrome.tabs.create({ url: chrome.runtime.getURL('welcome/welcome.html') }).catch(() => {});
 });
 
-// --- Translating a selection, screen text scanning ---------------------------------------------
-// Shortcuts and right-click menu items; see features/passage/background.js and
-// features/screen-ocr/background.js. The listeners are registered here, at the top level, so
+// --- Translating a selection, screen text scanning, summarising a page --------------------------
+// Shortcuts and right-click menu items; see features/passage/background.js,
+// features/screen-ocr/background.js and features/summary/background.js. The listeners are registered here, at the top level, so
 // that a click wakes this script up; the menu itself is kept by the browser and built when the
 // extension is installed or updated and when the browser starts (background/menus.js).
 
 registerPassage();
 registerScreenOcr();
+registerSummary();
 chrome.runtime.onInstalled.addListener(rebuildMenus);
 chrome.runtime.onStartup.addListener(rebuildMenus);
 

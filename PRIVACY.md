@@ -65,10 +65,17 @@ açıkla" çalışır. Düğmeye **sen bastığında** şunlar, tarayıcından d
 sağlayıcıya** gider, başka hiçbir yere gönderilmez; arada Wordvault'un bir sunucusu yoktur:
 
 - kelime için: kelime, geçtiği cümle ve sayfanın başlığı;
-- seçtiğin cümle/paragraf için: o metin ve sayfanın başlığı.
+- seçtiğin cümle/paragraf için: o metin ve sayfanın başlığı;
+- "Sayfayı özetle" için (sayfanın sağ tık menüsü ya da Wordvault penceresi; yalnızca bir sağlayıcı
+  ayarlıyken görünür): sayfanın **ana metni** ve başlığı. Menüler, reklamlar ve yan içerikler
+  ayıklanır. Sayfa yalnızca sen özet isteyince okunur; kart önce ne kadar metnin, kaç parçada, hangi
+  sağlayıcıya gideceğini gösterir ve sen "Özetle"ye basmadan hiçbir şey gönderilmez. Uzun sayfa
+  birkaç parçada gider; en çok 120.000 karakter, fazlası gönderilmez ve bu sana söylenir.
 
-Gönderilmeyenler: sayfanın adresi, sayfanın geri kalanı, parola alanları, formlar ve yazı yazdığın
-kutulardaki metin (böyle bir alandan seçilen metin için düğme çalışmaz), kasan. Hiçbir şey
+Gönderilmeyenler: sayfanın adresi, parola alanları, form girdileri, gizli alanlar ve gizlenmiş
+bölümler, yazı yazdığın kutulardaki ve düzenlenebilir alanlardaki metin (böyle bir alandan seçilen
+metin için "açıkla" düğmesi çalışmaz; özet bu alanları sayfanın kopyasından çıkarır), kasan.
+"Açıkla" için ayrıca sayfanın geri kalanı da gönderilmez. Hiçbir şey
 kendiliğinden ya da arka planda gönderilmez. İlk kullanımda pencere neyin nereye gideceğini söyler
 ve onayını ister; sağlayıcıyı değiştirirsen yeniden sorar. Banka, e-posta ve sağlık sitesine benzeyen
 sitelerde bu özellikler kapalıdır; listeyi ayarlardan sen yönetirsin.
@@ -76,7 +83,7 @@ sitelerde bu özellikler kapalıdır; listeyi ayarlardan sen yönetirsin.
 API anahtarın yalnızca bu tarayıcıda (`chrome.storage.local`) saklanır ve yalnızca o sağlayıcıya,
 isteğin başlığında gönderilir. Yedeğe, senkronizasyona, geri bildirime, hata günlüğüne ve
 önbelleklere girmez. Yapay zekâ cevapları diske yazılmaz: en fazla tarayıcı kapanana kadar bellekte
-tutulur (ayarlardan kapatılabilir). Bir açıklamayı kasadaki kelimenin notuna yalnızca sen eklersen
+tutulur (ayarlardan kapatılabilir); sayfanın metni yalnızca özet kartı açıkken bellekte durur. Bir açıklamayı kasadaki kelimenin notuna yalnızca sen eklersen
 saklanır. Gönderilen metinle sağlayıcının ne yaptığı kendi koşullarına bağlıdır (örneğin Google,
 Gemini'nin ücretsiz katmanında içeriğin ürünlerini geliştirmek için kullanıldığını yazar).
 

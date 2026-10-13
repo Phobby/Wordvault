@@ -24,7 +24,7 @@
     "page": "options/options.html",
     "open_in_tab": true
   },
-  "permissions": ["storage", "unlimitedStorage", "alarms", "identity", "activeTab", "contextMenus"],
+  "permissions": ["storage", "unlimitedStorage", "alarms", "identity", "activeTab", "contextMenus", "scripting"],
   "commands": {
     "scan-screen": {
       "suggested_key": { "default": "Alt+Shift+S", "mac": "Command+Shift+E", "windows": "Alt+Shift+S", "linux": "Alt+Shift+S", "chromeos": "Alt+Shift+S" },

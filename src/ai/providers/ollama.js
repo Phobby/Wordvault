@@ -27,6 +27,14 @@ export const ollama = {
   keyPage: '',
   /** Models run slowly on an ordinary computer, and the first answer waits for the model to load. */
   timeoutMs: 180_000,
+  /**
+   * A long page is sent in parts of this many characters (ai/summary.js). Checked against
+   * docs.ollama.com/context-length on 2026-10-14: with less than 24 GiB of video memory the
+   * context is 4k tokens by default, and the page does not say what happens to a longer
+   * prompt. ASSUMPTION: about 2,000 tokens of text per part leave room for the instructions
+   * and the answer within that.
+   */
+  partChars: 8_000,
   origins: (config) => {
     const url = parseBase(config.baseUrl);
     return url ? [originPattern(url)] : [];

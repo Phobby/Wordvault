@@ -2946,5 +2946,83 @@
   },
   "optAiPromptSiteHelp": {
     "message": "Which chat site is opened when no provider is connected. The prompt is on your clipboard; nothing is sent by Wordvault."
+  },
+  "sumMenu": {
+    "message": "Summarise this page",
+    "description": "Right-click menu of a page and tooltip of the button in the toolbar popup. Only there while an AI provider is set up."
+  },
+  "sumTitle": {
+    "message": "Page summary",
+    "description": "Heading of the summary card shown on a page."
+  },
+  "sumReading": {
+    "message": "Reading the page…"
+  },
+  "sumNoText": {
+    "message": "Wordvault found no main text to summarise on this page."
+  },
+  "sumNotHere": {
+    "message": "Wordvault cannot read this page (browser pages, the PDF viewer and the add-on stores are closed to extensions).",
+    "description": "Tooltip of the toolbar button and message in the toolbar popup."
+  },
+  "sumSize": {
+    "message": "Main text: about $1 characters",
+    "description": "$1: a number."
+  },
+  "sumOnePart": {
+    "message": "Sent in 1 request"
+  },
+  "sumParts": {
+    "message": "Sent in $1 parts: $2 requests (one per part, one to join them)",
+    "description": "$1: number of parts, $2: number of requests."
+  },
+  "sumTruncated": {
+    "message": "The page is very long: only the first $1 of its $2 characters will be summarised."
+  },
+  "sumWasTruncated": {
+    "message": "Only the first $1 characters of the page were summarised."
+  },
+  "sumSendsTo": {
+    "message": "This text and the page's title go to $1 ($2) and nowhere else. Fields, hidden parts and anything you typed are left out.",
+    "description": "$1: provider, $2: model."
+  },
+  "sumConsent": {
+    "message": "The main text of this page and its title will be sent to $1 ($2) and nowhere else. Fields, hidden parts and anything you typed are left out. Its own terms apply to what it does with the text. You are asked this once.",
+    "description": "Shown the first time text goes to a provider."
+  },
+  "sumLength": {
+    "message": "Length"
+  },
+  "sumShort": {
+    "message": "Short"
+  },
+  "sumMedium": {
+    "message": "Medium"
+  },
+  "sumDetailed": {
+    "message": "Detailed"
+  },
+  "sumGo": {
+    "message": "Summarise"
+  },
+  "sumAgreeGo": {
+    "message": "Agree and summarise"
+  },
+  "sumWorking": {
+    "message": "$1 is summarising…",
+    "description": "$1: provider."
+  },
+  "sumWorkingParts": {
+    "message": "$1 is summarising… (request $2 of $3)"
+  },
+  "sumAgain": {
+    "message": "Another length"
+  },
+  "sumAgainHint": {
+    "message": "Back to the choice of length. Nothing is sent until you press “Summarise”."
+  },
+  "aiSummaryNote": {
+    "message": "“Summarise this page” is in the right-click menu of a page and in the Wordvault popup while a provider is set up. It reads the page's main text only when you ask, shows how much that is, and sends it after you agree. A long page goes in several parts (up to 120,000 characters).",
+    "description": "Settings, AI section."
   }
 }

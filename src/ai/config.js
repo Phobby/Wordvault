@@ -33,6 +33,8 @@ export const DEFAULT_AI_CONFIG = Object.freeze({
   allowed: [],
   /** Which site "Copy the prompt and open" opens: a key of PROMPT_SITES. */
   promptSite: 'chatgpt',
+  /** The length last asked for in "Summarise this page": 'short', 'medium' or 'detailed'. */
+  summaryLength: 'medium',
 });
 
 const clean = (value, max = 300) => (typeof value === 'string' ? value.trim().slice(0, max) : '');
