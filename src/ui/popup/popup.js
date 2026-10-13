@@ -618,6 +618,8 @@
     context_invalidated: 'errContextInvalidated',
   };
   const AI_RETRYABLE = new Set(['network', 'timeout', 'ai_overloaded', 'ai_quota', 'ai_empty', 'ai_bad_answer']);
+  /** With these the provider's own words are shown too: ours cannot say what exactly went wrong there. (They never hold the key: ai/http.js.) */
+  const AI_DETAILED = new Set(['ai_request', 'ai_overloaded']);
   /** These are answered by a visit to the settings. */
   const AI_SETTINGS = new Set(['ai_auth', 'ai_model', 'ai_origin', 'ai_permission', 'ai_address']);
 
@@ -667,7 +669,7 @@
       children = [
         note(t(AI_ERRORS[code] || 'aiErrUnknown', [ai.provider || '']), true),
         // The provider's own words help with a request it did not accept; they never hold the key.
-        !AI_ERRORS[code] || code === 'ai_request' ? ai.error?.detail && h('div', { class: 'wv-error-detail', text: ai.error.detail }) : null,
+        !AI_ERRORS[code] || AI_DETAILED.has(code) ? ai.error?.detail && h('div', { class: 'wv-error-detail', text: ai.error.detail }) : null,
         row(AI_RETRYABLE.has(code) && aiButton('popupRetry', () => runAi(false)), AI_SETTINGS.has(code) && aiButton('aiOpenSettings', openAiSettings), aiButton('aiCancel', resetAi)),
       ];
     } else {

@@ -189,7 +189,7 @@ export function createAiSection({ flashSaved, switchRow, fieldRow }) {
     } catch (error) {
       const known = TEST_ERRORS[error?.code];
       // The provider's own words for what we have no name for; they never hold the key.
-      say(`${t(known || 'aiErrUnknown', [provider.name])}${(!known || error?.code === 'ai_request') && error?.detail ? ` (${error.detail})` : ''}`, true);
+      say(`${t(known || 'aiErrUnknown', [provider.name])}${(!known || error?.code === 'ai_request' || error?.code === 'ai_overloaded') && error?.detail ? ` (${error.detail})` : ''}`, true);
     } finally {
       test.disabled = false;
     }

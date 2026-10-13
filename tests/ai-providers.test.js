@@ -71,7 +71,7 @@ test('Gemini: refusals', async () => {
   reply = () => json(429, { error: { code: 429, message: 'Quota exceeded', status: 'RESOURCE_EXHAUSTED' } });
   await assert.rejects(gemini.generate(request, config), (error) => error.code === 'ai_quota');
   reply = () => json(503, { error: { code: 503, message: 'overloaded', status: 'UNAVAILABLE' } });
-  await assert.rejects(gemini.generate(request, config), (error) => error.code === 'ai_overloaded');
+  await assert.rejects(gemini.generate(request, config), (error) => error.code === 'ai_overloaded' && error.detail === 'overloaded');
   reply = () => streamed(['data: {"promptFeedback":{"blockReason":"SAFETY"}}\n\n'], 'text/event-stream');
   await assert.rejects(gemini.generate(request, config), (error) => error.code === 'ai_refused');
 });
