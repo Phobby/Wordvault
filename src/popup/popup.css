@@ -322,3 +322,4 @@ body {
   .diff-button { transition: none; }
   .diff-play .d-stem, .diff-play .d-leaf, .diff-play .d-star, .diff-play .d-ember, .diff-play .d-bolt, .diff-play .d-gem, .diff-play .d-glint { animation: none; }
 }
+.note-text { white-space: pre-wrap; font-size: 13px; line-height: 1.5; color: var(--wv-fg); overflow-wrap: anywhere; }

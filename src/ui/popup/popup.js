@@ -27,6 +27,7 @@
 
   const ICON_CLOSE = 'M6 6l12 12M18 6L6 18';
   const ICON_BACK = 'M15 6l-6 6 6 6';
+  const ICON_SPARK = 'M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8zM18.5 15.5l.8 2.2 2.2.8-2.2.8-.8 2.2-.8-2.2-2.2-.8 2.2-.8z';
   const ICON_COPY = 'M9 9h10v11H9zM5 15V4h10';
   const ICON_SPEAKER = 'M11 5L6 9H3v6h3l5 4zM15.5 8.5a5 5 0 0 1 0 7M18.5 5.5a9 9 0 0 1 0 13';
 
@@ -105,6 +106,8 @@
     const more = h('button', { class: 'wv-link wv-more', type: 'button', hidden: true, onclick: toggleSource });
     const body = h('div', { class: 'wv-body', 'aria-live': 'polite' });
     const actions = h('div', { class: 'wv-actions' });
+    // "Explain with AI": only ever filled after the user asks for it (see the AI part below).
+    const ai = h('div', { class: 'wv-ai', hidden: true });
     const foot = h('div', { class: 'wv-foot' });
     const main = h(
       'div',
@@ -116,6 +119,7 @@
       setup,
       body,
       actions,
+      ai,
       foot,
     );
 
@@ -151,6 +155,7 @@
       setupText,
       body,
       actions,
+      ai,
       foot,
       sheet,
       sheetTitle,
@@ -544,7 +549,10 @@
       status = { text: t('vaultError'), error: true };
     }
     current.saving = false;
-    if (session === current) flashStatus(status);
+    if (session === current) {
+      flashStatus(status);
+      renderAi(); // an explanation on screen can be kept with a word that is in the vault
+    }
   }
 
   /**
@@ -554,7 +562,12 @@
    */
   async function copyTranslation() {
     const current = session;
-    const text = current.result?.translation || '';
+    const copied = await copyText(current.result?.translation || '');
+    if (session === current) flashStatus(copied ? { text: t('passageCopied') } : { text: t('passageCopyFailed'), error: true });
+  }
+
+  /** @returns {Promise<boolean>} Whether the text is on the clipboard now. */
+  async function copyText(text) {
     let copied = false;
     try {
       await navigator.clipboard.writeText(text);
@@ -577,7 +590,208 @@
         selection.addRange(kept);
       }
     }
-    if (session === current) flashStatus(copied ? { text: t('passageCopied') } : { text: t('passageCopyFailed'), error: true });
+    return copied;
+  }
+
+  // --- Explain with AI -------------------------------------------------------------------------
+  //
+  // Off until the user has set up a provider of their own in the settings, and even then
+  // nothing is sent before they press the button: what goes out is the word (or the selected
+  // passage), the sentence it is in and the page's title, to the provider they chose and
+  // nowhere else. The answer is shown as text (textContent): nothing in it is markup, a link
+  // or an instruction to this extension.
+
+  const AI_ERRORS = {
+    ai_auth: 'aiErrAuth',
+    ai_quota: 'aiErrQuota',
+    ai_model: 'aiErrModel',
+    ai_overloaded: 'aiErrOverloaded',
+    ai_origin: 'aiErrOrigin',
+    ai_permission: 'aiErrPermission',
+    ai_request: 'aiErrRequest',
+    ai_refused: 'aiErrRefused',
+    ai_empty: 'aiErrEmpty',
+    ai_bad_answer: 'aiErrEmpty',
+    ai_address: 'aiErrAddress',
+    network: 'aiErrNetwork',
+    timeout: 'aiErrTimeout',
+    context_invalidated: 'errContextInvalidated',
+  };
+  const AI_RETRYABLE = new Set(['network', 'timeout', 'ai_overloaded', 'ai_quota', 'ai_empty', 'ai_bad_answer']);
+  /** These are answered by a visit to the settings. */
+  const AI_SETTINGS = new Set(['ai_auth', 'ai_model', 'ai_origin', 'ai_permission', 'ai_address']);
+
+  /** What is asked about: the word with its sentence, or the passage. The page's title goes along. */
+  function aiPayload() {
+    const title = session.standalone ? '' : document.title;
+    return session.mode === 'passage'
+      ? { kind: 'passage', text: session.text, title }
+      : { kind: 'word', text: session.text, sentence: session.sentence, title, sourceLang: session.sourceLang };
+  }
+
+  const aiButton = (labelKey, onclick, extra = {}) => h('button', { class: 'wv-btn wv-btn-sm', type: 'button', text: t(labelKey), onclick, ...extra });
+  const openAiSettings = () => WV.send('wv:ai:open-settings').catch(() => {});
+
+  function renderAi() {
+    if (!ui || !session) return;
+    const ai = session.ai;
+    // Offered once there is something on screen to explain.
+    const offered = Boolean(session.result || session.error) && !session.sheet;
+    ui.ai.hidden = !offered;
+    if (!offered) return;
+    const row = (...children) => h('div', { class: 'wv-ai-row' }, ...children.filter(Boolean));
+    const note = (text, error = false) => h('div', { class: error ? 'wv-ai-note wv-error' : 'wv-ai-note', role: error ? 'alert' : null, text });
+    let children;
+    if (ai.state === 'idle') {
+      children = [h('button', { class: 'wv-link wv-ai-ask', type: 'button', 'data-action': 'ai-explain', onclick: startAi }, icon(ICON_SPARK), ' ', t('aiExplain'))];
+    } else if (ai.state === 'field') {
+      // Text the user typed into a field is theirs; it is not sent to a model.
+      children = [note(t('aiNotFromFields'))];
+    } else if (ai.state === 'site') {
+      children = [note(t(ai.detail === 'blocked' ? 'aiSiteBlocked' : 'aiSiteSensitive')), row(aiButton('aiOpenSettings', openAiSettings))];
+    } else if (ai.state === 'setup') {
+      children = [
+        note(t('aiNeedsKey')),
+        row(aiButton('aiOpenSettings', openAiSettings), h('button', { class: 'wv-btn wv-btn-sm', type: 'button', 'data-action': 'ai-copy-prompt', text: t('aiCopyPrompt', [ai.site || '']), onclick: copyPromptAndOpen }), ai.flash && h('span', { class: 'wv-status', role: 'status', text: ai.flash })),
+        note(t('aiCopyPromptHint')),
+      ];
+    } else if (ai.state === 'consent') {
+      children = [
+        note(t(session.mode === 'passage' ? 'aiConsentPassage' : 'aiConsentWord', [ai.provider])),
+        row(aiButton('aiConsentYes', () => runAi(true), { class: 'wv-btn wv-btn-sm wv-btn-primary', 'data-action': 'ai-agree' }), aiButton('aiCancel', resetAi)),
+      ];
+    } else if (ai.state === 'loading') {
+      children = [h('div', { class: 'wv-loading' }, h('span', { class: 'wv-spinner' }), t('aiThinking', [ai.provider || ''])), row(aiButton('aiCancel', cancelAi))];
+    } else if (ai.state === 'error') {
+      const code = ai.error?.code || 'internal';
+      children = [
+        note(t(AI_ERRORS[code] || 'aiErrUnknown', [ai.provider || '']), true),
+        // The provider's own words help with a request it did not accept; they never hold the key.
+        !AI_ERRORS[code] || code === 'ai_request' ? ai.error?.detail && h('div', { class: 'wv-error-detail', text: ai.error.detail }) : null,
+        row(AI_RETRYABLE.has(code) && aiButton('popupRetry', () => runAi(false)), AI_SETTINGS.has(code) && aiButton('aiOpenSettings', openAiSettings), aiButton('aiCancel', resetAi)),
+      ];
+    } else {
+      children = [
+        h('div', { class: 'wv-ai-label', text: t('aiTitle') }),
+        h('div', { class: 'wv-ai-text', dir: 'auto', tabindex: '0', text: ai.text }),
+        row(
+          aiButton('passageCopy', copyAi, { 'data-action': 'ai-copy' }),
+          // Only for something that is in the vault, and only when the user says so.
+          session.saved && !ai.noted && aiButton('aiAddToNote', addAiToNote, { 'data-action': 'ai-note', title: t('aiAddToNoteHint') }),
+          ai.flash && h('span', { class: 'wv-status', role: 'status', text: ai.flash }),
+        ),
+        h('div', { class: 'wv-ai-note', text: t('aiBy', [ai.provider || '', ai.model || '']) }),
+      ];
+    }
+    ui.ai.replaceChildren(...children.filter(Boolean));
+    position();
+  }
+
+  function resetAi() {
+    if (!session) return;
+    session.ai = { state: 'idle' };
+    renderAi();
+  }
+
+  /** The button was pressed: find out what stands in the way, if anything, before anything is sent. */
+  async function startAi() {
+    const current = session;
+    if (current.fromField) {
+      current.ai = { state: 'field' };
+      renderAi();
+      return;
+    }
+    let status;
+    try {
+      status = await WV.send('wv:ai:status');
+    } catch (error) {
+      if (session !== current) return;
+      current.ai = { state: 'error', error };
+      renderAi();
+      return;
+    }
+    if (session !== current) return;
+    const provider = status.provider?.name || '';
+    if (status.site !== 'ok') current.ai = { state: 'site', detail: status.site };
+    else if (!status.ready) current.ai = { state: 'setup', site: status.promptSite };
+    else if (!status.consent) current.ai = { state: 'consent', provider };
+    else {
+      current.ai = { state: 'loading', provider };
+      runAi(false);
+      return;
+    }
+    renderAi();
+  }
+
+  /** @param {boolean} agree  The user has just said yes to the notice about what is sent. */
+  async function runAi(agree) {
+    const current = session;
+    const requestId = `ai-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+    current.ai = { state: 'loading', provider: current.ai.provider, requestId };
+    renderAi();
+    try {
+      const answer = await WV.send('wv:ai:explain', { ...aiPayload(), requestId, agree });
+      if (session !== current || current.ai.requestId !== requestId) return;
+      current.ai = { state: 'done', text: answer.text, provider: answer.provider.name, model: answer.provider.model };
+    } catch (error) {
+      if (session !== current || current.ai.requestId !== requestId) return;
+      if (error?.code === 'aborted') current.ai = { state: 'idle' };
+      // What the button asked a moment ago changed in the meantime (in the settings, in another tab).
+      else if (error?.code === 'ai_consent') current.ai = { state: 'consent', provider: error.detail || current.ai.provider };
+      else if (error?.code === 'ai_not_configured') current.ai = { state: 'setup', site: '' };
+      else if (error?.code === 'ai_site') current.ai = { state: 'site', detail: error.detail };
+      else current.ai = { state: 'error', error, provider: current.ai.provider };
+    }
+    renderAi();
+  }
+
+  function cancelAi() {
+    const requestId = session?.ai?.requestId;
+    if (requestId) WV.send('wv:ai:cancel', { requestId }).catch(() => {});
+    resetAi();
+  }
+
+  async function copyAi() {
+    const current = session;
+    const copied = await copyText(current.ai.text || '');
+    if (session !== current || current.ai.state !== 'done') return;
+    current.ai.flash = t(copied ? 'passageCopied' : 'passageCopyFailed');
+    renderAi();
+  }
+
+  /** Keeps the explanation with the word in the vault: the user pressed the button for it. */
+  async function addAiToNote() {
+    const current = session;
+    const known = current.result || current.error?.context || {};
+    try {
+      const done = await WV.send('wv:vault:note', { text: known.text || current.text, sourceLang: current.sourceLang, targetLang: known.targetLang || prefs?.targetLang || '', note: current.ai.text });
+      if (session !== current || current.ai.state !== 'done') return;
+      current.ai.noted = done;
+      current.ai.flash = t(done ? 'aiNoteAdded' : 'vaultError');
+    } catch {
+      if (session !== current || current.ai.state !== 'done') return;
+      current.ai.flash = t('vaultError');
+    }
+    renderAi();
+  }
+
+  /**
+   * Without a provider: the prompt goes to the clipboard and a chat site of the user's choice
+   * is opened in a new tab, for them to paste it into. Nothing is sent by the extension and the
+   * answer does not come back here.
+   */
+  async function copyPromptAndOpen() {
+    const current = session;
+    let copied = false;
+    try {
+      copied = await copyText(await WV.send('wv:ai:prompt', aiPayload()));
+      if (copied) await WV.send('wv:ai:open-site');
+    } catch {
+      copied = false;
+    }
+    if (session !== current || current.ai.state !== 'setup') return;
+    current.ai.flash = t(copied ? 'aiPromptCopied' : 'passageCopyFailed');
+    renderAi();
   }
 
   /** "Show all" / "Show less" for the selected text of a passage. */
@@ -613,6 +827,7 @@
     clearTimeout(statusTimer);
     showLoading();
     ui.actions.replaceChildren();
+    ui.ai.hidden = true;
     renderLanguages();
     try {
       const data = await WV.translateClient.translate({
@@ -645,6 +860,7 @@
       showError(error);
     }
     renderActions();
+    renderAi();
     renderLanguages();
     updateSpeakButton();
     position();
@@ -752,11 +968,13 @@
    * @param {DOMRect} [request.avoid]   The block the text is part of, which the popup should
    *                                    not cover; it then goes above it when there is room.
    * @param {'word' | 'passage'} [request.mode]  'passage': a selected sentence or paragraph.
+   * @param {boolean} [request.fromField]  The text was selected inside something the user types
+   *                                    in: it is translated, but never offered to an AI.
    * @param {boolean} [request.standalone]  The popup is all there is in its window (the window
    *                                    that stands in on pages nothing can be drawn on):
    *                                    it fills it, and closing it closes the window.
    */
-  function open({ text, range, point, sentence = '', sample = '', pageLang = '', rect: lastRect = null, avoid = null, mode = 'word', standalone = false }) {
+  function open({ text, range, point, sentence = '', sample = '', pageLang = '', rect: lastRect = null, avoid = null, mode = 'word', standalone = false, fromField = false }) {
     ui ||= build();
     if (!session) {
       for (const [type, listener, options] of LISTENERS) window.addEventListener(type, listener, options);
@@ -769,6 +987,8 @@
     session = {
       mode: mode === 'passage' ? 'passage' : 'word',
       standalone: standalone === true,
+      fromField: fromField === true,
+      ai: { state: 'idle' }, // "Explain with AI": idle until the user asks
       text,
       range,
       pinned,
@@ -802,6 +1022,8 @@
     ui.speakButton.hidden = true;
     ui.speakButton.classList.remove('wv-busy');
     ui.actions.replaceChildren();
+    ui.ai.replaceChildren();
+    ui.ai.hidden = true;
     ui.sheet.hidden = true;
     ui.main.hidden = false;
     ui.surface.mount(range?.commonAncestorContainer);
@@ -814,6 +1036,7 @@
   function close() {
     if (!session) return;
     session.controller?.abort();
+    if (session.ai.requestId) WV.send('wv:ai:cancel', { requestId: session.ai.requestId }).catch(() => {});
     const { standalone } = session;
     session = null;
     for (const [type, listener, options] of LISTENERS) window.removeEventListener(type, listener, options);

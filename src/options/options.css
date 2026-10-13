@@ -322,3 +322,11 @@ body {
 
 .card h3.with-badge { display: flex; align-items: center; gap: 8px; }
 .card h3.with-badge .sync-badge[hidden] { display: none; }
+
+/* The AI section */
+#ai h3 { margin: 18px 0 4px; font-size: 14px; }
+#ai textarea { width: 100%; min-height: 64px; padding: 6px 8px; border: 1px solid var(--wv-border); border-radius: 6px; background: transparent; color: inherit; font: 12.5px ui-monospace, SFMono-Regular, Menlo, monospace; resize: vertical; }
+#ai .fb-field { margin-top: 12px; }
+#ai .provider-panel .fb-field { margin-top: 0; }
+.ai-code { display: block; margin: 4px 0; padding: 6px 8px; border-radius: 6px; background: var(--wv-tint); font: 12.5px ui-monospace, SFMono-Regular, Menlo, monospace; overflow-wrap: anywhere; user-select: all; }
+.ai-ollama .help { margin: 0; }

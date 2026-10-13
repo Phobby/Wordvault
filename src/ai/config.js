@@ -1,0 +1,95 @@
+// What the user set up for the AI features: which provider, its key, model and address, the
+// site lists, and whether they have agreed to text being sent.
+//
+// It lives under its own key in chrome.storage.local and nowhere else. It is part of neither
+// the backup, nor synchronisation, nor a piece of feedback, nor any cache (tests/ai-secrets.test.js
+// holds that). The key never leaves the background script and the settings page: content
+// scripts are told only whether a provider is set up, never with what.
+
+import { getAiProvider } from './providers/index.js';
+import { parseBase } from './providers/shared.js';
+
+export const AI_CONFIG_KEY = 'aiConfig';
+
+/** Where "Copy the prompt and open" can take the user. Fixed addresses: nothing here comes from a page or a model. */
+export const PROMPT_SITES = Object.freeze({
+  chatgpt: { name: 'ChatGPT', url: 'https://chatgpt.com/' },
+  claude: { name: 'Claude', url: 'https://claude.ai/new' },
+  gemini: { name: 'Gemini', url: 'https://gemini.google.com/app' },
+});
+
+export const DEFAULT_AI_CONFIG = Object.freeze({
+  /** Id of the one active provider; '' while the AI features are off. */
+  provider: '',
+  /** Per provider: { apiKey, model, baseUrl }. Kept when another provider is chosen. */
+  providers: {},
+  /** The provider the user has agreed to send text to ('' = not yet). Asked again for another one. */
+  consent: '',
+  /** Keep answers for this browser session, so the same question is not sent twice. */
+  cache: true,
+  /** Hosts the AI features are off on, in addition to the built-in ones (ai/sites.js). */
+  blocked: [],
+  /** Hosts the AI features are on, although the built-in list would switch them off. */
+  allowed: [],
+  /** Which site "Copy the prompt and open" opens: a key of PROMPT_SITES. */
+  promptSite: 'chatgpt',
+});
+
+const clean = (value, max = 300) => (typeof value === 'string' ? value.trim().slice(0, max) : '');
+
+/** @returns {Promise<typeof DEFAULT_AI_CONFIG>} */
+export async function getAiConfig() {
+  const stored = (await chrome.storage.local.get(AI_CONFIG_KEY))[AI_CONFIG_KEY];
+  const config = { ...DEFAULT_AI_CONFIG, ...(stored && typeof stored === 'object' ? stored : {}) };
+  config.providers = config.providers && typeof config.providers === 'object' ? config.providers : {};
+  config.blocked = Array.isArray(config.blocked) ? config.blocked : [];
+  config.allowed = Array.isArray(config.allowed) ? config.allowed : [];
+  return config;
+}
+
+let turns = Promise.resolve();
+
+/** @param {Partial<typeof DEFAULT_AI_CONFIG>} patch  Changes take turns, like the settings' (lib/settings.js). */
+export function updateAiConfig(patch) {
+  const done = turns.then(async () => {
+    const next = { ...(await getAiConfig()), ...patch };
+    await chrome.storage.local.set({ [AI_CONFIG_KEY]: next });
+    return next;
+  });
+  turns = done.catch(() => {});
+  return done;
+}
+
+/**
+ * A provider's settings as they are used: what the user typed, with the provider's defaults
+ * where they typed nothing.
+ * @returns {import('./providers/index.js').AiSettings}
+ */
+export function settingsFor(provider, stored) {
+  return {
+    apiKey: clean(stored?.apiKey, 400),
+    model: clean(stored?.model, 120) || provider.defaultModel,
+    baseUrl: provider.needsBase ? clean(stored?.baseUrl) || provider.defaultBase : '',
+  };
+}
+
+/** Why a provider cannot be used as it is set up: 'key', 'model', 'address', or '' if it can. */
+export function missing(provider, settings) {
+  if (provider.needsKey && !settings.apiKey) return 'key';
+  if (provider.needsBase && !parseBase(settings.baseUrl)) return 'address';
+  if (!settings.model) return 'model';
+  return '';
+}
+
+/**
+ * The provider in use and its settings, or the reason there is none.
+ * @param {typeof DEFAULT_AI_CONFIG} [config]
+ * @returns {Promise<{ config: typeof DEFAULT_AI_CONFIG, provider: import('./providers/index.js').AiProvider | null, settings: import('./providers/index.js').AiSettings | null, ready: boolean }>}
+ */
+export async function activeAi(config) {
+  const current = config || (await getAiConfig());
+  const provider = getAiProvider(current.provider);
+  if (!provider) return { config: current, provider: null, settings: null, ready: false };
+  const settings = settingsFor(provider, current.providers[provider.id]);
+  return { config: current, provider, settings, ready: missing(provider, settings) === '' };
+}

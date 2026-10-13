@@ -31,6 +31,9 @@ export function scrub(text) {
     // nothing here should ever hold a key; if something did, it does not get written down
     .replace(/\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(?::fx)?\b/gi, '[key]')
     .replace(/\b(DeepL-Auth-Key|Bearer)\s+\S+/gi, '$1 [key]')
+    // the shapes AI providers' keys come in (ai/providers): never part of a record either
+    .replace(/\b(sk-ant-|sk-or-|sk-proj-|sk-|gsk_|AIza)[\w-]{6,}/g, '[key]')
+    .replace(/\b(x-api-key|x-goog-api-key)[\s:=]+\S+/gi, '$1 [key]')
     .replace(/(["'`])([^"'`]*)\1/g, (all, quote, inner) => (inner.length > MAX_QUOTED ? `${quote}…${quote}` : all))
     .replace(/[\u0000-\u0008\u000b-\u001f\u007f]/g, ' ');
 }

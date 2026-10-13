@@ -2659,5 +2659,292 @@
   },
   "optSelPrivacy": {
     "message": "The selected text is sent only to the translation service chosen above, and nowhere else. Nothing is kept unless you add it to the vault yourself. Note that MyMemory's free use is limited per day; long passages use it up quickly."
+  },
+  "aiExplain": {
+    "message": "Explain with AI",
+    "description": "Translation popup: asks the AI provider the user set up to explain the word or the selected text."
+  },
+  "aiTitle": {
+    "message": "AI explanation"
+  },
+  "aiThinking": {
+    "message": "Asking $1…",
+    "description": "$1: name of the AI provider."
+  },
+  "aiCancel": {
+    "message": "Cancel"
+  },
+  "aiOpenSettings": {
+    "message": "Open settings"
+  },
+  "aiNeedsKey": {
+    "message": "To use this, enter your own AI key in the settings."
+  },
+  "aiCopyPrompt": {
+    "message": "Copy the prompt and open $1",
+    "description": "$1: name of a chat site (ChatGPT, Claude, Gemini)."
+  },
+  "aiCopyPromptHint": {
+    "message": "Without a key: the ready prompt is copied and the site opens in a new tab; paste it there yourself. The answer does not come back to Wordvault."
+  },
+  "aiPromptCopied": {
+    "message": "Prompt copied"
+  },
+  "aiConsentWord": {
+    "message": "The word, the sentence it is in and the page's title will be sent to $1 and nowhere else. Its own terms apply to what it does with them. You are asked this once.",
+    "description": "$1: name of the AI provider."
+  },
+  "aiConsentPassage": {
+    "message": "The selected text and the page's title will be sent to $1 and nowhere else. Its own terms apply to what it does with them. You are asked this once."
+  },
+  "aiConsentYes": {
+    "message": "Agree and send"
+  },
+  "aiBy": {
+    "message": "Written by $1 ($2). AI can be wrong.",
+    "description": "$1: provider, $2: model."
+  },
+  "aiAddToNote": {
+    "message": "Add to the word's note"
+  },
+  "aiAddToNoteHint": {
+    "message": "Keeps this explanation with the word in your vault."
+  },
+  "aiNoteAdded": {
+    "message": "Added to the note"
+  },
+  "aiNotFromFields": {
+    "message": "Text selected inside a field you type in is not sent to an AI."
+  },
+  "aiSiteSensitive": {
+    "message": "AI features are off on this site: it looks like a banking, e-mail or health site. You can allow it in the settings."
+  },
+  "aiSiteBlocked": {
+    "message": "AI features are off on this site: it is on your block list."
+  },
+  "aiErrAuth": {
+    "message": "$1 did not accept the key: it is wrong, revoked, or may not use this model."
+  },
+  "aiErrQuota": {
+    "message": "$1: the quota or the credit is used up, or too many requests were made. Try again later."
+  },
+  "aiErrModel": {
+    "message": "$1 has no model of that name (or the address is wrong). Check the model name in the settings."
+  },
+  "aiErrOverloaded": {
+    "message": "$1 is having trouble right now. Try again in a little while."
+  },
+  "aiErrOrigin": {
+    "message": "Ollama turned the browser extension away. Start it with OLLAMA_ORIGINS set as described in the settings."
+  },
+  "aiErrPermission": {
+    "message": "The browser has not been allowed to reach $1 yet. Open the settings and press “Test”."
+  },
+  "aiErrRequest": {
+    "message": "$1 did not accept the request."
+  },
+  "aiErrRefused": {
+    "message": "$1 gave no answer for this text (its content rules)."
+  },
+  "aiErrEmpty": {
+    "message": "$1 answered without any text. Try again."
+  },
+  "aiErrAddress": {
+    "message": "The address is not usable: it has to start with https://, or with http://localhost for a server on this computer."
+  },
+  "aiErrNetwork": {
+    "message": "$1 could not be reached. Check the connection; for a server on this computer, check that it is running."
+  },
+  "aiErrTimeout": {
+    "message": "$1 took too long to answer."
+  },
+  "aiErrUnknown": {
+    "message": "Something went wrong while asking $1."
+  },
+  "dtNote": {
+    "message": "Note",
+    "description": "Vault popup: heading over the user's note on a word."
+  },
+  "optAiTitle": {
+    "message": "AI features",
+    "description": "Options page: heading of the AI section."
+  },
+  "optAiHelp": {
+    "message": "Off by default. Connect an AI provider of your own and the translation popup gets “Explain with AI”. Nothing is sent by itself: every request is one you start by hand, and it goes straight from your browser to the provider you chose. Wordvault has no server in between. Translating, the vault and the quiz work without any of this."
+  },
+  "optAiOff": {
+    "message": "Off"
+  },
+  "optAiOffHelp": {
+    "message": "No AI provider. “Explain with AI” then only offers to copy a ready prompt for you to paste into a chat site yourself."
+  },
+  "optAiGeminiHelp": {
+    "message": "With an API key from Google AI Studio. Has a free tier."
+  },
+  "optAiClaudeHelp": {
+    "message": "With your own Claude API key from the Claude Console. Paid by use."
+  },
+  "optAiOpenai": {
+    "message": "OpenAI-compatible service"
+  },
+  "optAiOpenaiHelp": {
+    "message": "OpenAI, OpenRouter, Groq, LM Studio and others: you give the address, the key and the model."
+  },
+  "optAiOllamaHelp": {
+    "message": "A model running on this computer. Nothing leaves it."
+  },
+  "optAiKey": {
+    "message": "API key"
+  },
+  "optAiKeyHelp": {
+    "message": "Stored only in this browser. It is not part of the backup, of synchronisation or of feedback, and it is sent only to this provider."
+  },
+  "optAiKeyOptional": {
+    "message": "Leave empty if the server wants none (a server on this computer usually does not). Stored only in this browser."
+  },
+  "optAiBase": {
+    "message": "Address"
+  },
+  "optAiBaseHelp": {
+    "message": "The base address of the API. It has to start with https://, or with http://localhost for a server on this computer."
+  },
+  "optAiModel": {
+    "message": "Model"
+  },
+  "optAiModelHelp": {
+    "message": "The model's name exactly as the service writes it."
+  },
+  "optAiModelHelpDefault": {
+    "message": "Leave empty for $1, or type another model's name exactly as the provider writes it.",
+    "description": "$1: the default model id."
+  },
+  "optAiModelExample": {
+    "message": "model name",
+    "description": "Placeholder of the model field."
+  },
+  "optAiModelExampleOllama": {
+    "message": "a model you have pulled, e.g. gemma4"
+  },
+  "optAiTest": {
+    "message": "Test"
+  },
+  "optAiTesting": {
+    "message": "Sending a small request…"
+  },
+  "optAiOk": {
+    "message": "It works: $1 answered with the model $2."
+  },
+  "optAiDenied": {
+    "message": "The browser was not allowed to reach this address, so nothing can be sent. Press “Test” again and allow it."
+  },
+  "optAiMissingKey": {
+    "message": "Enter the API key first."
+  },
+  "optAiMissingModel": {
+    "message": "Enter the model's name first."
+  },
+  "optAiGuideKey": {
+    "message": "How to get a key"
+  },
+  "optAiGuideSetup": {
+    "message": "How to set it up"
+  },
+  "optAiGeminiStep1": {
+    "message": "Open Google AI Studio (the link below) and sign in with a Google account."
+  },
+  "optAiGeminiStep2": {
+    "message": "Create an API key there and copy it."
+  },
+  "optAiGeminiStep3": {
+    "message": "Paste it above and press “Test”."
+  },
+  "optAiGeminiFree": {
+    "message": "Free tier: Google's pricing page lists a free tier for several models, among them the default one here. It does not give fixed numbers; your limits per minute and per day are shown in AI Studio and can change. When a limit is reached the request fails until it resets.",
+    "description": "Checked against ai.google.dev/gemini-api/docs/pricing and /rate-limits on 2026-10-13."
+  },
+  "optAiGeminiData": {
+    "message": "Data: the same page says that on the free tier content is “used to improve our products”, and on the paid tier it is not. Do not send text you would not want used that way."
+  },
+  "optAiClaudeStep1": {
+    "message": "Open the Claude Console (the link below) and sign in."
+  },
+  "optAiClaudeStep2": {
+    "message": "Create an API key under “API keys” and copy it."
+  },
+  "optAiClaudeStep3": {
+    "message": "Paste it above and press “Test”."
+  },
+  "optAiClaudePaid": {
+    "message": "The Claude API is billed by use and needs credit on the account; a Claude chat subscription is something else and does not include it."
+  },
+  "optAiOpenaiStep1": {
+    "message": "Get the API's base address and a key from the service you use (for OpenAI the address is already filled in; OpenRouter: https://openrouter.ai/api/v1; LM Studio on this computer: http://localhost:1234/v1)."
+  },
+  "optAiOpenaiStep2": {
+    "message": "Type the model's name exactly as that service lists it."
+  },
+  "optAiOpenaiStep3": {
+    "message": "Press “Test”; the browser asks once whether Wordvault may reach that address."
+  },
+  "optAiOpenaiNote": {
+    "message": "What a service costs and what it does with the text you send is in its own terms."
+  },
+  "optAiOllamaStep1": {
+    "message": "Install Ollama and pull a model (for example: ollama pull gemma4)."
+  },
+  "optAiOllamaStep2": {
+    "message": "Let it accept requests from browser extensions (see the note above), then restart it."
+  },
+  "optAiOllamaStep3": {
+    "message": "Type the model's name above and press “Test”."
+  },
+  "optAiOllamaLocal": {
+    "message": "The model runs on your computer: the text goes to localhost and no further. The first answer can take a while, because the model has to load."
+  },
+  "optAiOllamaOrigins": {
+    "message": "Ollama only accepts requests from origins it knows, and a browser extension is not one of them by default. Start it with this variable (from Ollama's FAQ):"
+  },
+  "optAiOllamaMac": {
+    "message": "If Ollama runs as the macOS app: run $1 in Terminal, then quit and reopen Ollama.",
+    "description": "$1: a launchctl command."
+  },
+  "optAiPrivacyTitle": {
+    "message": "Privacy"
+  },
+  "optAiPrivacy": {
+    "message": "What is sent when you press “Explain with AI”: the word (or the text you selected), the sentence it is in and the page's title. Never: text from password fields, forms or boxes you type in, the page's address, or your vault. The first time, the popup tells you this and asks you to agree."
+  },
+  "optAiConsentNone": {
+    "message": "You have not agreed to sending text yet; you will be asked at the first use."
+  },
+  "optAiConsentGiven": {
+    "message": "You agreed to text being sent to $1."
+  },
+  "optAiConsentWithdraw": {
+    "message": "Withdraw"
+  },
+  "optAiCache": {
+    "message": "Keep answers until the browser closes"
+  },
+  "optAiCacheHelp": {
+    "message": "The same question is then not sent (and paid for) twice. Answers are kept in memory only, never on disk, and are gone when the browser closes."
+  },
+  "optAiBlocked": {
+    "message": "Sites where AI features are off"
+  },
+  "optAiBlockedHelp": {
+    "message": "One host per line (example.com covers its subdomains). Sites that look like banking, e-mail or health sites are off already."
+  },
+  "optAiAllowed": {
+    "message": "Sites where they are on anyway"
+  },
+  "optAiAllowedHelp": {
+    "message": "For a site the built-in rule switches off by mistake. One host per line. Your block list above still wins."
+  },
+  "optAiPromptSite": {
+    "message": "“Copy the prompt and open”"
+  },
+  "optAiPromptSiteHelp": {
+    "message": "Which chat site is opened when no provider is connected. The prompt is on your clipboard; nothing is sent by Wordvault."
   }
 }

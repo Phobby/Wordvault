@@ -393,6 +393,8 @@ function renderDetail() {
         : h('div', { class: 'translation none', text: t('dtNoTranslation') }),
       entry.alternatives.length > 0 &&
         h('div', { class: 'alternatives' }, h('b', { text: t('popupAlternatives') }), ' ', h('span', { dir: 'auto', lang: entry.targetLang || null, text: entry.alternatives.join(', ') })),
+      entry.note && h('h3', { text: t('dtNote') }),
+      entry.note && h('div', { class: 'note-text', dir: 'auto', text: entry.note }),
       ...dictionarySection(entry),
       examples.length > 0 && h('h3', { text: t('dtExamples') }),
       examples.length > 0 &&

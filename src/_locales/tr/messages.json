@@ -2069,5 +2069,281 @@
   },
   "optSelPrivacy": {
     "message": "Seçilen metin yalnızca yukarıda seçili çeviri servisine gönderilir, başka hiçbir yere gönderilmez. Sen kasaya eklemedikçe hiçbir şey saklanmaz. MyMemory'nin ücretsiz kullanımı günlük sınırlıdır; uzun metinler bu sınırı çabuk doldurur."
+  },
+  "aiExplain": {
+    "message": "Yapay zekâ ile açıkla"
+  },
+  "aiTitle": {
+    "message": "Yapay zekâ açıklaması"
+  },
+  "aiThinking": {
+    "message": "$1 sağlayıcısına soruluyor…"
+  },
+  "aiCancel": {
+    "message": "Vazgeç"
+  },
+  "aiOpenSettings": {
+    "message": "Ayarları aç"
+  },
+  "aiNeedsKey": {
+    "message": "Bu özellik için ayarlardan kendi yapay zekâ anahtarını gir."
+  },
+  "aiCopyPrompt": {
+    "message": "İstemi kopyala ve $1 sitesini aç"
+  },
+  "aiCopyPromptHint": {
+    "message": "Anahtarsız: hazır istem panoya kopyalanır ve site yeni sekmede açılır; oraya kendin yapıştırırsın. Cevap Wordvault'a dönmez."
+  },
+  "aiPromptCopied": {
+    "message": "İstem kopyalandı"
+  },
+  "aiConsentWord": {
+    "message": "Kelime, geçtiği cümle ve sayfanın başlığı $1 sağlayıcısına gönderilecek, başka hiçbir yere gönderilmeyecek. Gönderilenle ne yaptığı kendi koşullarına bağlıdır. Bu bir kez sorulur."
+  },
+  "aiConsentPassage": {
+    "message": "Seçilen metin ve sayfanın başlığı $1 sağlayıcısına gönderilecek, başka hiçbir yere gönderilmeyecek. Gönderilenle ne yaptığı kendi koşullarına bağlıdır. Bu bir kez sorulur."
+  },
+  "aiConsentYes": {
+    "message": "Onayla ve gönder"
+  },
+  "aiBy": {
+    "message": "$1 ($2) tarafından yazıldı. Yapay zekâ yanılabilir."
+  },
+  "aiAddToNote": {
+    "message": "Kelimenin notuna ekle"
+  },
+  "aiAddToNoteHint": {
+    "message": "Bu açıklamayı kasadaki kelimeyle birlikte saklar."
+  },
+  "aiNoteAdded": {
+    "message": "Nota eklendi"
+  },
+  "aiNotFromFields": {
+    "message": "Yazı yazdığın alanlarda seçilen metin yapay zekâya gönderilmez."
+  },
+  "aiSiteSensitive": {
+    "message": "Bu sitede yapay zekâ özellikleri kapalı: banka, e-posta ya da sağlık sitesine benziyor. Ayarlardan izin verebilirsin."
+  },
+  "aiSiteBlocked": {
+    "message": "Bu sitede yapay zekâ özellikleri kapalı: engelleme listende."
+  },
+  "aiErrAuth": {
+    "message": "$1 anahtarı kabul etmedi: yanlış, iptal edilmiş ya da bu modeli kullanma izni yok."
+  },
+  "aiErrQuota": {
+    "message": "$1: kota ya da bakiye dolmuş, ya da çok fazla istek yapılmış. Daha sonra yeniden dene."
+  },
+  "aiErrModel": {
+    "message": "$1 üzerinde bu adda bir model yok (ya da adres yanlış). Ayarlardan model adını kontrol et."
+  },
+  "aiErrOverloaded": {
+    "message": "$1 şu an sorun yaşıyor. Biraz sonra yeniden dene."
+  },
+  "aiErrOrigin": {
+    "message": "Ollama tarayıcı eklentisinden gelen isteği reddetti. Ayarlarda anlatıldığı gibi OLLAMA_ORIGINS ile başlat."
+  },
+  "aiErrPermission": {
+    "message": "Tarayıcının $1 adresine erişmesine henüz izin verilmedi. Ayarları açıp “Test et”e bas."
+  },
+  "aiErrRequest": {
+    "message": "$1 isteği kabul etmedi."
+  },
+  "aiErrRefused": {
+    "message": "$1 bu metin için cevap vermedi (içerik kuralları)."
+  },
+  "aiErrEmpty": {
+    "message": "$1 metinsiz bir cevap verdi. Yeniden dene."
+  },
+  "aiErrAddress": {
+    "message": "Adres kullanılamıyor: https:// ile, bu bilgisayardaki bir sunucu içinse http://localhost ile başlamalı."
+  },
+  "aiErrNetwork": {
+    "message": "$1 adresine ulaşılamadı. Bağlantıyı kontrol et; bu bilgisayardaki bir sunucuysa çalıştığından emin ol."
+  },
+  "aiErrTimeout": {
+    "message": "$1 cevap vermek için çok bekletti."
+  },
+  "aiErrUnknown": {
+    "message": "$1 sorulurken bir şeyler ters gitti."
+  },
+  "dtNote": {
+    "message": "Not"
+  },
+  "optAiTitle": {
+    "message": "Yapay zekâ"
+  },
+  "optAiHelp": {
+    "message": "Varsayılan olarak kapalı. Kendi yapay zekâ sağlayıcını bağlarsan çeviri penceresine “Yapay zekâ ile açıkla” gelir. Hiçbir şey kendiliğinden gönderilmez: her isteği sen elle başlatırsın ve istek tarayıcından doğrudan seçtiğin sağlayıcıya gider. Arada Wordvault'un bir sunucusu yoktur. Çeviri, kasa ve quiz bunların hiçbiri olmadan çalışır."
+  },
+  "optAiOff": {
+    "message": "Kapalı"
+  },
+  "optAiOffHelp": {
+    "message": "Yapay zekâ sağlayıcısı yok. “Yapay zekâ ile açıkla” o zaman yalnızca hazır istemi kopyalamayı önerir; bir sohbet sitesine kendin yapıştırırsın."
+  },
+  "optAiGeminiHelp": {
+    "message": "Google AI Studio'dan alınan API anahtarıyla. Ücretsiz katmanı var."
+  },
+  "optAiClaudeHelp": {
+    "message": "Claude Console'dan aldığın kendi Claude API anahtarınla. Kullanıma göre ücretli."
+  },
+  "optAiOpenai": {
+    "message": "OpenAI uyumlu servis"
+  },
+  "optAiOpenaiHelp": {
+    "message": "OpenAI, OpenRouter, Groq, LM Studio ve benzerleri: adresi, anahtarı ve modeli sen girersin."
+  },
+  "optAiOllamaHelp": {
+    "message": "Bu bilgisayarda çalışan bir model. Hiçbir şey dışarı çıkmaz."
+  },
+  "optAiKey": {
+    "message": "API anahtarı"
+  },
+  "optAiKeyHelp": {
+    "message": "Yalnızca bu tarayıcıda saklanır. Yedeğe, senkronizasyona ve geri bildirime girmez; yalnızca bu sağlayıcıya gönderilir."
+  },
+  "optAiKeyOptional": {
+    "message": "Sunucu anahtar istemiyorsa boş bırak (bu bilgisayardaki sunucular genelde istemez). Yalnızca bu tarayıcıda saklanır."
+  },
+  "optAiBase": {
+    "message": "Adres"
+  },
+  "optAiBaseHelp": {
+    "message": "API'nin temel adresi. https:// ile, bu bilgisayardaki bir sunucu içinse http://localhost ile başlamalı."
+  },
+  "optAiModel": {
+    "message": "Model"
+  },
+  "optAiModelHelp": {
+    "message": "Modelin adı, servisin yazdığı şekliyle."
+  },
+  "optAiModelHelpDefault": {
+    "message": "$1 için boş bırak, ya da başka bir modelin adını sağlayıcının yazdığı şekliyle gir."
+  },
+  "optAiModelExample": {
+    "message": "model adı"
+  },
+  "optAiModelExampleOllama": {
+    "message": "indirdiğin bir model, örn. gemma4"
+  },
+  "optAiTest": {
+    "message": "Test et"
+  },
+  "optAiTesting": {
+    "message": "Küçük bir istek gönderiliyor…"
+  },
+  "optAiOk": {
+    "message": "Çalışıyor: $1, $2 modeliyle cevap verdi."
+  },
+  "optAiDenied": {
+    "message": "Tarayıcının bu adrese erişmesine izin verilmedi; bu yüzden hiçbir şey gönderilemez. Yeniden “Test et”e bas ve izin ver."
+  },
+  "optAiMissingKey": {
+    "message": "Önce API anahtarını gir."
+  },
+  "optAiMissingModel": {
+    "message": "Önce modelin adını gir."
+  },
+  "optAiGuideKey": {
+    "message": "Anahtar nasıl alınır"
+  },
+  "optAiGuideSetup": {
+    "message": "Nasıl kurulur"
+  },
+  "optAiGeminiStep1": {
+    "message": "Google AI Studio'yu aç (aşağıdaki bağlantı) ve bir Google hesabıyla giriş yap."
+  },
+  "optAiGeminiStep2": {
+    "message": "Orada bir API anahtarı oluştur ve kopyala."
+  },
+  "optAiGeminiStep3": {
+    "message": "Yukarıya yapıştır ve “Test et”e bas."
+  },
+  "optAiGeminiFree": {
+    "message": "Ücretsiz katman: Google'ın fiyat sayfası, buradaki varsayılan model dahil birkaç model için ücretsiz katman gösteriyor. Sabit bir sayı vermiyor; dakikalık ve günlük sınırların AI Studio'da görünür ve değişebilir. Sınıra gelince istek, sınır sıfırlanana kadar başarısız olur."
+  },
+  "optAiGeminiData": {
+    "message": "Veri: aynı sayfa, ücretsiz katmanda içeriğin “ürünlerimizi geliştirmek için kullanıldığını”, ücretli katmanda kullanılmadığını söylüyor. Bu şekilde kullanılmasını istemediğin metni gönderme."
+  },
+  "optAiClaudeStep1": {
+    "message": "Claude Console'u aç (aşağıdaki bağlantı) ve giriş yap."
+  },
+  "optAiClaudeStep2": {
+    "message": "“API keys” altında bir API anahtarı oluştur ve kopyala."
+  },
+  "optAiClaudeStep3": {
+    "message": "Yukarıya yapıştır ve “Test et”e bas."
+  },
+  "optAiClaudePaid": {
+    "message": "Claude API kullanıma göre ücretlendirilir ve hesapta bakiye ister; Claude sohbet aboneliği ayrı bir şeydir ve bunu kapsamaz."
+  },
+  "optAiOpenaiStep1": {
+    "message": "Kullandığın servisten API'nin temel adresini ve bir anahtar al (OpenAI için adres hazır; OpenRouter: https://openrouter.ai/api/v1; bu bilgisayardaki LM Studio: http://localhost:1234/v1)."
+  },
+  "optAiOpenaiStep2": {
+    "message": "Modelin adını o servisin listelediği şekliyle yaz."
+  },
+  "optAiOpenaiStep3": {
+    "message": "“Test et”e bas; tarayıcı Wordvault'un o adrese erişip erişemeyeceğini bir kez sorar."
+  },
+  "optAiOpenaiNote": {
+    "message": "Bir servisin ücreti ve gönderdiğin metinle ne yaptığı kendi koşullarında yazar."
+  },
+  "optAiOllamaStep1": {
+    "message": "Ollama'yı kur ve bir model indir (örneğin: ollama pull gemma4)."
+  },
+  "optAiOllamaStep2": {
+    "message": "Tarayıcı eklentilerinden gelen istekleri kabul etmesini sağla (yukarıdaki nota bak), sonra yeniden başlat."
+  },
+  "optAiOllamaStep3": {
+    "message": "Modelin adını yukarıya yaz ve “Test et”e bas."
+  },
+  "optAiOllamaLocal": {
+    "message": "Model bilgisayarında çalışır: metin localhost'a gider, daha öteye gitmez. İlk cevap biraz sürebilir, çünkü modelin yüklenmesi gerekir."
+  },
+  "optAiOllamaOrigins": {
+    "message": "Ollama yalnızca tanıdığı kaynaklardan gelen istekleri kabul eder ve tarayıcı eklentisi varsayılan olarak bunlardan biri değildir. Şu değişkenle başlat (Ollama'nın SSS'sinden):"
+  },
+  "optAiOllamaMac": {
+    "message": "Ollama macOS uygulaması olarak çalışıyorsa: Terminal'de $1 komutunu çalıştır, sonra Ollama'yı kapatıp yeniden aç."
+  },
+  "optAiPrivacyTitle": {
+    "message": "Gizlilik"
+  },
+  "optAiPrivacy": {
+    "message": "“Yapay zekâ ile açıkla”ya bastığında gönderilen: kelime (ya da seçtiğin metin), geçtiği cümle ve sayfanın başlığı. Asla gönderilmeyen: parola alanları, formlar ve yazı yazdığın kutulardaki metin, sayfanın adresi, kasan. İlk seferde pencere bunu söyler ve onayını ister."
+  },
+  "optAiConsentNone": {
+    "message": "Metin gönderilmesine henüz onay vermedin; ilk kullanımda sorulacak."
+  },
+  "optAiConsentGiven": {
+    "message": "Metnin $1 sağlayıcısına gönderilmesine onay verdin."
+  },
+  "optAiConsentWithdraw": {
+    "message": "Onayı geri al"
+  },
+  "optAiCache": {
+    "message": "Cevapları tarayıcı kapanana kadar tut"
+  },
+  "optAiCacheHelp": {
+    "message": "Aynı soru o zaman iki kez gönderilmez (ve ücretlendirilmez). Cevaplar yalnızca bellekte tutulur, diske yazılmaz ve tarayıcı kapanınca silinir."
+  },
+  "optAiBlocked": {
+    "message": "Yapay zekâ özelliklerinin kapalı olduğu siteler"
+  },
+  "optAiBlockedHelp": {
+    "message": "Her satıra bir alan adı (example.com alt alan adlarını da kapsar). Banka, e-posta ya da sağlık sitesine benzeyen siteler zaten kapalıdır."
+  },
+  "optAiAllowed": {
+    "message": "Yine de açık olduğu siteler"
+  },
+  "optAiAllowedHelp": {
+    "message": "Yerleşik kuralın yanlışlıkla kapattığı siteler için. Her satıra bir alan adı. Yukarıdaki engelleme listen yine de önce gelir."
+  },
+  "optAiPromptSite": {
+    "message": "“İstemi kopyala ve aç”"
+  },
+  "optAiPromptSiteHelp": {
+    "message": "Sağlayıcı bağlı değilken hangi sohbet sitesinin açılacağı. İstem panondadır; Wordvault hiçbir şey göndermez."
   }
 }

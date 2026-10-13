@@ -5,6 +5,7 @@
 // All network requests are made from here. Content scripts cannot do it themselves: their
 // requests would be subject to the CORS and CSP rules of whatever page they run in.
 
+import { aiHandlers } from '../ai/background.js';
 import { catchUncaught, recordError } from '../features/feedback/error-log.js';
 import { sendFeedback } from '../features/feedback/send.js';
 import { lookupWord } from '../lib/dictionary.js';
@@ -16,7 +17,7 @@ import { WordvaultError, serializeError } from '../lib/errors.js';
 import { fetchRecording } from '../lib/pronunciation.js';
 import { CLEANUP_ALARM, cleanupCache, ensureCacheCleanup } from '../lib/translation-cache.js';
 import { cancelTranslation, checkProvider, clearTranslationCaches, getPreferences, setSiteSourceLanguage, setTargetLanguage, translate, translatePassage, translationCacheStats } from '../lib/translator.js';
-import { ENTRY_PREFIX, TOMBSTONE_PREFIX, addEntry, entryId, getEntry, hasEntry, isPhrase, removeEntry, updateEntry } from '../lib/vault.js';
+import { ENTRY_PREFIX, TOMBSTONE_PREFIX, addEntry, appendNote, entryId, getEntry, hasEntry, isPhrase, removeEntry, updateEntry } from '../lib/vault.js';
 import { NOTIFICATION_ID } from '../quiz/display.js';
 import { ackRank, freezeYesterday, getProgress } from '../quiz/progress-state.js';
 import { REMINDER_ALARM, REMINDER_NOTIFICATION, ensureReminder, runReminder } from '../quiz/reminder.js';
@@ -109,6 +110,8 @@ const handlers = {
   'wv:vault:add': save,
   'wv:vault:enrich': (payload) => enrich(payload?.id),
   'wv:vault:remove': (payload) => removeEntry(entryId(payload || {})),
+  // An explanation the user chose to keep with a word that is in the vault.
+  'wv:vault:note': async (payload) => Boolean(await appendNote(entryId(payload || {}), payload?.note)),
   'wv:quiz:test': (payload) => testQuiz(payload),
   // "Start quiz" in the toolbar popup, at the difficulty chosen there.
   'wv:quiz:start': fromOwnPage((payload) => startManualQuiz({ mode: payload?.mode })),
@@ -139,6 +142,7 @@ const handlers = {
   'wv:feedback:send': fromOwnPage((payload) => sendFeedback(payload)),
   ...screenOcrHandlers,
   ...passageHandlers,
+  ...aiHandlers,
 };
 
 // What nothing else caught goes to the local error log (features/feedback/error-log.js). It

@@ -363,6 +363,20 @@
     .wv-foot a { color: inherit; }
     .wv-foot:empty { display: none; }
 
+    /* "Explain with AI": under the result, apart from it. */
+    .wv-ai { margin-top: 10px; padding-top: 8px; border-top: 1px dashed var(--wv-border); font-size: 12.5px; }
+    .wv-ai-ask { display: inline-flex; align-items: center; gap: 4px; text-decoration: none; font-size: 12.5px; }
+    .wv-ai-ask:hover { text-decoration: underline; }
+    .wv-ai-ask .wv-icon { width: 14px; height: 14px; }
+    .wv-ai-label { font-size: 11px; font-weight: 650; letter-spacing: 0.02em; color: var(--wv-muted); text-transform: uppercase; }
+    .wv-ai-text { margin-top: 4px; max-height: min(220px, 36vh); overflow: hidden auto; overscroll-behavior: contain; white-space: pre-wrap; overflow-wrap: anywhere; font-size: 13px; line-height: 1.5; }
+    .wv-ai-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 8px; }
+    .wv-ai-row:empty { display: none; }
+    .wv-ai-note { margin-top: 6px; color: var(--wv-muted); }
+    .wv-ai-note.wv-error { color: var(--wv-danger); }
+    .wv-ai-note:first-child { margin-top: 0; }
+    .wv-standalone .wv-ai-text { max-height: none; }
+
     /* A passage (a selected sentence or paragraph): wider, the selection as small text cut
        after three lines, the translation with its line breaks and a scroll bar of its own. */
     .wv-card.wv-passage { width: min(380px, calc(100vw - 16px)); max-height: min(540px, calc(100vh - 16px)); }

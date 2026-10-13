@@ -57,6 +57,8 @@ bunu denetler).
 
 > Optional and not granted at installation. The pattern is broad because the address is not known in advance, but the extension always requests one specific origin at the moment it is needed, with the browser's own prompt: (1) the API hosts of the cloud provider the user connects for synchronisation (for example www.googleapis.com), (2) the address of the user's own WebDAV/HTTP server, which only the user knows (localhost for a server on their own computer), (3) the host of the feedback receiver (wordvault-feedback.phoby.workers.dev) the first time the user sends feedback, and (4) DeepL's API host (api-free.deepl.com or api.deepl.com) if the user chooses DeepL as the translation service and tests their own API key. No origin is requested without a user action.
 
+> AI features (off by default): if the user connects an AI provider of their own, the browser asks for that provider's address only (generativelanguage.googleapis.com, api.anthropic.com, the OpenAI-compatible address the user typed, or localhost for Ollama), when the provider is chosen or "Test" is pressed. Requests are made only when the user presses "Explain with AI".
+
 ## Content scripts: `<all_urls>`
 
 > Translation on double-click has to work on whatever page the user is reading, so the content script is present on all pages. It reads nothing from the page until the user double-clicks a word (or starts a screen scan); then only the selected text is used. A second script, limited to youtube.com and youtube-nocookie.com, finds the word under the pointer in the video captions.

@@ -120,6 +120,8 @@ export function fromRecord(id, record, existing) {
     dictionary: existing?.dictionary || null,
   };
   if (record.k === 'p') entry.kind = PHRASE;
+  // The note is this device's own (it does not travel): it stays with the word.
+  if (existing?.note) entry.note = existing.note;
   if (Object.keys(extra).length > 0) entry.syncExtra = extra;
   return entry;
 }

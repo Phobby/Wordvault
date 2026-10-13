@@ -1,6 +1,7 @@
 // Options page. It edits the same stored settings every other part of the extension reads
 // (lib/settings.js); nothing is kept here.
 
+import { createAiSection } from './ai.js';
 import { createFeedbackPanel } from './feedback.js';
 import { createOcrSection } from './ocr.js';
 import { createPassageSection } from './passage.js';
@@ -614,6 +615,7 @@ const quizSection = h(
 
 const ocrSection = createOcrSection({ flashSaved, switchRow, fieldRow });
 const passageSection = createPassageSection({ flashSaved, switchRow, fieldRow });
+const aiSection = createAiSection({ flashSaved, switchRow, fieldRow });
 const providerSection = createProviderSection({ flashSaved });
 const cacheSection = createCacheSection();
 const feedbackPanel = createFeedbackPanel();
@@ -641,6 +643,7 @@ const panels = {
     providerSection.element,
     h('section', { class: 'card' }, switchRow(doubleClick, 'optDoubleClick', 'optDoubleClickHelp')),
     passageSection.element,
+    aiSection.element,
     // Only meaningful in the browsers where recordings replace the browser's voice. (append()
     // would write a `false` out as text, hence the empty string.)
     speech.usesRecordings ? h('section', { class: 'card' }, switchRow(ttsFallback, 'optTtsFallback', 'optTtsFallbackHelp')) : '',
@@ -687,6 +690,8 @@ document.getElementById('app').append(
 selectTab(location.hash === '#feedback' ? 'feedback' : 'settings');
 
 // The toolbar popup links here for importing.
+// "Open settings" from the AI part of the translation popup.
+if (location.hash === '#ai') requestAnimationFrame(() => aiSection.element.scrollIntoView({ block: 'start' }));
 if (location.hash === '#backup') {
   backupSection.classList.add('highlight');
   backupSection.scrollIntoView({ block: 'center' });
@@ -698,6 +703,7 @@ function render() {
   renderQuizSettings();
   ocrSection.render();
   passageSection.render();
+  aiSection.render();
   providerSection.render();
 }
 cacheSection.render();

@@ -107,7 +107,7 @@
    * double-click on that word does.
    * @returns {boolean} Whether there was something to open it for.
    */
-  function openFor({ text, range = null, rect = null, point = null }) {
+  function openFor({ text, range = null, rect = null, point = null, editable = false }) {
     const locale = WV.selection.languageOf(range?.startContainer || document.body);
     const anchor = point || { x: Math.round(window.innerWidth / 2 - 150), y: 80 };
     // Where the selection is now. Some pages draw their text again a moment after a click
@@ -116,12 +116,12 @@
     const box = range ? range.getBoundingClientRect() : null;
     const place = rect || (box && (box.width > 0 || box.height > 0) ? new DOMRect(box.left, box.top, box.width, box.height) : null);
     if (WV.passageText.isPassage(text, locale)) {
-      WV.popup.open({ text, range, rect: place, point: anchor, pageLang: locale, mode: 'passage' });
+      WV.popup.open({ text, range, rect: place, point: anchor, pageLang: locale, mode: 'passage', fromField: editable });
       return true;
     }
     const word = WV.selection.tidyWord(text);
     if (!word) return false;
-    WV.popup.open({ text: word, range, rect: place, point: anchor, pageLang: locale, ...WV.selection.context(range, locale) });
+    WV.popup.open({ text: word, range, rect: place, point: anchor, pageLang: locale, fromField: editable, ...WV.selection.context(range, locale) });
     return true;
   }
 
@@ -269,7 +269,7 @@
       const recent = menuPoint && Date.now() - menuPoint.at < MENU_POINT_MS ? { x: menuPoint.x, y: menuPoint.y } : null;
       // The frame's own selection has line breaks and a place; what the browser passed along with the menu has neither.
       const text = own?.text || (typeof message.text === 'string' ? message.text : '');
-      sendResponse(openFor({ text, range: own?.range || null, rect: own?.rect || null, point: message.menu ? recent : null }));
+      sendResponse(openFor({ text, range: own?.range || null, rect: own?.rect || null, point: message.menu ? recent : null, editable: own?.editable === true }));
       return undefined;
     });
   } catch {

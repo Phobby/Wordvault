@@ -57,6 +57,32 @@ YouTube'da altyazıdaki bir kelimenin üzerinde imleci tuttuğunda da aynı şey
 ve dil çifti gönderilir. Altyazı satırı dili algılamak için tarayıcının içinde kullanılır, kelimeyi
 kasaya eklersen onunla birlikte saklanır; altyazı akışı kaydedilmez ya da indirilmez.
 
+### Yapay zekâ özellikleri (yalnızca sen bir sağlayıcı bağlarsan ve her seferinde sen başlatırsan)
+
+Varsayılan olarak kapalıdır. Ayarlardan kendi yapay zekâ sağlayıcını (Google Gemini, Claude API,
+OpenAI uyumlu bir servis ya da bilgisayarındaki Ollama) bağlarsan çeviri penceresinde "Yapay zekâ ile
+açıkla" çalışır. Düğmeye **sen bastığında** şunlar, tarayıcından doğrudan **yalnızca seçtiğin
+sağlayıcıya** gider, başka hiçbir yere gönderilmez; arada Wordvault'un bir sunucusu yoktur:
+
+- kelime için: kelime, geçtiği cümle ve sayfanın başlığı;
+- seçtiğin cümle/paragraf için: o metin ve sayfanın başlığı.
+
+Gönderilmeyenler: sayfanın adresi, sayfanın geri kalanı, parola alanları, formlar ve yazı yazdığın
+kutulardaki metin (böyle bir alandan seçilen metin için düğme çalışmaz), kasan. Hiçbir şey
+kendiliğinden ya da arka planda gönderilmez. İlk kullanımda pencere neyin nereye gideceğini söyler
+ve onayını ister; sağlayıcıyı değiştirirsen yeniden sorar. Banka, e-posta ve sağlık sitesine benzeyen
+sitelerde bu özellikler kapalıdır; listeyi ayarlardan sen yönetirsin.
+
+API anahtarın yalnızca bu tarayıcıda (`chrome.storage.local`) saklanır ve yalnızca o sağlayıcıya,
+isteğin başlığında gönderilir. Yedeğe, senkronizasyona, geri bildirime, hata günlüğüne ve
+önbelleklere girmez. Yapay zekâ cevapları diske yazılmaz: en fazla tarayıcı kapanana kadar bellekte
+tutulur (ayarlardan kapatılabilir). Bir açıklamayı kasadaki kelimenin notuna yalnızca sen eklersen
+saklanır. Gönderilen metinle sağlayıcının ne yaptığı kendi koşullarına bağlıdır (örneğin Google,
+Gemini'nin ücretsiz katmanında içeriğin ürünlerini geliştirmek için kullanıldığını yazar).
+
+Sağlayıcı bağlı değilken "İstemi kopyala ve aç" hazır istemi panona kopyalar ve seçtiğin sohbet
+sitesini yeni sekmede açar; eklenti hiçbir şey göndermez, oraya sen yapıştırırsın.
+
 ### Ekrandan metin tarama (yalnızca sen başlattığında)
 
 Taramayı kısayolla ya da menüden başlattığında, o sekmenin o anki ekran görüntüsü alınır ve seçtiğin

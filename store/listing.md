@@ -32,6 +32,7 @@ Wordvault is for learning a language while you browse.
 • Scan text on screen: pause a video or open an image, select an area, and the text inside it is read on your device. Click a word to translate it.
 • Save words with "Add to vault". Each word stays in your vault with the sentence it came from.
 • From time to time Wordvault asks you about your saved words in a short four-choice quiz. Words you get wrong come back more often; words you know come back less and less often.
+• Optional, off by default: connect an AI provider of your own (Gemini, Claude, an OpenAI-compatible service or local Ollama) and get "Explain with AI" for a word or a selected passage. Your key stays in your browser.
 • Translations come from MyMemory out of the box; if you prefer, use DeepL with your own API key.
 • Export and import your vault as a JSON file.
 • If you like, keep your vault in step across your devices: with your browser's own sync, with your own Google Drive, OneDrive or Dropbox account, or with your own server (WebDAV). You can encrypt the file with a password.
@@ -58,6 +59,7 @@ Wordvault, gezinirken dil öğrenmek içindir.
 • Ekrandan metin tara: videoyu durdur ya da bir resim aç, bir alan seç; içindeki yazı cihazında okunur. Çevirmek için kelimeye tıkla.
 • "Kasaya ekle" ile kaydet. Her kelime, alındığı cümleyle birlikte kasanda durur.
 • Wordvault ara sıra kasandaki kelimeleri dört şıklı kısa bir quizle sorar. Yanlış bildiklerin daha sık, iyi bildiklerin giderek daha seyrek gelir.
+• İsteğe bağlı, varsayılan olarak kapalı: kendi yapay zekâ sağlayıcını (Gemini, Claude, OpenAI uyumlu bir servis ya da yerel Ollama) bağla; kelime ya da seçtiğin metin için "Yapay zekâ ile açıkla" gelsin. Anahtarın tarayıcında kalır.
 • Çeviriler varsayılan olarak MyMemory'den gelir; istersen kendi API anahtarınla DeepL kullanabilirsin.
 • Kasanı JSON dosyası olarak dışa ve içe aktarabilirsin.
 • İstersen kasanı cihazların arasında eşitle: tarayıcının kendi senkronuyla, kendi Google Drive, OneDrive ya da Dropbox hesabınla, ya da kendi sunucunla (WebDAV). Dosyayı parolayla şifreleyebilirsin.

@@ -12,7 +12,7 @@ import { WordvaultError } from './errors.js';
 export const ENTRY_PREFIX = 'vault:';
 export const TOMBSTONE_PREFIX = 'tomb:';
 
-const LIMITS = { text: 500, translation: 1000, alternative: 200, alternatives: 8, sentence: 600, url: 2000, title: 300, lang: 35, box: 20 };
+const LIMITS = { text: 500, translation: 1000, alternative: 200, alternatives: 8, sentence: 600, url: 2000, title: 300, lang: 35, box: 20, note: 4000 };
 
 /** The fields that are synchronised between devices. Changing one of them is an edit. */
 const SYNCED_FIELDS = ['text', 'translation', 'sourceLang', 'targetLang', 'sentence', 'box', 'dueAt', 'quiz', 'kind'];
@@ -33,6 +33,8 @@ export const isPhrase = (entry) => entry?.kind === PHRASE;
  * @property {string} translation   '' when the word was saved without a translation.
  * @property {string[]} alternatives  Other target-language equivalents.
  * @property {string} sentence      Sentence the word was found in ('' if none).
+ * @property {string} [note]        The user's note on the word (an explanation they chose to keep). Stays on
+ *                                  this device and in its backups; it is not synchronised.
  * @property {string} url           Address of the page it was saved from ('' if unknown).
  * @property {string} title         Title of that page.
  * @property {number} createdAt     Milliseconds since the epoch.
@@ -55,6 +57,8 @@ export const isPhrase = (entry) => entry?.kind === PHRASE;
  */
 
 const clip = (value, max) => (typeof value === 'string' ? value.replace(/\s+/g, ' ').trim().slice(0, max) : '');
+/** A note keeps its line breaks. */
+const clipNote = (value) => (typeof value === 'string' ? value.replace(/\r\n?/g, '\n').replace(/[^\S\n]+/g, ' ').replace(/\n{3,}/g, '\n\n').trim().slice(0, LIMITS.note) : '');
 const positive = (value, fallback) => (Number.isFinite(Number(value)) && Number(value) > 0 ? Number(value) : fallback);
 
 /**
@@ -107,6 +111,7 @@ export function normalizeEntry(raw) {
     quiz: normalizeStats(raw.quiz),
     dictionary: normalizeDictionary(raw.dictionary),
     ...(raw.kind === PHRASE ? { kind: PHRASE } : {}),
+    ...(clipNote(raw.note) ? { note: clipNote(raw.note) } : {}),
   };
 }
 
@@ -159,6 +164,7 @@ export async function addEntry(raw) {
     if (raw.dueAt === undefined) entry.dueAt = existing.dueAt;
     if (raw.quiz === undefined) entry.quiz = existing.quiz;
     if (existing.syncExtra) entry.syncExtra = existing.syncExtra;
+    if (raw.note === undefined && existing.note) entry.note = existing.note;
     const edited = editedFields(existing, entry);
     entry.rev = edited ? existing.rev + 1 : existing.rev;
     entry.updatedAt = edited ? now : existing.updatedAt;
@@ -202,6 +208,17 @@ export async function updateEntry(id, patch) {
   }
   await chrome.storage.local.set({ [entryKey(id)]: entry });
   return entry;
+}
+
+/**
+ * Adds text to an entry's note, under what is already there.
+ * @returns {Promise<VaultEntry | null>} null if the word is not in the vault.
+ */
+export async function appendNote(id, text) {
+  const existing = await getEntry(id);
+  const addition = clipNote(text);
+  if (!existing || !addition) return existing;
+  return updateEntry(id, { note: clipNote(existing.note ? `${existing.note}\n\n${addition}` : addition) });
 }
 
 /**
