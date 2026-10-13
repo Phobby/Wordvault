@@ -9,7 +9,9 @@ import { catchUncaught, recordError } from '../features/feedback/error-log.js';
 import { sendFeedback } from '../features/feedback/send.js';
 import { lookupWord } from '../lib/dictionary.js';
 import { ensureSchema } from '../lib/schema.js';
+import { passageHandlers, registerPassage } from '../features/passage/background.js';
 import { registerScreenOcr, screenOcrHandlers } from '../features/screen-ocr/background.js';
+import { rebuildMenus } from './menus.js';
 import { WordvaultError, serializeError } from '../lib/errors.js';
 import { fetchRecording } from '../lib/pronunciation.js';
 import { CLEANUP_ALARM, cleanupCache, ensureCacheCleanup } from '../lib/translation-cache.js';
@@ -136,6 +138,7 @@ const handlers = {
   // "Contact and feedback" on the options page, after the user has seen the data and pressed "Send".
   'wv:feedback:send': fromOwnPage((payload) => sendFeedback(payload)),
   ...screenOcrHandlers,
+  ...passageHandlers,
 };
 
 // What nothing else caught goes to the local error log (features/feedback/error-log.js). It
@@ -171,10 +174,16 @@ chrome.runtime.onInstalled.addListener(async ({ reason }) => {
   chrome.tabs.create({ url: chrome.runtime.getURL('welcome/welcome.html') }).catch(() => {});
 });
 
-// --- Screen text scanning ----------------------------------------------------------------------
-// Shortcut and menus; see features/screen-ocr/background.js.
+// --- Translating a selection, screen text scanning ---------------------------------------------
+// Shortcuts and right-click menu items; see features/passage/background.js and
+// features/screen-ocr/background.js. The listeners are registered here, at the top level, so
+// that a click wakes this script up; the menu itself is kept by the browser and built when the
+// extension is installed or updated and when the browser starts (background/menus.js).
 
+registerPassage();
 registerScreenOcr();
+chrome.runtime.onInstalled.addListener(rebuildMenus);
+chrome.runtime.onStartup.addListener(rebuildMenus);
 
 // --- Quiz timer --------------------------------------------------------------------------------
 // The alarm survives the background script being stopped, but not always a browser restart, so

@@ -2021,5 +2021,11 @@
   },
   "cmdTranslateSelection": {
     "message": "Seçili metni çevir"
+  },
+  "selNothingSelected": {
+    "message": "Wordvault: önce sayfada bir metin seç, sonra kısayolu kullan."
+  },
+  "selNotHere": {
+    "message": "Wordvault: kısayol bu sayfada çalışmaz. Metni seçip sağ tık menüsündeki “Wordvault ile çevir”i kullan."
   }
 }

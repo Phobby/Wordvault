@@ -2607,5 +2607,13 @@
   "cmdTranslateSelection": {
     "message": "Translate the selected text",
     "description": "Name of the keyboard shortcut, as the browser lists it."
+  },
+  "selNothingSelected": {
+    "message": "Wordvault: select some text on the page first, then use the shortcut.",
+    "description": "Tooltip of the toolbar button after the translate shortcut was pressed with nothing selected."
+  },
+  "selNotHere": {
+    "message": "Wordvault: the shortcut does not work on this page. Select the text and use “Translate with Wordvault” in the right-click menu.",
+    "description": "Tooltip of the toolbar button on pages extensions cannot run on (browser pages, the PDF viewer)."
   }
 }

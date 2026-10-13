@@ -250,7 +250,13 @@
 
   try {
     chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-      if (message?.type !== 'wv:passage:open' || sender.id !== chrome.runtime.id) return undefined;
+      if (sender.id !== chrome.runtime.id) return undefined;
+      // "Are the scripts in this frame?": asked before they are put in where they are missing.
+      if (message?.type === 'wv:passage:ping') {
+        sendResponse(true);
+        return undefined;
+      }
+      if (message?.type !== 'wv:passage:open') return undefined;
       const own = selected();
       // The shortcut is sent to every frame of the tab: only the one with the selection answers.
       if (!message.menu && !(own && hasTheFocus())) return undefined;
@@ -272,5 +278,7 @@
       if (!enabled) hide();
     },
     isShown: () => Boolean(shown),
+    /** False for a copy of these scripts that the extension was reloaded underneath. */
+    alive,
   };
 })(globalThis.WV);

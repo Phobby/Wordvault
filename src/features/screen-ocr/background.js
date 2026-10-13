@@ -3,6 +3,7 @@
 // All of these are things the user does, which is what lets `activeTab` cover the screenshot:
 // the extension has no standing permission to look at any tab.
 
+import { addMenuItem } from '../../background/menus.js';
 import { scanTab } from './scan.js';
 
 export const SCAN_COMMAND = 'scan-screen';
@@ -73,21 +74,17 @@ export async function startScan(tab) {
   }
 }
 
-function createMenu() {
-  chrome.contextMenus.removeAll(() => {
-    chrome.contextMenus.create({
-      id: MENU_ID,
-      title: chrome.i18n.getMessage('ocrMenuScan'),
-      // 'action': the menu of the toolbar button.
-      contexts: ['page', 'frame', 'image', 'video', 'selection', 'link', 'action'],
-    });
-  });
-}
+/** The item in the right-click menu; the menu itself is built in background/menus.js. */
+const menuItem = () => ({
+  id: MENU_ID,
+  title: chrome.i18n.getMessage('ocrMenuScan'),
+  // 'action': the menu of the toolbar button.
+  contexts: ['page', 'frame', 'image', 'video', 'selection', 'link', 'action'],
+});
 
 /** Registers the listeners. Called once, synchronously, when the background script starts. */
 export function registerScreenOcr() {
-  chrome.runtime.onInstalled.addListener(createMenu);
-  chrome.runtime.onStartup.addListener(createMenu);
+  addMenuItem(menuItem);
   chrome.contextMenus.onClicked.addListener((info, tab) => {
     if (info.menuItemId === MENU_ID) startScan(tab);
   });

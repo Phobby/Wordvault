@@ -1,0 +1,5 @@
+/* The window that shows a translation where Wordvault cannot draw on the page itself. The
+   translation popup fills it (shared/styles.js: .wv-standalone); this is only what is behind it. */
+html { color-scheme: light dark; }
+body { margin: 0; background: #ffffff; }
+@media (prefers-color-scheme: dark) { body { background: #23222b; } }

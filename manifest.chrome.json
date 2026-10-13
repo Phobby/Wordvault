@@ -30,6 +30,10 @@
     "scan-screen": {
       "suggested_key": { "default": "Alt+Shift+S", "mac": "Command+Shift+E", "windows": "Alt+Shift+S", "linux": "Alt+Shift+S", "chromeos": "Alt+Shift+S" },
       "description": "__MSG_cmdScanScreen__"
+    },
+    "translate-selection": {
+      "suggested_key": { "default": "Ctrl+Shift+U", "mac": "Command+Shift+U" },
+      "description": "__MSG_cmdTranslateSelection__"
     }
   },
   "optional_permissions": ["notifications"],
