@@ -31,6 +31,7 @@ import { mymemory } from './mymemory.js';
  * @property {string} homepage
  * @property {boolean} supportsAutoDetect      Whether translate() accepts `source: null`.
  * @property {number} [maxBytes]               Largest query in UTF-8 bytes, if the API has a limit.
+ * @property {boolean} [keepsLineBreaks]         Whether line breaks in a text come back in its translation.
  * @property {ProviderConfigField[]} configFields
  * @property {(config: Record<string, string>) => Promise<string[]>} getLanguages
  *   Language codes the provider can translate from and to.

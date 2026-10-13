@@ -4,6 +4,7 @@
 import { DEFAULT_PROVIDER_ID, getProvider } from '../providers/index.js';
 import { WordvaultError } from './errors.js';
 import { matchSupported, normalizeLang, sameLanguage } from './languages.js';
+import { DEFAULT_PIECE_CHARS, PASSAGE_MAX_CHARS, joinPassage, splitPassage, tidyPassage } from './passage.js';
 import { getSettings, getSiteSource, setSiteSource, updateSettings } from './settings.js';
 import { clearSession, forgetFailure, getFailure, getSession, hasSessionCache, putFailure, putSession, sessionCount } from './session-cache.js';
 import { TOUCH_AFTER_MS, cacheKey, cacheStats, clearCache, getCached, putCached, touchCached } from './translation-cache.js';
@@ -202,6 +203,39 @@ export function cancelTranslation(requestId) {
 }
 
 /**
+ * What a service answers for a text, asked for at most once: remembered answers first, then a
+ * failure remembered from a moment ago, then the service itself (one request however many ask).
+ * @param {{ provider: string, source: string | null, target: string, text: string }} remembered
+ * @param {{ provider: Object, config: Object, requestId?: string, fresh?: boolean }} how
+ */
+async function answerFor(remembered, { provider, config, requestId, fresh }) {
+  // Asked for before, of this service, for this language pair: not asked for again.
+  const key = cacheKey(remembered);
+  const known = await recall(remembered);
+  if (known) return known;
+  // It failed a moment ago in a way that asking again does not change: the same error,
+  // without another request. "Try again" asks anyway.
+  if (fresh) await forgetFailure(key);
+  const failed = fresh ? null : await getFailure(key);
+  if (failed) throw new WordvaultError(failed.code, failed.detail);
+  return askOnce(
+    key,
+    async (signal) => {
+      try {
+        const answer = await provider.translate({ text: remembered.text, source: remembered.source, target: remembered.target }, config, { signal });
+        // an answer that lost letters is not worth remembering: next time may be better
+        if (answer.damaged !== true) await remember(remembered, { translation: answer.translation, detectedSource: answer.detectedSource || null, alternatives: answer.alternatives || [] });
+        return answer;
+      } catch (error) {
+        await putFailure(key, error); // only the kinds worth it; never a request that was given up
+        throw error;
+      }
+    },
+    requestId,
+  );
+}
+
+/**
  * @param {Object} request
  * @param {string} request.text       Selected text. The only thing that is sent to the provider.
  * @param {string} [request.sample]   Text around the selection, used for local language detection.
@@ -265,33 +299,9 @@ export async function translate(request, host) {
     throw new WordvaultError('unsupported_language', '', { text, sourceLang: '', targetLang, ...about });
   }
 
-  // Asked for before, of this service, for this language pair: not asked for again.
-  const remembered = { provider: provider.id, source: sourceLang, target: targetLang, text };
-  const key = cacheKey(remembered);
-  let result = await recall(remembered);
+  let result;
   try {
-    if (!result) {
-      // It failed a moment ago in a way that asking again does not change: the same error,
-      // without another request. "Try again" asks anyway.
-      if (request.fresh) await forgetFailure(key);
-      const failed = request.fresh ? null : await getFailure(key);
-      if (failed) throw new WordvaultError(failed.code, failed.detail);
-      result = await askOnce(
-        key,
-        async (signal) => {
-          try {
-            const answer = await provider.translate({ text, source: sourceLang, target: targetLang }, config, { signal });
-            // an answer that lost letters is not worth remembering: next time may be better
-            if (answer.damaged !== true) await remember(remembered, { translation: answer.translation, detectedSource: answer.detectedSource || null, alternatives: answer.alternatives || [] });
-            return answer;
-          } catch (error) {
-            await putFailure(key, error); // only the kinds worth it; never a request that was given up
-            throw error;
-          }
-        },
-        request.requestId,
-      );
-    }
+    result = await answerFor({ provider: provider.id, source: sourceLang, target: targetLang, text }, { provider, config, requestId: request.requestId, fresh: request.fresh });
   } catch (error) {
     // The provider found the text to be in the target language: that is information for the
     // user, not a failure.
@@ -323,6 +333,103 @@ export async function translate(request, host) {
     /** Informational: the service's answer seems to have lost letters, and asking again did not help. */
     damaged: result.damaged === true,
   });
+}
+
+/**
+ * A selected sentence or paragraph. Like translate(), with these differences: line breaks are
+ * kept, the text may be much longer and goes to the service in pieces that end where sentences
+ * end (lib/passage.js), one after the other, and the language is told from the text itself.
+ * Each piece is remembered like any other translation.
+ *
+ * @param {Object} request
+ * @param {string} request.text       The selection. Nothing else is sent to the service.
+ * @param {string} [request.pageLang] `lang` attribute closest to the selection.
+ * @param {string} [request.source]   Source language picked by the user in the popup.
+ * @param {string} [request.requestId]
+ * @param {boolean} [request.fresh]
+ * @param {string} [request.provider]
+ * @param {string} [host]
+ * @param {(progress: { done: number, total: number, translation: string }) => void} [onProgress]
+ *        Called after every piece but the last, with what there is so far.
+ * @returns {Promise<Object>} What translate() returns, and: `passage: true`, `pieces` (how many
+ *          requests the text was cut into) and `partial`: null, or `{ code, detail, done }`
+ *          when a piece failed after others had worked; `translation` then holds those.
+ */
+export async function translatePassage(request, host, onProgress = () => {}) {
+  const text = tidyPassage(request?.text);
+  if (!text) throw new WordvaultError('empty');
+
+  const { settings, provider, config, languages } = await activeProvider(request.provider);
+  const about = providerContext(provider);
+  if (text.length > PASSAGE_MAX_CHARS) throw new WordvaultError('passage_too_long', String(PASSAGE_MAX_CHARS), { text: '', length: text.length, ...about });
+  if (normalizeLang(settings.targetLang) && !matchSupported(settings.targetLang, languages)) {
+    throw new WordvaultError('provider_language', normalizeLang(settings.targetLang), { text, sourceLang: '', targetLang: normalizeLang(settings.targetLang), ...about });
+  }
+  const targetLang = resolveTarget(settings, languages);
+
+  const manual = matchSupported(request.source, languages);
+  const pinned = manual ? null : matchSupported(await getSiteSource(host), languages);
+  const chosen = manual || pinned;
+  // A passage is enough text to tell its language from; nothing around it is looked at.
+  const guessed = chosen ? null : await guessSource({ sample: text, pageLang: request.pageLang }, languages);
+  // It looks like the user's own language: the service decides (see translate()), and if it
+  // agrees that is said as a note, not as an error.
+  const looksLikeTarget = Boolean(guessed) && sameLanguage(guessed, targetLang);
+  let sourceLang = chosen || (looksLikeTarget && provider.supportsAutoDetect ? null : guessed);
+
+  const outcome = (fields) => ({
+    text,
+    targetLang,
+    translation: '',
+    alternatives: [],
+    sameLanguage: false,
+    sourceMode: manual ? 'manual' : pinned ? 'site' : 'auto',
+    provider: { id: provider.id, name: provider.name },
+    passage: true,
+    pieces: 0,
+    partial: null,
+    ...fields,
+  });
+
+  if (chosen && sameLanguage(chosen, targetLang)) return outcome({ sourceLang: chosen, sameLanguage: true });
+  if (!sourceLang && !provider.supportsAutoDetect) {
+    throw new WordvaultError('unsupported_language', '', { text, sourceLang: '', targetLang, ...about });
+  }
+
+  const pieces = splitPassage(text, {
+    maxBytes: provider.maxBytes || 0,
+    maxChars: provider.maxBytes ? 0 : DEFAULT_PIECE_CHARS,
+    acrossParagraphs: provider.keepsLineBreaks === true,
+    locale: sourceLang || guessed || '',
+  });
+  const parts = [];
+  let detected = '';
+  let partial = null;
+  for (const piece of pieces) {
+    try {
+      const answer = await answerFor({ provider: provider.id, source: sourceLang, target: targetLang, text: piece.text }, { provider, config, requestId: request.requestId, fresh: request.fresh });
+      parts.push(answer.translation);
+      detected ||= matchSupported(answer.detectedSource, languages) || '';
+      // What the service made of the first piece holds for the rest: one text, one language.
+      if (!sourceLang && detected && !sameLanguage(detected, targetLang)) sourceLang = detected;
+      if (parts.length < pieces.length) onProgress({ done: parts.length, total: pieces.length, translation: joinPassage(parts, pieces, targetLang) });
+    } catch (error) {
+      if (error?.code === 'aborted') throw error;
+      if (error?.code === 'same_language' && parts.length === 0) return outcome({ sourceLang: targetLang, sameLanguage: true });
+      if (parts.length === 0) {
+        if (error instanceof WordvaultError) throw new WordvaultError(error.code, error.detail, { text, sourceLang: sourceLang || '', targetLang, ...about });
+        throw error;
+      }
+      // Some of it is done: that is shown, with what went wrong for the rest.
+      partial = { code: error?.code || 'internal', detail: error?.detail || '', done: parts.length };
+      break;
+    }
+  }
+
+  const translation = joinPassage(parts, pieces, targetLang);
+  const language = chosen || sourceLang || detected || matchSupported(await detect(text, 1), languages) || '';
+  const same = sameLanguage(language, targetLang) || (looksLikeTarget && fold(translation) === fold(text));
+  return outcome({ translation, sourceLang: same ? targetLang : language, sameLanguage: same, pieces: pieces.length, partial });
 }
 
 /**

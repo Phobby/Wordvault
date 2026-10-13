@@ -13,7 +13,7 @@ import { registerScreenOcr, screenOcrHandlers } from '../features/screen-ocr/bac
 import { WordvaultError, serializeError } from '../lib/errors.js';
 import { fetchRecording } from '../lib/pronunciation.js';
 import { CLEANUP_ALARM, cleanupCache, ensureCacheCleanup } from '../lib/translation-cache.js';
-import { cancelTranslation, checkProvider, clearTranslationCaches, getPreferences, setSiteSourceLanguage, setTargetLanguage, translate, translationCacheStats } from '../lib/translator.js';
+import { cancelTranslation, checkProvider, clearTranslationCaches, getPreferences, setSiteSourceLanguage, setTargetLanguage, translate, translatePassage, translationCacheStats } from '../lib/translator.js';
 import { ENTRY_PREFIX, TOMBSTONE_PREFIX, addEntry, entryId, getEntry, hasEntry, removeEntry, updateEntry } from '../lib/vault.js';
 import { NOTIFICATION_ID } from '../quiz/display.js';
 import { ackRank, freezeYesterday, getProgress } from '../quiz/progress-state.js';
@@ -46,6 +46,19 @@ async function lookup(payload, sender) {
     }
     throw error;
   }
+}
+
+/**
+ * A selected sentence or paragraph (lib/translator.js: translatePassage). While its pieces are
+ * being translated, what there is so far goes to the place that asked.
+ */
+async function lookupPassage(payload, sender) {
+  const tell = (progress) => {
+    if (sender.tab?.id == null || typeof payload?.requestId !== 'string') return;
+    chrome.tabs.sendMessage(sender.tab.id, { type: 'wv:passage:progress', requestId: payload.requestId, ...progress }, { frameId: sender.frameId || 0 }).catch(() => {});
+  };
+  const result = await translatePassage(payload, hostOf(sender), tell);
+  return { ...result, saved: await hasEntry(entryId(result)) };
 }
 
 /**
@@ -83,6 +96,7 @@ function fromOwnPage(handler) {
 /** Message handlers, keyed by message type. Each returns (a promise of) the response data. */
 const handlers = {
   'wv:translate': lookup,
+  'wv:translate:passage': lookupPassage,
   // The user moved on to another word before the answer came.
   'wv:translate:cancel': (payload) => cancelTranslation(payload?.requestId),
   'wv:prefs': (payload, sender) => getPreferences(hostOf(sender)),

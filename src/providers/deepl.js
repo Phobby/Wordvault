@@ -89,6 +89,8 @@ export const deepl = {
   supportsAutoDetect: true,
   // DeepL takes far more; a lookup is capped by the translator long before that.
   maxBytes: 0,
+  // A paragraph comes back as a paragraph, so several can go in one request (lib/passage.js).
+  keepsLineBreaks: true,
   configFields: [{ key: 'apiKey', type: 'password', labelKey: 'optDeeplKey', required: true }],
 
   async getLanguages() {
