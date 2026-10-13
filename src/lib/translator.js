@@ -1,10 +1,11 @@
 // Turns "the user picked this text on this page" into a translation: resolves the target
 // language, works out the source language and calls the active provider.
 
-import { getProvider } from '../providers/index.js';
+import { DEFAULT_PROVIDER_ID, getProvider } from '../providers/index.js';
 import { WordvaultError } from './errors.js';
 import { matchSupported, normalizeLang, sameLanguage } from './languages.js';
 import { getSettings, getSiteSource, setSiteSource, updateSettings } from './settings.js';
+import { getCached, putCached } from './translation-cache.js';
 
 const FALLBACK_TARGET = 'en';
 /** Upper bound for one lookup. Wordvault is a vocabulary tool, not a page translator. */
@@ -16,11 +17,22 @@ const MAX_DETECTION_SAMPLE = 1000;
 const collapse = (value) => (typeof value === 'string' ? value.replace(/\s+/g, ' ').trim() : '');
 const fold = (value) => value.trim().toLowerCase();
 
-async function activeProvider() {
+/** @param {string} [override]  A provider to use for this one request instead of the chosen one. */
+async function activeProvider(override) {
   const settings = await getSettings();
-  const provider = getProvider(settings.provider);
+  const provider = getProvider(override || settings.provider);
   const config = settings.providerConfig?.[provider.id] || {};
   return { settings, provider, config, languages: await provider.getLanguages(config) };
+}
+
+/**
+ * What an error tells the UI about the service it came from: its name, and, when it is not
+ * the default one, the default as something to carry on with. Switching is offered, never done
+ * silently.
+ */
+function providerContext(provider) {
+  const fallback = provider.id === DEFAULT_PROVIDER_ID ? null : getProvider(DEFAULT_PROVIDER_ID);
+  return { provider: { id: provider.id, name: provider.name }, fallback: fallback && { id: fallback.id, name: fallback.name } };
 }
 
 /**
@@ -108,16 +120,24 @@ export async function setSiteSourceLanguage(host, code) {
  * @param {string} [request.sample]   Text around the selection, used for local language detection.
  * @param {string} [request.pageLang] `lang` attribute closest to the selection.
  * @param {string} [request.source]   Source language picked by the user in the popup.
+ * @param {string} [request.provider] Use this service for this request ("continue with …"
+ *                                    after the chosen one failed); the setting is not changed.
  * @param {string} [host]             Host name of the page the text is on.
  */
 export async function translate(request, host) {
   const text = collapse(request?.text);
   if (!text) throw new WordvaultError('empty');
 
-  const { settings, provider, config, languages } = await activeProvider();
+  const { settings, provider, config, languages } = await activeProvider(request.provider);
+  const about = providerContext(provider);
   const tooManyBytes = provider.maxBytes && new TextEncoder().encode(text).length > provider.maxBytes;
-  if (text.length > MAX_CHARS || tooManyBytes) throw new WordvaultError('too_long');
+  if (text.length > MAX_CHARS || tooManyBytes) throw new WordvaultError('too_long', '', { text, ...about });
 
+  // The language the user chose is not one this service translates into: said, with the
+  // language named, instead of quietly translating into some other language.
+  if (normalizeLang(settings.targetLang) && !matchSupported(settings.targetLang, languages)) {
+    throw new WordvaultError('provider_language', normalizeLang(settings.targetLang), { text, sourceLang: '', targetLang: normalizeLang(settings.targetLang), ...about });
+  }
   const targetLang = resolveTarget(settings, languages);
 
   // A source language picked by the user, now or earlier for this site, is used as is. No
@@ -153,18 +173,24 @@ export async function translate(request, host) {
 
   if (chosen && sameLanguage(chosen, targetLang)) return outcome({ sourceLang: chosen, sameLanguage: true });
   if (!sourceLang && !provider.supportsAutoDetect) {
-    throw new WordvaultError('unsupported_language', '', { text, sourceLang: '', targetLang });
+    throw new WordvaultError('unsupported_language', '', { text, sourceLang: '', targetLang, ...about });
   }
 
-  let result;
+  // Asked for before, of this service, for this language pair: not asked for again.
+  const remembered = { provider: provider.id, source: sourceLang, target: targetLang, text };
+  let result = await getCached(remembered).catch(() => null);
   try {
-    result = await provider.translate({ text, source: sourceLang, target: targetLang }, config);
+    if (!result) {
+      result = await provider.translate({ text, source: sourceLang, target: targetLang }, config);
+      // an answer that lost letters is not worth remembering: next time may be better
+      if (result.damaged !== true) await putCached(remembered, { translation: result.translation, detectedSource: result.detectedSource || null, alternatives: result.alternatives || [] });
+    }
   } catch (error) {
     // The provider found the text to be in the target language: that is information for the
     // user, not a failure.
     if (error?.code === 'same_language') return outcome({ sourceLang: targetLang, sameLanguage: true });
     if (error instanceof WordvaultError) {
-      throw new WordvaultError(error.code, error.detail, { text, sourceLang: sourceLang || '', targetLang });
+      throw new WordvaultError(error.code, error.detail, { text, sourceLang: sourceLang || '', targetLang, ...about });
     }
     throw error;
   }
@@ -190,4 +216,16 @@ export async function translate(request, host) {
     /** Informational: the service's answer seems to have lost letters, and asking again did not help. */
     damaged: result.damaged === true,
   });
+}
+
+/**
+ * "Test the key" on the settings page: tries a provider's configuration as it is typed in,
+ * without saving it and without translating anything.
+ * @param {string} providerId
+ * @param {Record<string, string>} config
+ */
+export async function checkProvider(providerId, config) {
+  const provider = getProvider(providerId);
+  if (provider.id !== providerId || typeof provider.check !== 'function') throw new WordvaultError('provider_error', 'nothing to check');
+  return provider.check(config || {});
 }

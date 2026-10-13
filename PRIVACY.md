@@ -38,6 +38,12 @@ Bir kelimeye çift tıkladığında ya da çeviri istediğinde **seçtiğin meti
 sağlayıcısına gönderilir (varsayılan: MyMemory, `api.mymemory.translated.net`). Sayfanın geri kalanı,
 adresi ya da kimliğin gönderilmez. Sağlayıcının kendi gizlilik politikası geçerlidir.
 
+Ayarlardan **DeepL**'i seçip kendi API anahtarını girersen bu metin MyMemory yerine DeepL'e
+(`api-free.deepl.com` ya da `api.deepl.com`) gider; anahtarın isteğin başlığında DeepL'e gönderilir ve
+başka hiçbir yere gitmez. Anahtar yalnızca bu tarayıcıda saklanır; yedeğe, senkronizasyona ve geri
+bildirime dahil edilmez. Bir hata olursa servis kendiliğinden değiştirilmez; MyMemory ile devam etmek
+senin seçimindir. Çevirilerin yanıtları 7 gün boyunca yalnızca bu tarayıcıda önbellekte tutulur.
+
 YouTube'da altyazıdaki bir kelimenin üzerinde imleci tuttuğunda da aynı şey olur: **yalnızca o kelime**
 ve dil çifti gönderilir. Altyazı satırı dili algılamak için tarayıcının içinde kullanılır, kelimeyi
 kasaya eklersen onunla birlikte saklanır; altyazı akışı kaydedilmez ya da indirilmez.

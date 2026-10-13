@@ -3,6 +3,7 @@
 
 import { createFeedbackPanel } from './feedback.js';
 import { createOcrSection } from './ocr.js';
+import { createProviderSection } from './provider.js';
 import { catchUncaught } from '../features/feedback/error-log.js';
 import { supportCard } from '../support/support.js';
 import { downloadBackup, restoreBackup } from '../lib/backup.js';
@@ -474,6 +475,7 @@ const quizSection = h(
 // --- Page ----------------------------------------------------------------------------------------
 
 const ocrSection = createOcrSection({ flashSaved, switchRow, fieldRow });
+const providerSection = createProviderSection({ flashSaved });
 const feedbackPanel = createFeedbackPanel();
 
 // Two tabs: the settings, and "Contact and feedback". The address says which one is open
@@ -496,6 +498,7 @@ const panels = {
       currentTarget,
       targetList.element,
     ),
+    providerSection.element,
     h('section', { class: 'card' }, switchRow(doubleClick, 'optDoubleClick', 'optDoubleClickHelp')),
     // Only meaningful in the browsers where recordings replace the browser's voice. (append()
     // would write a `false` out as text, hence the empty string.)
@@ -552,6 +555,7 @@ function render() {
   renderSwitches();
   renderQuizSettings();
   ocrSection.render();
+  providerSection.render();
 }
 feedbackPanel.render();
 syncControls.render();

@@ -289,3 +289,18 @@ body {
 .fb-status[hidden] { display: none; }
 .fb-status.bad { background: color-mix(in srgb, var(--wv-danger) 12%, transparent); color: var(--wv-danger); }
 .fb-done .verdict { margin: 0; }
+
+/* Translation service (options/provider.js) */
+.provider-panel { display: grid; gap: 12px; margin-top: 4px; padding: 12px 14px; border: 1px solid var(--wv-border); border-radius: 10px; }
+.provider-panel[hidden] { display: none; }
+.provider-panel .buttons { margin: 0; }
+.provider-key { display: flex; gap: 8px; align-items: center; }
+.provider-key input { flex: 1 1 auto; min-width: 0; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+.provider-status { display: flex; align-items: center; gap: 8px; margin: 0; padding: 8px 12px; border-radius: 8px; background: var(--wv-tint); font-size: 13px; font-weight: 600; }
+.provider-status[hidden] { display: none; }
+.provider-status.bad { background: color-mix(in srgb, var(--wv-danger) 12%, transparent); color: var(--wv-danger); }
+.provider-guide { font-size: 13.5px; }
+.provider-guide summary { cursor: pointer; font-weight: 600; }
+.provider-guide ol { margin: 8px 0; padding-left: 20px; }
+.provider-guide li { margin-bottom: 4px; }
+.provider-guide .help { margin-top: 6px; }

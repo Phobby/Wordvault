@@ -1317,5 +1317,191 @@
   },
   "fbErrPermission": {
     "message": "Gönderilmedi: alıcıya ulaşma izni verilmedi."
+  },
+  "errAuth": {
+    "message": "$PROVIDER$ API anahtarını kabul etmedi. Ayarlardan kontrol et.",
+    "placeholders": {
+      "provider": {
+        "content": "$1"
+      }
+    }
+  },
+  "errQuota": {
+    "message": "$PROVIDER$ anahtarının bu dönemki karakter kotası doldu.",
+    "placeholders": {
+      "provider": {
+        "content": "$1"
+      }
+    }
+  },
+  "errNoKey": {
+    "message": "$PROVIDER$ seçili ama API anahtarı girilmemiş. Ayarlardan ekle.",
+    "placeholders": {
+      "provider": {
+        "content": "$1"
+      }
+    }
+  },
+  "errProviderPermission": {
+    "message": "$PROVIDER$ adresine henüz izin verilmemiş. Ayarları açıp \"Anahtarı test et\"e basarak izin ver.",
+    "placeholders": {
+      "provider": {
+        "content": "$1"
+      }
+    }
+  },
+  "errProviderLanguage": {
+    "message": "$PROVIDER$ $LANGUAGE$ diline çeviri yapmıyor.",
+    "placeholders": {
+      "provider": {
+        "content": "$1"
+      },
+      "language": {
+        "content": "$2"
+      }
+    }
+  },
+  "noteProviderFailed": {
+    "message": "Ayarlarda seçili servis $PROVIDER$. Hiçbir şey değiştirilmedi; bu çeviri için $FALLBACK$ ile devam edebilirsin.",
+    "placeholders": {
+      "provider": {
+        "content": "$1"
+      },
+      "fallback": {
+        "content": "$2"
+      }
+    }
+  },
+  "popupContinueWith": {
+    "message": "$PROVIDER$ ile devam et",
+    "placeholders": {
+      "provider": {
+        "content": "$1"
+      }
+    }
+  },
+  "optProviderTitle": {
+    "message": "Çeviri sağlayıcısı"
+  },
+  "optProviderHelp": {
+    "message": "Wordvault'un çevirdiği her şey için kullanılır: sayfalardaki kelimeler, video altyazıları ve taranan metin. Sözlük bilgisi ve örnek cümleler hangisini seçersen seç Wiktionary'den gelir."
+  },
+  "optProviderMymemoryHelp": {
+    "message": "Ücretsiz, anahtar gerekmez. Günde yaklaşık 5.000 karakterle sınırlı."
+  },
+  "optProviderDeeplHelp": {
+    "message": "Kendi DeepL API anahtarını ister. Daha az dil; seçtiğin metin DeepL'e gider."
+  },
+  "optProviderUse": {
+    "message": "$PROVIDER$ kullan",
+    "placeholders": {
+      "provider": {
+        "content": "$1"
+      }
+    }
+  },
+  "optProviderLanguage": {
+    "message": "$PROVIDER$, hedef dilin olan $LANGUAGE$ diline çeviri yapmıyor. İkisinden birini değiştirene kadar çeviriler başarısız olur.",
+    "placeholders": {
+      "provider": {
+        "content": "$1"
+      },
+      "language": {
+        "content": "$2"
+      }
+    }
+  },
+  "optDeeplKey": {
+    "message": "DeepL API anahtarı"
+  },
+  "optDeeplKeyHelp": {
+    "message": "Yalnızca bu tarayıcıda durur. Yedeğe, senkronizasyona ve geri bildirime dahil edilmez."
+  },
+  "optDeeplKeyPlaceholder": {
+    "message": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx:fx"
+  },
+  "optKeyShow": {
+    "message": "Göster"
+  },
+  "optKeyHide": {
+    "message": "Gizle"
+  },
+  "optDeeplTest": {
+    "message": "Anahtarı test et"
+  },
+  "optDeeplTesting": {
+    "message": "DeepL'e soruluyor…"
+  },
+  "optDeeplOkUsage": {
+    "message": "Anahtar çalışıyor ($PLAN$). Bu dönem kullanılan: $USED$ / $LIMIT$ karakter.",
+    "placeholders": {
+      "plan": {
+        "content": "$1"
+      },
+      "used": {
+        "content": "$2"
+      },
+      "limit": {
+        "content": "$3"
+      }
+    }
+  },
+  "optDeeplOk": {
+    "message": "Anahtar çalışıyor ($PLAN$).",
+    "placeholders": {
+      "plan": {
+        "content": "$1"
+      }
+    }
+  },
+  "optDeeplPlanFree": {
+    "message": "API Free"
+  },
+  "optDeeplPlanPro": {
+    "message": "API Pro"
+  },
+  "optDeeplBadKey": {
+    "message": "DeepL bu anahtarı kabul etmedi. Tamamının kopyalandığını kontrol et; sonunda \":fx\" varsa o da dahil."
+  },
+  "optDeeplQuota": {
+    "message": "Anahtar geçerli, ama bu dönemki karakter kotası dolmuş."
+  },
+  "optDeeplBusy": {
+    "message": "DeepL şu an çok fazla istek alıyor. Biraz sonra yeniden dene."
+  },
+  "optDeeplNetwork": {
+    "message": "DeepL'e ulaşılamadı. İnternet bağlantını kontrol et."
+  },
+  "optDeeplNoKey": {
+    "message": "Önce bir anahtar gir."
+  },
+  "optDeeplDenied": {
+    "message": "Test edilmedi: DeepL'e ulaşma izni verilmedi."
+  },
+  "optDeeplFailed": {
+    "message": "Test başarısız oldu: $REASON$",
+    "placeholders": {
+      "reason": {
+        "content": "$1"
+      }
+    }
+  },
+  "optDeeplGuideTitle": {
+    "message": "Anahtar nasıl alınır"
+  },
+  "optDeeplGuide1": {
+    "message": "DeepL'in sitesinde bir DeepL API hesabı aç (DeepL çevirmen hesabından ayrıdır)."
+  },
+  "optDeeplGuide2": {
+    "message": "Ücretsiz planı, \"DeepL API Free\"yi seç."
+  },
+  "optDeeplGuide3": {
+    "message": "Hesabındaki \"API Keys\" sekmesinden anahtarı kopyala ve yukarıya yapıştır."
+  },
+  "optDeeplGuideCard": {
+    "message": "DeepL kayıt sırasında, ücretsiz planda da, kimlik doğrulamak için kredi kartı isteyebilir. Planın sınırlarını ve ülkende kullanılabilir olup olmadığını DeepL belirler; sitesinden kontrol et."
+  },
+  "optDeeplGuideLink": {
+    "message": "DeepL'in API sayfasını aç"
   }
 }

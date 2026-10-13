@@ -4,6 +4,7 @@
 // TranslationProvider and register it below. Nothing else in the extension knows about concrete
 // providers: lib/translator.js only talks to this interface.
 
+import { deepl } from './deepl.js';
 import { mymemory } from './mymemory.js';
 
 /**
@@ -35,12 +36,17 @@ import { mymemory } from './mymemory.js';
  *   Language codes the provider can translate from and to.
  * @property {(request: TranslationRequest, config: Record<string, string>) => Promise<TranslationResult>} translate
  *   Rejects with a WordvaultError (lib/errors.js) describing what went wrong.
+ * @property {(config: Record<string, string>) => Promise<Object>} [check]
+ *   Tries the configuration (the key) without translating anything; rejects like translate().
  */
 
 export const DEFAULT_PROVIDER_ID = mymemory.id;
 
 /** @type {Map<string, TranslationProvider>} */
-const providers = new Map([[mymemory.id, mymemory]]);
+const providers = new Map([
+  [mymemory.id, mymemory],
+  [deepl.id, deepl],
+]);
 
 /** @returns {TranslationProvider} The requested provider, or the default one for an unknown id. */
 export function getProvider(id) {

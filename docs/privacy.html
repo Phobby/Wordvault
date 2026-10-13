@@ -47,7 +47,7 @@
 <h3>What leaves your browser, and when</h3>
 <table>
   <tr><th>When</th><th>What</th><th>Where</th></tr>
-  <tr><td>You ask for a translation (double-click, a word in a YouTube caption you point at, a word of a screen scan you click)</td><td>That word or selection and the language pair. Not the page, not its address.</td><td>The translation service (default: MyMemory, <code>api.mymemory.translated.net</code>)</td></tr>
+  <tr><td>You ask for a translation (double-click, a word in a YouTube caption you point at, a word of a screen scan you click)</td><td>That word or selection and the language pair. Not the page, not its address.</td><td>The translation service: MyMemory (<code>api.mymemory.translated.net</code>) by default; DeepL (<code>api-free.deepl.com</code> / <code>api.deepl.com</code>) if you chose it and entered your own API key. The key is sent to DeepL in the request header and nowhere else; it is stored only in this browser. The service is never switched without you asking.</td></tr>
   <tr><td>You add a word to the vault</td><td>That word</td><td>Wiktionary (<code>en.wiktionary.org</code>), for its type, definitions and examples</td></tr>
   <tr><td>You press the pronunciation button (Firefox-based browsers on macOS only)</td><td>That word</td><td>Wiktionary and Wikimedia Commons (<code>upload.wikimedia.org</code>), for a recording</td></tr>
   <tr><td>You turn synchronisation on (off by default)</td><td>Your vault: words, translations, language pairs, a short context sentence, review progress. Never page addresses, settings, keys or tokens.</td><td>The place <em>you</em> chose: your browser's own sync, your Google Drive, OneDrive or Dropbox, or your own server. Optionally encrypted with your password before it leaves.</td></tr>
@@ -106,7 +106,7 @@
 <h3>Tarayıcından çıkanlar ve ne zaman çıktıkları</h3>
 <table>
   <tr><th>Ne zaman</th><th>Ne</th><th>Nereye</th></tr>
-  <tr><td>Çeviri istediğinde (çift tıklama, YouTube altyazısında üzerinde durduğun kelime, ekran taramasında tıkladığın kelime)</td><td>O kelime ya da seçim ve dil çifti. Sayfa ya da adresi değil.</td><td>Çeviri servisi (varsayılan: MyMemory, <code>api.mymemory.translated.net</code>)</td></tr>
+  <tr><td>Çeviri istediğinde (çift tıklama, YouTube altyazısında üzerinde durduğun kelime, ekran taramasında tıkladığın kelime)</td><td>O kelime ya da seçim ve dil çifti. Sayfa ya da adresi değil.</td><td>Çeviri servisi: varsayılan MyMemory (<code>api.mymemory.translated.net</code>); seçip kendi API anahtarını girdiysen DeepL (<code>api-free.deepl.com</code> / <code>api.deepl.com</code>). Anahtar isteğin başlığında DeepL'e gider, başka hiçbir yere gitmez; yalnızca bu tarayıcıda saklanır. Servis sen istemeden değiştirilmez.</td></tr>
   <tr><td>Kasaya kelime eklediğinde</td><td>O kelime</td><td>Wiktionary (<code>en.wiktionary.org</code>): türü, tanımları ve örnekleri için</td></tr>
   <tr><td>Telaffuz düğmesine bastığında (yalnızca macOS'te Firefox tabanlı tarayıcılarda)</td><td>O kelime</td><td>Wiktionary ve Wikimedia Commons (<code>upload.wikimedia.org</code>): ses kaydı için</td></tr>
   <tr><td>Eşitlemeyi açtığında (varsayılan kapalı)</td><td>Kasan: kelimeler, çeviriler, dil çiftleri, kısa bağlam cümlesi, tekrar ilerlemesi. Sayfa adresleri, ayarlar, anahtarlar ve token'lar asla.</td><td><em>Senin</em> seçtiğin yer: tarayıcının kendi senkronu, Google Drive, OneDrive ya da Dropbox hesabın, ya da kendi sunucun. İstersen çıkmadan önce parolanla şifrelenir.</td></tr>

@@ -3,7 +3,9 @@
  * maps it to a localized message (see the `err*` keys in _locales).
  *
  * Codes: network, timeout, rate_limit, auth, unsupported_language, same_language, too_long,
- * no_result, empty, provider_error.
+ * no_result, empty, provider_error; for a provider that needs a key: no_key, quota,
+ * provider_permission (its host was not allowed yet), provider_language (it does not translate
+ * into the chosen language; the detail is that language's code).
  */
 export class WordvaultError extends Error {
   /**

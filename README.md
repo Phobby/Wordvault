@@ -331,6 +331,50 @@ indirilir; Firefox'ta kuruluma özgü olan kimlik kısmı da böylece gider), uz
 kısaltılır. Günlük yalnızca kullanıcı kutuyu işaretlerse gövdeye girer ve formdaki "Kayıtları sil" ile
 silinebilir. Gövde 8 KB'ı aşacaksa en eski kayıtlar çıkarılır.
 
+### Çeviri sağlayıcısı (MyMemory, DeepL)
+
+Ayarlardaki "Çeviri sağlayıcısı" bölümünden seçilir (`options/provider.js`). Varsayılan **MyMemory**'dir:
+anahtar istemez. **DeepL** kullanıcının kendi API anahtarıyla çalışır.
+
+| Ne | Hangi servis |
+| --- | --- |
+| Sayfada çift tıklanan kelime / seçim | Seçili sağlayıcı |
+| YouTube altyazısında üzerine gelinen kelime | Seçili sağlayıcı |
+| Ekran taramasında tıklanan kelime | Seçili sağlayıcı |
+| Kelime türü, tanımlar, örnek cümleler | Wiktionary (sağlayıcıdan bağımsız) |
+| Telaffuz kaydı (Firefox/macOS) | Wiktionary / Wikimedia Commons (sağlayıcıdan bağımsız) |
+| Dil algılama | Tarayıcının yerel algılayıcısı; yetmezse seçili sağlayıcının algılaması |
+| Quiz'in şıkları | Kasadaki kayıtlı çeviriler (istek yapılmaz) |
+
+Üç çeviri yolu da aynı `wv:translate` isteğinden ve `lib/translator.js`'ten geçer; sağlayıcı ayarı tek yerdir.
+
+**DeepL** (`providers/deepl.js`; adresler ve başlık 2026-10-13'te DeepL'in belgelerinden doğrulandı):
+
+- Anahtar `:fx` ile bitiyorsa `https://api-free.deepl.com`, bitmiyorsa `https://api.deepl.com` kullanılır.
+- Anahtar yalnızca `Authorization: DeepL-Auth-Key <anahtar>` başlığında gider; adrese ya da gövdeye yazılmaz.
+- Çeviri: `POST /v2/translate`. "Anahtarı test et": `GET /v2/usage` (hiçbir şey çevirmez; dönemin
+  kullanılan/toplam karakterini gösterir).
+- Dil kodları DeepL'inkilere çevrilir: hedefte `en` → `EN-US`, `pt` → `PT-PT`, `pt-BR` → `PT-BR`,
+  `zh-CN` → `ZH-HANS`, `zh-TW` → `ZH-HANT`, `no` → `NB`; kaynakta bölge atılır (`EN`, `PT`, `ZH`).
+- Hata kodları: 403 → anahtar kabul edilmedi, 456 → kota doldu, 429/529 → çok fazla istek.
+- ASSUMPTION: dil listesi DeepL'in yıllardır sunduğu 35 dildir. Belgelerinde artık çok daha fazlası
+  listeleniyor; anahtarsız denenemedikleri için eklenmediler.
+
+**Anahtar** ayarlarla birlikte yalnızca `chrome.storage.local` içinde durur (`settings.providerConfig.deepl.apiKey`).
+Yedeğe / JSON dışa aktarmaya, senkronizasyona, geri bildirime ve hata günlüğüne girmez
+(`tests/providers.test.js` bunu denetler; hata günlüğü ayrıca anahtara benzeyen her metni siler).
+DeepL'in adresi için izin kurulumda istenmez: "Anahtarı test et"e basıldığında, yalnızca o anahtarın
+kullanıldığı adres için istenir.
+
+**Sessizce servis değiştirilmez.** DeepL seçiliyken bir hata olursa (anahtar yok ya da geçersiz, kota
+dolu, ağ hatası, DeepL'in desteklemediği hedef dil) baloncuk hatayı DeepL'in adıyla söyler ve
+"MyMemory ile devam et" düğmesini sunar. Düğme yalnızca o çeviriyi MyMemory ile yapar; ayar değişmez.
+Her sonucun altında hangi servisle çevrildiği yazar. Hedef dil DeepL'de yoksa ayarlar sayfası da uyarır.
+
+**Çeviri önbelleği** (`lib/translation-cache.js`): başarılı çeviriler 7 gün, en fazla 300 kayıt olarak
+`storage.local` içinde tutulur; aynı metin yeniden sorulmaz (kotayı da harcamaz). Anahtar sağlayıcıyı,
+dil çiftini ve metni içerir; iki servisin yanıtları karışmaz. Yedeğe ve senkronizasyona girmez.
+
 ### Hedef ve kaynak dil
 
 Hedef dil tek bir yerde durur: `chrome.storage.local` içindeki `settings.targetLang`. Çeviri penceresi,
@@ -717,7 +761,7 @@ iki manifestteki `host_permissions` listesine de ekle.
 | `scripting` (yalnızca Chrome) | Kullanıcı taramayı, eklenti yüklenmeden önce açılmış bir sekmede başlatırsa içerik betiklerini o sekmeye eklemek için (Chrome bunu kendiliğinden yapmaz). Yalnızca `activeTab` ile, yani kullanıcının taramayı başlattığı sekmede çalışır. |
 | `contextMenus` | Sağ tık menüsüne ve araç çubuğu simgesinin menüsüne "Ekrandan metin tara" maddesini eklemek için. Sayfa içeriğine erişim vermez. |
 | `identity` | Bulut hesabına bağlanırken sağlayıcının oturum penceresini açmak (`identity.launchWebAuthFlow`) için. Tarayıcı hesabının e-postası istenmez (`identity.email` yok). |
-| İsteğe bağlı adres izni: `https://*/*`, `http://localhost/*`, `http://127.0.0.1/*` | Kurulumda verilmez. Bir bulut hesabı ya da kendi sunucun bağlanırken tarayıcı yalnızca o adres için sorar (Google Drive: `www.googleapis.com`, `oauth2.googleapis.com`; OneDrive: `graph.microsoft.com`, `login.microsoftonline.com`; Dropbox: `api.dropboxapi.com`, `content.dropboxapi.com`). Desen geniştir çünkü kullanıcının gireceği sunucu adresi önceden bilinemez; verilen izin yalnızca istenen adrestir. | Geri bildirim gönderilirken de aynı yol kullanılır: ilk gönderimde tarayıcı yalnızca geri bildirim alıcısının alan adı (`FEEDBACK_ENDPOINT`) için sorar; başka hiçbir adres istenmez.
+| İsteğe bağlı adres izni: `https://*/*`, `http://localhost/*`, `http://127.0.0.1/*` | Kurulumda verilmez. Bir bulut hesabı ya da kendi sunucun bağlanırken tarayıcı yalnızca o adres için sorar (Google Drive: `www.googleapis.com`, `oauth2.googleapis.com`; OneDrive: `graph.microsoft.com`, `login.microsoftonline.com`; Dropbox: `api.dropboxapi.com`, `content.dropboxapi.com`). Desen geniştir çünkü kullanıcının gireceği sunucu adresi önceden bilinemez; verilen izin yalnızca istenen adrestir. | Geri bildirim gönderilirken de aynı yol kullanılır: ilk gönderimde tarayıcı yalnızca geri bildirim alıcısının alan adı (`FEEDBACK_ENDPOINT`) için sorar; başka hiçbir adres istenmez. DeepL seçilirse `api-free.deepl.com` ya da `api.deepl.com` için de aynı yolla, "Anahtarı test et"e basıldığında sorulur.
 | `notifications` (isteğe bağlı) | Kurulumda istenmez. Yalnızca ayarlardan **İzin ver**'e basılırsa tarayıcı sorar; quiz başka hiçbir yolla gösterilemediğinde bildirimle haber vermek için. Ayarlardan geri alınabilir. |
 | `unlimitedStorage` | Kasa büyüdükçe `storage.local`'ın 10 MB sınırına takılmamak için. Kasadaki kelimeler asla otomatik silinmez. |
 | İçerik betiği: `*://*.youtube.com/*`, `*://*.youtube-nocookie.com/*` (bütün çerçevelerde) | Altyazıda üzerine gelinen kelimeyi bulmak için. Yalnızca YouTube'da (gömülü oynatıcılar dahil) yüklenir; yeni bir izin değildir, `<all_urls>` betiğinin kapsamı içindedir ama altyazı kodu başka sitelere hiç eklenmez. Altyazı metni kaydedilmez ya da indirilmez. |

@@ -28,6 +28,9 @@ export function scrub(text) {
     .replace(/\b(?:moz|chrome|safari-web)-extension:\/\/[^/\s)]+\//g, '')
     .replace(/\b(?:https?|wss?|ftp|file|blob|data|about|chrome|moz-extension):[^\s)'"]+/gi, '[address]')
     .replace(/\b[a-z][\w+.-]*%3A%2F%2F[^\s)'"]*/gi, '[address]')
+    // nothing here should ever hold a key; if something did, it does not get written down
+    .replace(/\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(?::fx)?\b/gi, '[key]')
+    .replace(/\b(DeepL-Auth-Key|Bearer)\s+\S+/gi, '$1 [key]')
     .replace(/(["'`])([^"'`]*)\1/g, (all, quote, inner) => (inner.length > MAX_QUOTED ? `${quote}…${quote}` : all))
     .replace(/[\u0000-\u0008\u000b-\u001f\u007f]/g, ' ');
 }

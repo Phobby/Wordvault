@@ -55,7 +55,7 @@ bunu denetler).
 
 ## Optional host permissions: `https://*/*`, `http://localhost/*`, `http://127.0.0.1/*`
 
-> Optional and not granted at installation. The pattern is broad because the address is not known in advance, but the extension always requests one specific origin at the moment it is needed, with the browser's own prompt: (1) the API hosts of the cloud provider the user connects for synchronisation (for example www.googleapis.com), (2) the address of the user's own WebDAV/HTTP server, which only the user knows (localhost for a server on their own computer), and (3) the host of the feedback receiver (wordvault-feedback.phoby.workers.dev) the first time the user sends feedback. No origin is requested without a user action.
+> Optional and not granted at installation. The pattern is broad because the address is not known in advance, but the extension always requests one specific origin at the moment it is needed, with the browser's own prompt: (1) the API hosts of the cloud provider the user connects for synchronisation (for example www.googleapis.com), (2) the address of the user's own WebDAV/HTTP server, which only the user knows (localhost for a server on their own computer), (3) the host of the feedback receiver (wordvault-feedback.phoby.workers.dev) the first time the user sends feedback, and (4) DeepL's API host (api-free.deepl.com or api.deepl.com) if the user chooses DeepL as the translation service and tests their own API key. No origin is requested without a user action.
 
 ## Content scripts: `<all_urls>`
 

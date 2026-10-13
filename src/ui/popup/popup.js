@@ -27,10 +27,16 @@
     no_result: 'errNoResult',
     empty: 'errNoResult',
     context_invalidated: 'errContextInvalidated',
+    // a service that needs the user's own key (providers/deepl.js); $1 is its name, $2 a language
+    auth: 'errAuth',
+    quota: 'errQuota',
+    no_key: 'errNoKey',
+    provider_permission: 'errProviderPermission',
+    provider_language: 'errProviderLanguage',
   };
   const RETRYABLE = new Set(['network', 'timeout', 'provider_error', 'internal']);
   /** Failures of the translation itself: the word can still be saved, just without one. */
-  const SAVEABLE_ERRORS = new Set(['network', 'timeout', 'rate_limit', 'unsupported_language', 'provider_error', 'no_result', 'internal']);
+  const SAVEABLE_ERRORS = new Set(['network', 'timeout', 'rate_limit', 'unsupported_language', 'provider_error', 'no_result', 'internal', 'auth', 'quota', 'no_key', 'provider_permission', 'provider_language']);
   /** How long "Added to vault" stays on screen. */
   const STATUS_MS = 2200;
 
@@ -345,10 +351,14 @@
   function showError(error) {
     const code = error?.code || 'internal';
     const known = ERROR_MESSAGES[code];
+    const service = error?.context?.provider?.name || '';
+    const fallback = error?.context?.fallback;
     setBody(
-      h('div', { class: 'wv-error', role: 'alert', text: t(known || 'errUnknown') }),
+      h('div', { class: 'wv-error', role: 'alert', text: t(known || 'errUnknown', [service, code === 'provider_language' ? languages.name(error.detail) : '']) }),
       // For errors we have no message for, the provider's own wording is better than nothing.
       !known && error?.detail && h('div', { class: 'wv-error-detail', text: error.detail }),
+      // Not the default service: said by name, and nothing is switched unless the user asks.
+      fallback && h('div', { class: 'wv-note', text: t('noteProviderFailed', [service, fallback.name]) }),
     );
     renderFoot();
   }
@@ -365,6 +375,22 @@
     const children = [];
     if (error && RETRYABLE.has(error.code)) {
       children.push(h('button', { class: 'wv-btn', type: 'button', text: t('popupRetry'), onclick: () => lookup() }));
+    }
+    // The chosen service failed: the default one is offered for this lookup. The setting stays.
+    const fallback = error?.context?.fallback;
+    if (fallback) {
+      children.push(
+        h('button', {
+          class: 'wv-btn',
+          type: 'button',
+          'data-action': 'fallback',
+          text: t('popupContinueWith', [fallback.name]),
+          onclick: () => {
+            session.provider = fallback.id;
+            lookup();
+          },
+        }),
+      );
     }
     if (result || (error && SAVEABLE_ERRORS.has(error.code))) {
       const translated = Boolean(result?.translation);
@@ -451,6 +477,7 @@
         sample: current.sample,
         pageLang: current.pageLang,
         source: current.source,
+        provider: current.provider || undefined,
       });
       if (isStale()) return;
       current.result = data;
@@ -592,6 +619,7 @@
       sample,
       pageLang,
       source: null, // language picked by the user in this popup
+      provider: null, // "continue with …": the service used for this lookup instead of the chosen one
       sourceLang: '', // language the text is (believed to be) in
       sourceMode: 'auto', // 'auto', 'manual' or 'site' (pinned for this host)
       sitePinned: false,

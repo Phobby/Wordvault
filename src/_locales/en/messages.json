@@ -1734,5 +1734,228 @@
   "fbErrPermission": {
     "message": "Not sent: permission to reach the receiver was not given.",
     "description": "Feedback error."
+  },
+  "errAuth": {
+    "message": "$PROVIDER$ did not accept the API key. Check it in the settings.",
+    "description": "Error: the key of a translation service was refused.",
+    "placeholders": {
+      "provider": {
+        "content": "$1"
+      }
+    }
+  },
+  "errQuota": {
+    "message": "The character quota of your $PROVIDER$ key is used up for this period.",
+    "description": "Error: quota of the user's key exhausted.",
+    "placeholders": {
+      "provider": {
+        "content": "$1"
+      }
+    }
+  },
+  "errNoKey": {
+    "message": "$PROVIDER$ is chosen but no API key is entered. Add one in the settings.",
+    "description": "Error: provider needs a key and has none.",
+    "placeholders": {
+      "provider": {
+        "content": "$1"
+      }
+    }
+  },
+  "errProviderPermission": {
+    "message": "$PROVIDER$ may not be reached yet. Open the settings and press \"Test key\" to allow it.",
+    "description": "Error: the host permission for the provider was not granted.",
+    "placeholders": {
+      "provider": {
+        "content": "$1"
+      }
+    }
+  },
+  "errProviderLanguage": {
+    "message": "$PROVIDER$ does not translate into $LANGUAGE$.",
+    "description": "Error: the chosen target language is not supported by the chosen service.",
+    "placeholders": {
+      "provider": {
+        "content": "$1"
+      },
+      "language": {
+        "content": "$2"
+      }
+    }
+  },
+  "noteProviderFailed": {
+    "message": "$PROVIDER$ is the service chosen in the settings. Nothing was switched; you can carry on with $FALLBACK$ for this lookup.",
+    "description": "Bubble: the chosen service failed; the default is offered.",
+    "placeholders": {
+      "provider": {
+        "content": "$1"
+      },
+      "fallback": {
+        "content": "$2"
+      }
+    }
+  },
+  "popupContinueWith": {
+    "message": "Continue with $PROVIDER$",
+    "description": "Bubble: use the default service for this lookup.",
+    "placeholders": {
+      "provider": {
+        "content": "$1"
+      }
+    }
+  },
+  "optProviderTitle": {
+    "message": "Translation service",
+    "description": "Options: title of the provider section."
+  },
+  "optProviderHelp": {
+    "message": "Used for everything Wordvault translates: words on pages, video captions and scanned text. Dictionary entries and example sentences come from Wiktionary whichever you choose.",
+    "description": "Options: what the provider is used for."
+  },
+  "optProviderMymemoryHelp": {
+    "message": "Free, no key needed. Limited to about 5,000 characters a day.",
+    "description": "Options: MyMemory."
+  },
+  "optProviderDeeplHelp": {
+    "message": "Needs your own DeepL API key. Fewer languages; the selected text goes to DeepL.",
+    "description": "Options: DeepL."
+  },
+  "optProviderUse": {
+    "message": "Use $PROVIDER$",
+    "description": "Options: button that switches back to the default provider.",
+    "placeholders": {
+      "provider": {
+        "content": "$1"
+      }
+    }
+  },
+  "optProviderLanguage": {
+    "message": "$PROVIDER$ does not translate into $LANGUAGE$, your target language. Translations will fail until you change one of the two.",
+    "description": "Options: warning.",
+    "placeholders": {
+      "provider": {
+        "content": "$1"
+      },
+      "language": {
+        "content": "$2"
+      }
+    }
+  },
+  "optDeeplKey": {
+    "message": "DeepL API key",
+    "description": "Options: label."
+  },
+  "optDeeplKeyHelp": {
+    "message": "Kept only in this browser. It is not part of the backup, of synchronisation or of feedback.",
+    "description": "Options: where the key is kept."
+  },
+  "optDeeplKeyPlaceholder": {
+    "message": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx:fx",
+    "description": "Options: placeholder showing the shape of a key."
+  },
+  "optKeyShow": {
+    "message": "Show",
+    "description": "Options: reveals the key."
+  },
+  "optKeyHide": {
+    "message": "Hide",
+    "description": "Options: hides the key."
+  },
+  "optDeeplTest": {
+    "message": "Test key",
+    "description": "Options: button."
+  },
+  "optDeeplTesting": {
+    "message": "Asking DeepL…",
+    "description": "Options: test in progress."
+  },
+  "optDeeplOkUsage": {
+    "message": "The key works ($PLAN$). Used this period: $USED$ / $LIMIT$ characters.",
+    "description": "Options: test succeeded.",
+    "placeholders": {
+      "plan": {
+        "content": "$1"
+      },
+      "used": {
+        "content": "$2"
+      },
+      "limit": {
+        "content": "$3"
+      }
+    }
+  },
+  "optDeeplOk": {
+    "message": "The key works ($PLAN$).",
+    "description": "Options: test succeeded, no usage figures.",
+    "placeholders": {
+      "plan": {
+        "content": "$1"
+      }
+    }
+  },
+  "optDeeplPlanFree": {
+    "message": "API Free",
+    "description": "DeepL plan name."
+  },
+  "optDeeplPlanPro": {
+    "message": "API Pro",
+    "description": "DeepL plan name."
+  },
+  "optDeeplBadKey": {
+    "message": "DeepL did not accept this key. Check that it is copied whole, including \":fx\" at the end if it has one.",
+    "description": "Options: invalid key."
+  },
+  "optDeeplQuota": {
+    "message": "The key is valid, but its character quota for this period is used up.",
+    "description": "Options: quota exhausted."
+  },
+  "optDeeplBusy": {
+    "message": "DeepL is receiving too many requests right now. Try again in a moment.",
+    "description": "Options: rate limited."
+  },
+  "optDeeplNetwork": {
+    "message": "DeepL could not be reached. Check your internet connection.",
+    "description": "Options: network error."
+  },
+  "optDeeplNoKey": {
+    "message": "Enter a key first.",
+    "description": "Options: no key."
+  },
+  "optDeeplDenied": {
+    "message": "Not tested: permission to reach DeepL was not given.",
+    "description": "Options: host permission refused."
+  },
+  "optDeeplFailed": {
+    "message": "The test failed: $REASON$",
+    "description": "Options: other failure.",
+    "placeholders": {
+      "reason": {
+        "content": "$1"
+      }
+    }
+  },
+  "optDeeplGuideTitle": {
+    "message": "How to get a key",
+    "description": "Options: guide title."
+  },
+  "optDeeplGuide1": {
+    "message": "Create a DeepL API account on DeepL's website (this is separate from the DeepL translator account).",
+    "description": "Guide step."
+  },
+  "optDeeplGuide2": {
+    "message": "Choose the free plan, \"DeepL API Free\".",
+    "description": "Guide step."
+  },
+  "optDeeplGuide3": {
+    "message": "Copy the key from the \"API Keys\" tab of your account and paste it above.",
+    "description": "Guide step."
+  },
+  "optDeeplGuideCard": {
+    "message": "DeepL may ask for a credit card when you sign up, to verify your identity, also for the free plan. The plan's limits and availability in your country are DeepL's; check them on its site.",
+    "description": "Guide note."
+  },
+  "optDeeplGuideLink": {
+    "message": "Open DeepL's API page",
+    "description": "Guide link."
   }
 }
