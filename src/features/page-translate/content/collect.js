@@ -19,8 +19,15 @@
     // code, and what is not text for reading
     'script', 'style', 'noscript', 'template', 'code', 'pre', 'kbd', 'samp', 'var', 'svg', 'math', 'canvas', 'iframe', 'object',
     // what the page says is not to be translated, what it hides, and Wordvault's own cards
-    '[translate="no"]', '.notranslate', '[hidden]', '[aria-hidden="true"]', 'wordvault-ui',
+    // ("aria-hidden" is not among them: it hides text from screen readers, not from the eye, and
+    // pages put it on visible labels and counters that have a spoken version elsewhere)
+    '[translate="no"]', '.notranslate', '[hidden]', 'wordvault-ui',
   ].join(',');
+  /**
+   * ASSUMPTION: a font whose name says "icon" or "symbol" draws pictures from words ("search",
+   * "menu"); translating that word would break the picture. Such text is left alone.
+   */
+  const ICON_FONT = /icon|symbol|glyph|fontawesome|material/i;
   /** A text node longer than this is not prose (a data blob, a minified something). */
   const MAX_NODE_CHARS = 4000;
   /** Pieces of one sentence that are sent together; more than this is not one sentence. */
@@ -56,15 +63,31 @@
     return block;
   }
 
-  /** Whether the page shows this text node at all. */
+  /** Whether the page shows this text node at all, as text. */
   function shown(node, range) {
     const parent = node.parentElement;
     try {
-      if (getComputedStyle(parent).visibility !== 'visible') return false;
+      const style = getComputedStyle(parent);
+      if (style.visibility !== 'visible' || ICON_FONT.test(style.fontFamily)) return false;
       range.selectNodeContents(node);
       return range.getClientRects().length > 0; // none: not laid out (display: none somewhere above, a closed <details>)
     } catch {
       return false;
+    }
+  }
+
+  /**
+   * The text nodes under a root, in document order, and those in the open shadow roots of its
+   * elements (pages built of web components keep much of their text there). Skipped elements
+   * are not entered at all.
+   */
+  function* textNodes(root) {
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_ELEMENT | NodeFilter.SHOW_TEXT, {
+      acceptNode: (node) => (node.nodeType === Node.ELEMENT_NODE && node.matches(SKIP) ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT),
+    });
+    for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+      if (node.nodeType === Node.TEXT_NODE) yield node;
+      else if (node.shadowRoot) yield* textNodes(node.shadowRoot);
     }
   }
 
@@ -79,13 +102,12 @@
     if (!document.body) return groups;
     const blocks = new WeakMap();
     const range = document.createRange();
-    const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
     let last = null; // { block, group }
-    for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+    for (const node of textNodes(document.body)) {
       const parent = node.parentElement;
       const text = squeeze(node.nodeValue || '');
       if (!parent || !text || text.length > MAX_NODE_CHARS || !hasLetters(text)) continue; // (punctuation between two links stays as it is)
-      if (parent.closest(SKIP) || (done && done(node)) || !shown(node, range)) continue;
+      if ((done && done(node)) || !shown(node, range)) continue;
       const block = blockOf(parent, blocks);
       if (last && last.block === block && last.group.nodes.length < MAX_PIECES && last.end === previousText(node, block)) {
         last.group.nodes.push(node);
@@ -104,7 +126,7 @@
    * run of text ends where another block (or something skipped, like a field) stands in it.
    */
   function previousText(node, block) {
-    const walker = document.createTreeWalker(block || document.body, NodeFilter.SHOW_ELEMENT | NodeFilter.SHOW_TEXT);
+    const walker = document.createTreeWalker(block || node.getRootNode(), NodeFilter.SHOW_ELEMENT | NodeFilter.SHOW_TEXT);
     walker.currentNode = node;
     for (let before = walker.previousNode(); before; before = walker.previousNode()) {
       if (before.nodeType === Node.TEXT_NODE) {
@@ -183,16 +205,23 @@
        * Puts the translations of a chunk in place.
        * @param {{ nodes: Text[] }[]} chunk
        * @param {(string | string[] | null)[]} answers  As ai/page-translate.js returns them.
-       * @returns {number} Groups that stayed as they were (no usable answer, or the page changed them meanwhile).
+       * @returns {{ placed: [object, string[]][], unanswered: object[], stale: number }}  The groups
+       *          that now show a translation (with its pieces), those that stayed as they were for
+       *          want of a usable answer, and how many the page changed meanwhile (also left as they are).
        */
       apply(chunk, answers) {
-        let skipped = 0;
+        const placed = [];
+        const unanswered = [];
+        let stale = 0;
         chunk.forEach((group, index) => {
           const answer = answers?.[index];
           const pieces = Array.isArray(answer) ? answer : typeof answer === 'string' ? [answer] : null;
-          const untouched = group.nodes.every((node, position) => node.isConnected && squeeze(node.nodeValue || '') === group.texts[position]);
-          if (!pieces || pieces.length !== group.nodes.length || !untouched || pieces.some((piece) => typeof piece !== 'string')) {
-            skipped += 1;
+          if (!group.nodes.every((node, position) => node.isConnected && squeeze(node.nodeValue || '') === group.texts[position])) {
+            stale += 1;
+            return;
+          }
+          if (!pieces || pieces.length !== group.nodes.length || pieces.some((piece) => typeof piece !== 'string')) {
+            unanswered.push(group);
             return;
           }
           group.nodes.forEach((node, position) => {
@@ -201,8 +230,9 @@
             changed.set(node, { original, translated });
             node.nodeValue = translated;
           });
+          placed.push([group, pieces]);
         });
-        return skipped;
+        return { placed, unanswered, stale };
       },
       /** Back to the original. A node the page has changed since is left as the page has it. */
       restore() {
@@ -219,5 +249,29 @@
     };
   }
 
-  WV.pageTranslate = { collect, chunksOf, itemsOf, fitted, sizeOf, createLedger };
+  /** ASSUMPTION: runs of text one page keeps translations of; far more than the longest page that is translated. */
+  const MEMORY_GROUPS = 20_000;
+
+  /**
+   * Translations already paid for, kept while the page is open (in this tab's memory only,
+   * never stored): the same text in the same language is put in place again without a request,
+   * after "Show original", after the card was closed and opened again, or when the page draws
+   * text it had already shown anew.
+   */
+  function createMemory() {
+    /** @type {Map<string, string[]>} */
+    const known = new Map();
+    const key = (lang, group) => `${lang}\u0001${group.texts.join('\u0002')}`;
+    return {
+      keep(lang, group, pieces) {
+        if (known.size >= MEMORY_GROUPS) known.delete(known.keys().next().value);
+        known.set(key(lang, group), pieces);
+      },
+      /** @returns {string[] | null} */
+      recall: (lang, group) => known.get(key(lang, group)) || null,
+      size: () => known.size,
+    };
+  }
+
+  WV.pageTranslate = { collect, chunksOf, itemsOf, fitted, sizeOf, createLedger, createMemory };
 })(globalThis.WV);

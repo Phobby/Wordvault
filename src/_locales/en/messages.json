@@ -3091,7 +3091,7 @@
     "message": "Show translation"
   },
   "ptSkipped": {
-    "message": "$1 pieces of text stayed as they were (no usable answer, or the page changed them meanwhile)."
+    "message": "$1 pieces of text stayed as they were even after a second try (no usable answer came, or the page changed them meanwhile)."
   },
   "ptLeftOut": {
     "message": "The end of the page was beyond the limit and is not translated."
@@ -3103,7 +3103,25 @@
     "message": "Translate it too"
   },
   "ptCloseHint": {
-    "message": "Closing this card puts the original text back."
+    "message": "Closing this puts the original text back. The translation stays in this tab's memory: opening it again brings it back at once, without a request."
+  },
+  "ptFromMemory": {
+    "message": "$1 pieces of text came back at once from this tab's memory; nothing was sent again."
+  },
+  "ptNewShort": {
+    "message": "+ New text"
+  },
+  "ptCollapse": {
+    "message": "Minimise"
+  },
+  "ptExpand": {
+    "message": "Details"
+  },
+  "ptWorkingShort": {
+    "message": "Translating $1/$2"
+  },
+  "ptOriginal": {
+    "message": "Original"
   },
   "aiPageNote": {
     "message": "“Translate this page with AI” (experimental) is in the same two places. It replaces the page's visible text chunk by chunk and can always be undone with “Show original”. It sends far more text than the other features: the card shows how much before you agree (up to 100,000 characters).",

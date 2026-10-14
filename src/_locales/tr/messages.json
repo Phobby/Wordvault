@@ -2476,7 +2476,7 @@
     "message": "Çeviriyi göster"
   },
   "ptSkipped": {
-    "message": "$1 metin parçası olduğu gibi kaldı (kullanılabilir cevap gelmedi ya da sayfa onları bu arada değiştirdi)."
+    "message": "$1 metin parçası, bir kez daha denendiği hâlde olduğu gibi kaldı (kullanılabilir cevap gelmedi ya da sayfa onları bu arada değiştirdi)."
   },
   "ptLeftOut": {
     "message": "Sayfanın sonu sınırın dışında kaldı ve çevrilmedi."
@@ -2488,7 +2488,25 @@
     "message": "Onu da çevir"
   },
   "ptCloseHint": {
-    "message": "Bu kartı kapatmak sayfayı orijinal metnine döndürür."
+    "message": "Kapatmak sayfayı orijinal metnine döndürür. Çeviri bu sekmede bellekte kalır: yeniden açınca istek gönderilmeden hemen gelir."
+  },
+  "ptFromMemory": {
+    "message": "$1 metin parçası bu sekmenin belleğinden anında geri geldi; yeniden gönderilmedi."
+  },
+  "ptNewShort": {
+    "message": "+ Yeni metin"
+  },
+  "ptCollapse": {
+    "message": "Küçült"
+  },
+  "ptExpand": {
+    "message": "Ayrıntılar"
+  },
+  "ptWorkingShort": {
+    "message": "Çevriliyor $1/$2"
+  },
+  "ptOriginal": {
+    "message": "Orijinal"
   },
   "aiPageNote": {
     "message": "“Sayfayı yapay zekâ ile çevir” (deneysel) aynı iki yerde durur. Sayfanın görünür metnini parça parça değiştirir ve “Orijinale dön” ile her zaman geri alınır. Diğer özelliklerden çok daha fazla metin gönderir: kart, sen onaylamadan önce ne kadar olduğunu gösterir (en çok 100.000 karakter)."

@@ -19,7 +19,7 @@ const sandbox = { WV: { supported: true } };
 sandbox.globalThis = sandbox;
 vm.createContext(sandbox);
 vm.runInContext(readFileSync(new URL('../src/features/page-translate/content/collect.js', import.meta.url), 'utf8'), sandbox, { filename: 'collect.js' });
-const { chunksOf, itemsOf, fitted, createLedger } = sandbox.WV.pageTranslate;
+const { chunksOf, itemsOf, fitted, createLedger, createMemory } = sandbox.WV.pageTranslate;
 
 const KEY = 'AIzaSyTEST-secret-key-0123456789';
 const PAGE = { url: 'https://news.example.com/article', id: 'wordvault', tab: { id: 7 }, frameId: 0 };
@@ -147,8 +147,10 @@ test('only the text of the nodes that were sent changes, and all of it can be pu
   const before = chunk.map((entry) => entry.nodes.map((node) => node.nodeValue));
   chunk[3].nodes[0].nodeValue = 'The page wrote something else.';
   const ledger = createLedger();
-  const skipped = ledger.apply(chunk, ['Merhaba dünya.', ['Devam etmek için', 'buraya', 'tıklayın.'], null, 'Sayfa değiştirdi.']);
-  assert.equal(skipped, 2);
+  const result = ledger.apply(chunk, ['Merhaba dünya.', ['Devam etmek için', 'buraya', 'tıklayın.'], null, 'Sayfa değiştirdi.']);
+  assert.deepEqual(Array.from(result.placed, ([entry, pieces]) => [chunk.indexOf(entry), pieces.length]), [[0, 1], [1, 3]]);
+  assert.deepEqual([...result.unanswered], [chunk[2]]); // (sent again once at the end)
+  assert.equal(result.stale, 1);
   assert.deepEqual(chunk.map((entry) => entry.nodes.map((node) => node.nodeValue)), [['  Merhaba dünya. '], ['Devam etmek için ', 'buraya', ' tıklayın.'], ['Not answered.'], ['The page wrote something else.']]);
   assert.equal(ledger.count(), 4);
   assert.equal(ledger.has(chunk[0].nodes[0]), true);
@@ -162,10 +164,19 @@ test('only the text of the nodes that were sent changes, and all of it can be pu
   assert.equal(chunk[1].nodes[1].nodeValue, 'rewritten');
   // an answer of the wrong shape changes nothing
   const other = [group('A ', 'B')];
-  assert.equal(createLedger().apply(other, ['one text for two nodes']), 1);
-  assert.equal(createLedger().apply(other, [['a', 'b', 'c']]), 1);
-  assert.equal(createLedger().apply(other, [[{ evil: true }, 'b']]), 1);
+  assert.equal(createLedger().apply(other, ['one text for two nodes']).unanswered.length, 1);
+  assert.equal(createLedger().apply(other, [['a', 'b', 'c']]).unanswered.length, 1);
+  assert.equal(createLedger().apply(other, [[{ evil: true }, 'b']]).unanswered.length, 1);
   assert.deepEqual(other[0].nodes.map((node) => node.nodeValue), ['A ', 'B']);
+});
+
+test('the memory of a page gives back a translation for the same text in the same language only', () => {
+  const memory = createMemory();
+  memory.keep('tr', group('Click ', 'here'), ['Buraya', 'tıklayın']);
+  assert.deepEqual([...memory.recall('tr', group('Click  ', 'here'))], ['Buraya', 'tıklayın']);
+  assert.equal(memory.recall('de', group('Click ', 'here')), null);
+  assert.equal(memory.recall('tr', group('Click here')), null);
+  assert.equal(memory.recall('tr', group('Click', 'here', 'now')), null);
 });
 
 // --- the requests ---------------------------------------------------------------------------

@@ -474,14 +474,24 @@ sekmeye eklenir (bu yüzden `scripting` izni Firefox'ta da var).
 **"Sayfayı yapay zekâ ile çevir" (deneysel)** (`features/page-translate/`, `ai/page-translate.js`).
 Özetle aynı iki yerde durur ve aynı şekilde yalnızca istenen sekmeye eklenir.
 
-- **Ne okunur** (`content/collect.js`): ana çerçevedeki görünür metin düğümleri. Okunmayanlar:
-  `input`/`textarea`/`select`, düzenlenebilir alanlar, gizli olanlar (`hidden`, `aria-hidden`,
-  `display: none`, `visibility: hidden`), `code`/`pre`, `translate="no"`/`.notranslate`, harf
-  içermeyen düğümler.
+- **Ne okunur** (`content/collect.js`): ana çerçevedeki görünür metin düğümleri, açık gölge
+  köklerindekiler (web bileşenleri) dahil. Okunmayanlar: `input`/`textarea`/`select`,
+  düzenlenebilir alanlar, gizli olanlar (`hidden`, `display: none`, `visibility: hidden`),
+  `code`/`pre`, `translate="no"`/`.notranslate`, ikon yazı tipiyle çizilen metin (adında
+  "icon"/"symbol"/"material" geçen yazı tipi: "search" gibi kelimeler resimdir), harf içermeyen
+  düğümler. `aria-hidden` yalnızca ekran okuyucudan gizler, görünür metin olduğu için okunur.
 - **Sayfanın yapısına dokunulmaz.** Değişen tek şey, zaten var olan metin düğümlerinin `nodeValue`
   değeridir; öğe eklenmez, silinmez, taşınmaz, öznitelik verilmez. Her değişiklik bir kayıtta durur:
-  "Orijinale dön" hepsini geri yazar, "Çeviriyi göster" bellekten yeniden yazar (istek yok), kartı
+  "Orijinal" hepsini geri yazar, dil adı (ör. "Türkçe") bellekten yeniden yazar (istek yok), kartı
   kapatmak orijinale döndürür. Sayfanın sonradan kendi değiştirdiği düğüme dokunulmaz.
+- **Küçük bar**: çeviri giderken ve bittikten sonra kart sağ altta küçük bir bara dönüşür:
+  "Orijinal | Türkçe" anahtarı, ayrıntılar (˄) ve kapatma. Ayrıntılar eski büyük kartı açar.
+- **Sekme belleği** (`createMemory`): çevrilen her metin parçası, sayfa açık kaldıkça bu sekmenin
+  belleğinde metin + dil anahtarıyla durur (hiçbir yere kaydedilmez). Kart kapatılıp yeniden
+  açılınca, sayfa aynı metni yeniden çizince ya da sonradan gelen metin daha önce çevrilmiş bir
+  metinse çeviri istek gönderilmeden hemen yerine konur.
+- **Cevapsız kalanlar**: modelin kullanılabilir cevap vermediği metin parçaları sonda bir kez daha,
+  15'erlik küçük isteklerle gönderilir; yine olmazsa olduğu gibi kalır ve sayılır.
 - **İstek biçimi** (`ai/page-translate.js`): her parça numaralı maddelerdir (`[[3]] metin`). Bir
   cümle bağlantı ya da kalın yazıyla bölünmüşse parçaları tek maddede, numaralı etiketlerle gider
   (`[[4]] <1>Click</1><2>here</2><3>to continue.</3>`); model cümleyi bütün olarak çevirip aynı
@@ -492,12 +502,12 @@ sekmeye eklenir (bu yüzden `scripting` izni Firefox'ta da var).
   sağlayıcıyı, ayrıca kota uyarısını gösterir. Parça başına 5.000 karakter ve en çok 60 madde
   (Ollama'da 1.500 karakter); üst sınır 100.000 karakter. İlerleme "istek 2 / 5", iptal edilebilir;
   iptalde ya da hatada çevrilen kısım kalır ve "Devam et" kalan parçaları gönderir.
-- **Dinamik sayfalar**: çeviri bittikten sonra bir `MutationObserver` yalnızca **sayar**; sayfaya
-  yeni metin gelirse kart bunu boyutuyla söyler ve yalnızca kullanıcı "Onu da çevir" derse
-  gönderir. Kendiliğinden hiçbir şey gönderilmez.
+- **Dinamik sayfalar**: çeviri bittikten sonra bir `MutationObserver` yalnızca **sayar** (düğüm
+  eklenmesi ve `hidden`/`class`/`style`/`open`/`aria-expanded` değişimi: açılan bölüm, sekme);
+  sayfaya yeni metin gelirse barda "+ Yeni metin" çıkar ve yalnızca kullanıcı basarsa gönderilir. Kendiliğinden hiçbir şey gönderilmez.
 - **Bilinen sınırlar**: yalnızca ana çerçeve; `title`/`alt`/`placeholder` gibi öznitelikler
-  çevrilmez; yazı yönü (RTL/LTR) değiştirilmez; sayfa kendi metnini yeniden çizerse (React vb.) o
-  düğümün çevirisi kaybolur ve "yeni metin" olarak sayılır; bölünmüş cümlelerde kelime sırası
+  çevrilmez; yazı yönü (RTL/LTR) değiştirilmez; sayfa kendi metnini yeniden çizerse (React vb.) aynı
+  metin sekme belleğinden hemen yeniden çevrilir, farklı metin "yeni metin" olarak sayılır; bölünmüş cümlelerde kelime sırası
   modelin etiketleri ne kadar iyi dağıttığına bağlıdır. Gerçek modellerle henüz denenmedi; bu yüzden
   "deneysel".
 
