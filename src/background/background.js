@@ -14,6 +14,7 @@ import { pageTranslationHandlers, registerPageTranslation } from '../features/pa
 import { passageHandlers, registerPassage } from '../features/passage/background.js';
 import { registerScreenOcr, screenOcrHandlers } from '../features/screen-ocr/background.js';
 import { registerSummary, summaryHandlers } from '../features/summary/background.js';
+import { i18nHandlers, registerI18n } from './i18n.js';
 import { rebuildMenus } from './menus.js';
 import { WordvaultError, serializeError } from '../lib/errors.js';
 import { fetchRecording } from '../lib/pronunciation.js';
@@ -146,6 +147,7 @@ const handlers = {
   ...passageHandlers,
   ...summaryHandlers,
   ...pageTranslationHandlers,
+  ...i18nHandlers,
   ...aiHandlers,
 };
 
@@ -188,6 +190,7 @@ chrome.runtime.onInstalled.addListener(async ({ reason }) => {
 // that a click wakes this script up; the menu itself is kept by the browser and built when the
 // extension is installed or updated and when the browser starts (background/menus.js).
 
+registerI18n();
 registerPassage();
 registerScreenOcr();
 registerSummary();

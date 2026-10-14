@@ -77,7 +77,7 @@ export function createAiSection({ flashSaved, switchRow, fieldRow }) {
   const status = h('p', { class: 'provider-status', role: 'status', 'data-ai': 'status', hidden: true });
   const test = h('button', { class: 'wv-btn', type: 'button', 'data-action': 'ai-test', text: t('optAiTest'), onclick: () => runTest() });
   const guide = h('details', { class: 'provider-guide' });
-  const ollamaNote = h('div', { class: 'ai-ollama', hidden: true }, h('p', { class: 'help', text: t('optAiOllamaOrigins') }), h('code', { class: 'ai-code', text: `OLLAMA_ORIGINS=${OLLAMA_ORIGINS} ollama serve` }), h('p', { class: 'help', text: t('optAiOllamaMac', [`launchctl setenv OLLAMA_ORIGINS "${OLLAMA_ORIGINS}"`]) }));
+  const ollamaNote = h('div', { class: 'ai-ollama', hidden: true }, h('p', { class: 'help', text: t('optAiOllamaOrigins') }), h('code', { class: 'ai-code', text: `OLLAMA_ORIGINS=${OLLAMA_ORIGINS} ollama serve` }), h('p', { class: 'help', text: t('optAiOllamaMac', { command: `launchctl setenv OLLAMA_ORIGINS "${OLLAMA_ORIGINS}"` }) }));
   const panel = h('div', { class: 'provider-panel', 'data-ai': 'panel', hidden: true }, keyRow, baseRow, modelRow, h('div', { class: 'buttons' }, test), status, ollamaNote, guide);
 
   // What applies whichever provider is chosen.
@@ -187,11 +187,11 @@ export function createAiSection({ flashSaved, switchRow, fieldRow }) {
     status.replaceChildren(h('span', { class: 'wv-spinner' }), ' ', t('optAiTesting'));
     try {
       const answer = await globalThis.WV.send('wv:ai:test', { provider: provider.id, settings });
-      say(t('optAiOk', [provider.name, answer.model]));
+      say(t('optAiOk', { provider: provider.name, model: answer.model }));
     } catch (error) {
       const known = TEST_ERRORS[error?.code];
       // The provider's own words for what we have no name for; they never hold the key.
-      say(`${t(known || 'aiErrUnknown', [provider.name])}${(!known || error?.code === 'ai_request' || error?.code === 'ai_overloaded') && error?.detail ? ` (${error.detail})` : ''}`, true);
+      say(`${t(known || 'aiErrUnknown', { provider: provider.name })}${(!known || error?.code === 'ai_request' || error?.code === 'ai_overloaded') && error?.detail ? ` (${error.detail})` : ''}`, true);
     } finally {
       test.disabled = false;
     }
@@ -223,12 +223,12 @@ export function createAiSection({ flashSaved, switchRow, fieldRow }) {
       baseRow.hidden = !provider.needsBase;
       base.placeholder = provider.defaultBase;
       model.placeholder = provider.defaultModel || t(provider.id === 'ollama' ? 'optAiModelExampleOllama' : 'optAiModelExample');
-      modelRow.querySelector('[data-ai="model-help"]').textContent = provider.defaultModel ? t('optAiModelHelpDefault', [provider.defaultModel]) : t('optAiModelHelp');
+      modelRow.querySelector('[data-ai="model-help"]').textContent = provider.defaultModel ? t('optAiModelHelpDefault', { model: provider.defaultModel }) : t('optAiModelHelp');
       ollamaNote.hidden = provider.id !== 'ollama';
       renderGuide(provider);
     }
     const agreed = getAiProvider(config.consent);
-    consent.textContent = agreed ? t('optAiConsentGiven', [agreed.name]) : t('optAiConsentNone');
+    consent.textContent = agreed ? t('optAiConsentGiven', { provider: agreed.name }) : t('optAiConsentNone');
     withdraw.hidden = !agreed;
     cache.checked = config.cache !== false;
     promptSite.value = PROMPT_SITES[config.promptSite] ? config.promptSite : 'chatgpt';

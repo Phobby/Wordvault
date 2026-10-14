@@ -147,7 +147,6 @@
   /** True while we change text ourselves: the observer must not take that for the page's doing. */
   let writing = false;
 
-  const number = (value) => Number(value || 0).toLocaleString(WV.languages?.uiLanguage?.() || undefined);
   const button = (labelKey, onclick, extra = {}) => h('button', { class: 'wv-btn wv-btn-sm', type: 'button', text: t(labelKey), onclick, ...extra });
   const openSettings = () => WV.send('wv:ai:open-settings').catch(() => {});
   /** (the width is set as a property: a page's content security policy can forbid style attributes) */
@@ -182,7 +181,7 @@
     if (state.step === 'working') {
       const total = job.chunks.length;
       children.push(
-        h('span', { class: 'wv-pt-progress', role: 'status' }, h('span', { class: 'wv-spinner' }), t('ptWorkingShort', [number(Math.min(job.next + 1, total)), number(total)])),
+        h('span', { class: 'wv-pt-progress', role: 'status' }, h('span', { class: 'wv-spinner' }), t('ptWorkingShort', { current: Math.min(job.next + 1, total), total: total })),
         h('button', { class: 'wv-btn-icon', type: 'button', title: t('aiCancel'), 'aria-label': t('aiCancel'), 'data-action': 'pt-cancel', onclick: cancel }, icon(ICON_STOP)),
         bar(job.next / total),
       );
@@ -197,7 +196,7 @@
         ),
       );
       if (state.step === 'paused') children.push(button('ptContinue', () => run(false), { 'data-action': 'pt-continue' }));
-      else if (state.fresh > 0 && job.shown) children.push(button('ptNewShort', translateNew, { 'data-action': 'pt-new', title: t('ptNewText', [number(state.fresh)]) }));
+      else if (state.fresh > 0 && job.shown) children.push(button('ptNewShort', translateNew, { 'data-action': 'pt-new', title: t('ptNewText', { count: state.fresh }) }));
     }
     children.push(h('button', { class: 'wv-btn-icon', type: 'button', title: t('ptExpand'), 'aria-label': t('ptExpand'), 'aria-expanded': 'false', 'data-action': 'pt-expand', onclick: () => setExpanded(true) }, icon(ICON_MORE)), closeButton());
     ui.card.className = 'wv-pt wv-pt-mini';
@@ -236,28 +235,28 @@
         h(
           'div',
           { class: 'wv-pt-facts', 'data-role': 'pt-facts' },
-          h('div', { text: t('ptSize', [number(job.chars)]) }),
-          h('div', { text: job.chunks.length === 1 ? t('sumOnePart') : t('ptRequests', [number(job.chunks.length)]) }),
-          h('div', { text: t('ptInto', [WV.languages?.name?.(plan.targetLang) || plan.targetLang]) }),
+          h('div', { text: t('ptSize', { count: job.chars }) }),
+          h('div', { text: job.chunks.length === 1 ? t('sumOnePart') : t('ptRequests', { count: job.chunks.length }) }),
+          h('div', { text: t('ptInto', { language: WV.languages?.name?.(plan.targetLang) || plan.targetLang }) }),
         ),
-        job.left > 0 && note(t('ptTruncated', [number(job.chars), number(job.total)]), 'wv-pt-strong'),
-        note(t(plan.consent ? 'ptSendsTo' : 'ptConsent', [plan.provider.name, plan.provider.model])),
+        job.left > 0 && note(t('ptTruncated', { limit: job.chars, total: job.total }), 'wv-pt-strong'),
+        note(t(plan.consent ? 'ptSendsTo' : 'ptConsent', { provider: plan.provider.name, model: plan.provider.model })),
         note(t('ptCost')),
         row(button(plan.consent ? 'ptGo' : 'ptAgreeGo', () => run(true), { class: 'wv-btn wv-btn-primary', 'data-action': 'pt-go' }), button('aiCancel', close)),
       ];
     } else if (state.step === 'working') {
       const total = job.chunks.length;
       children = [
-        h('div', { class: 'wv-pt-loading', role: 'status' }, h('span', { class: 'wv-spinner' }), t('ptWorking', [number(Math.min(job.next + 1, total)), number(total)])),
+        h('div', { class: 'wv-pt-loading', role: 'status' }, h('span', { class: 'wv-spinner' }), t('ptWorking', { current: Math.min(job.next + 1, total), total: total })),
         bar(job.next / total),
         row(button('aiCancel', cancel, { 'data-action': 'pt-cancel' })),
       ];
     } else if (state.step === 'error') {
       const code = state.error?.code || 'internal';
       children = [
-        h('div', { class: 'wv-pt-error', role: 'alert', text: t(ERRORS[code] || 'aiErrUnknown', [job?.plan?.provider?.name || '']) }),
+        h('div', { class: 'wv-pt-error', role: 'alert', text: t(ERRORS[code] || 'aiErrUnknown', { provider: job?.plan?.provider?.name || '' }) }),
         (!ERRORS[code] || DETAILED.has(code)) && state.error?.detail ? h('div', { class: 'wv-pt-detail', text: String(state.error.detail).slice(0, 300) }) : null,
-        job && job.next > 0 && note(t('ptPartDone', [number(job.next), number(job.chunks.length)])),
+        job && job.next > 0 && note(t('ptPartDone', { done: job.next, total: job.chunks.length })),
         row(
           job && job.next < job.chunks.length && button('ptContinue', () => run(false), { 'data-action': 'pt-continue' }),
           TO_SETTINGS.has(code) && button('aiOpenSettings', openSettings),
@@ -268,21 +267,21 @@
     } else if (state.step === 'paused') {
       // "Cancel" half way: what is translated stays until the user says otherwise.
       children = [
-        note(t('ptPartDone', [number(job.next), number(job.chunks.length)]), 'wv-pt-strong'),
+        note(t('ptPartDone', { done: job.next, total: job.chunks.length }), 'wv-pt-strong'),
         row(button('ptContinue', () => run(false), { 'data-action': 'pt-continue' }), button(job.shown ? 'ptShowOriginal' : 'ptShowTranslation', job.shown ? showOriginal : showTranslation, { 'data-action': 'pt-toggle' })),
       ];
     } else if (state.step === 'done') {
       children = [
         note(t(job.shown ? 'ptDone' : 'ptOriginalShown'), 'wv-pt-strong'),
-        job.recalled > 0 && note(t('ptFromMemory', [number(job.recalled)])),
-        job.skipped > 0 && note(t('ptSkipped', [number(job.skipped)])),
+        job.recalled > 0 && note(t('ptFromMemory', { count: job.recalled })),
+        job.skipped > 0 && note(t('ptSkipped', { count: job.skipped })),
         job.left > 0 && note(t('ptLeftOut')),
-        state.fresh > 0 && job.shown && note(t('ptNewText', [number(state.fresh)]), 'wv-pt-strong'),
+        state.fresh > 0 && job.shown && note(t('ptNewText', { count: state.fresh }), 'wv-pt-strong'),
         row(
           button(job.shown ? 'ptShowOriginal' : 'ptShowTranslation', job.shown ? showOriginal : showTranslation, { class: 'wv-btn wv-btn-sm wv-btn-primary', 'data-action': 'pt-toggle' }),
           state.fresh > 0 && job.shown && button('ptTranslateNew', translateNew, { 'data-action': 'pt-new' }),
         ),
-        note(t('aiBy', [job.plan.provider.name, job.plan.provider.model])),
+        note(t('aiBy', { provider: job.plan.provider.name, model: job.plan.provider.model })),
         note(t('ptCloseHint')),
       ];
     }
@@ -493,6 +492,17 @@
     prepare();
     return true;
   }
+
+  // The interface language changed: the card is built again in it, as it stands.
+  WV.i18n.onChange(() => {
+    if (!ui) return;
+    ui.surface.unmount();
+    ui = build();
+    if (state) {
+      ui.surface.mount(document.body);
+      render();
+    }
+  });
 
   window.addEventListener(
     'keydown',

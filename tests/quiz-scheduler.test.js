@@ -37,7 +37,7 @@ async function alarmGoesOff(t) {
 test('the timer is set as soon as the extension starts, one interval ahead', async () => {
   await ensureScheduled();
   assert.equal(alarmAt(), T0 + 20 * MINUTE);
-  assert.equal((await getQuizState()).sonrakiQuizZamani, T0 + 20 * MINUTE);
+  assert.equal((await getQuizState()).nextQuizAt, T0 + 20 * MINUTE);
 });
 
 test('starting again keeps the plan instead of pushing it further away', async (t) => {
@@ -72,7 +72,7 @@ test('switched off: no alarm, and the plan is cleared', async () => {
   await updateSettings({ quizEnabled: false });
   await ensureScheduled();
   assert.equal(alarmAt(), undefined);
-  assert.equal((await getQuizState()).sonrakiQuizZamani, 0);
+  assert.equal((await getQuizState()).nextQuizAt, 0);
   assert.equal(await runScheduledQuiz(), 'disabled');
   assert.equal(alarmAt(), undefined);
 
@@ -99,7 +99,7 @@ test('changing the frequency rebuilds the timer at once, counting from now', asy
   await updateSettings({ quizIntervalMinutes: 5 });
   await ensureScheduled();
   assert.equal(alarmAt(), T0 + 8 * MINUTE, 'shorter: five minutes from the change, not the old twenty');
-  assert.equal((await getQuizState()).sonrakiQuizZamani, T0 + 8 * MINUTE);
+  assert.equal((await getQuizState()).nextQuizAt, T0 + 8 * MINUTE);
 
   at(t, T0 + 4 * MINUTE);
   await updateSettings({ quizIntervalMinutes: 60 });
@@ -155,7 +155,7 @@ test('after every quiz, shown or not, the next one is set', async (t) => {
     // The quiz on screen is over before the next one is due.
     if (!blocked) await answerQuestion({ sessionId: device.cards().at(-1).sessionId, id: device.lastQuestion().id, correct: true, ms: 2000 });
     expected += (blocked ? RETRY_MINUTES : 10) * MINUTE;
-    assert.equal((await getQuizState()).sonrakiQuizZamani, expected);
+    assert.equal((await getQuizState()).nextQuizAt, expected);
     assert.equal(device.alarm(ALARM_NAME).periodInMinutes, 10);
   }
   assert.equal(alarmAt(), expected, 'and after the last one too');
@@ -204,7 +204,7 @@ test('waking up for a due quiz: the start-up check and the quiz do not undo each
     assert.ok(results.includes('shown'), order);
     assert.equal(device.cards().length, 1, `${order}: one quiz`);
     assert.equal(alarmAt(), T0 + 40 * MINUTE, `${order}: the alarm is one interval ahead, not left at "as soon as possible"`);
-    assert.equal((await getQuizState()).sonrakiQuizZamani, T0 + 40 * MINUTE);
+    assert.equal((await getQuizState()).nextQuizAt, T0 + 40 * MINUTE);
   }
 });
 
@@ -325,7 +325,7 @@ test('"Test now" shows a quiz the way the timer does, whatever the timer, the sw
   assert.equal(message.quiz.question.choices.length, 4);
   assert.equal(alarmAt(), undefined, 'the plan is not touched');
   const state = await getQuizState();
-  assert.deepEqual([state.sonrakiQuizZamani, state.lastAttempt, state.lastShown, state.lastSkip], [0, null, null, null], 'nor is the record of what the timer did');
+  assert.deepEqual([state.nextQuizAt, state.lastAttempt, state.lastShown, state.lastSkip], [0, null, null, null], 'nor is the record of what the timer did');
 
   // what can still stand in the way is reported instead of failing silently
   device.browser.page.supported = false;

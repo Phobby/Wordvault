@@ -63,7 +63,7 @@ export function createPassageSection({ flashSaved, switchRow, fieldRow }) {
     'section',
     { class: 'card', id: 'selection' },
     h('h2', { text: t('optSelTitle') }),
-    h('p', { class: 'help', text: t('optSelHelp', [PASSAGE_MAX_CHARS.toLocaleString()]) }),
+    h('p', { class: 'help', text: t('optSelHelp', { max: PASSAGE_MAX_CHARS }) }),
     switchRow(menu, 'optSelMenu', 'optSelMenuHelp'),
     switchRow(button, 'optSelButton', 'optSelButtonHelp'),
     fieldRow('optSelShortcut', isFirefox ? 'optSelShortcutHelpFirefox' : 'optSelShortcutHelpChrome', shortcut),

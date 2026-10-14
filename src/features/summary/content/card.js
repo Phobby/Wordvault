@@ -88,7 +88,6 @@
   /** The page's text as it was read when the card was opened. Kept only while the card is open. */
   let page = null;
 
-  const number = (value) => Number(value || 0).toLocaleString(WV.languages?.uiLanguage?.() || undefined);
   const button = (labelKey, onclick, extra = {}) => h('button', { class: 'wv-btn wv-btn-sm', type: 'button', text: t(labelKey), onclick, ...extra });
   const openSettings = () => WV.send('wv:ai:open-settings').catch(() => {});
 
@@ -131,12 +130,12 @@
         h(
           'div',
           { class: 'wv-sum-facts', 'data-role': 'sum-facts' },
-          h('div', { text: t('sumSize', [number(plan.chars)]) }),
-          h('div', { text: plan.parts > 1 ? t('sumParts', [number(plan.parts), number(plan.requests)]) : t('sumOnePart') }),
+          h('div', { text: t('sumSize', { count: plan.chars }) }),
+          h('div', { text: plan.parts > 1 ? t('sumParts', { parts: plan.parts, requests: plan.requests }) : t('sumOnePart') }),
         ),
-        plan.truncated && note(t('sumTruncated', [number(plan.chars), number(plan.total)]), 'wv-sum-warn'),
+        plan.truncated && note(t('sumTruncated', { limit: plan.chars, total: plan.total }), 'wv-sum-warn'),
         // The first time for this provider: what agreeing means. Afterwards: where it goes.
-        note(t(plan.consent ? 'sumSendsTo' : 'sumConsent', [plan.provider.name, plan.provider.model])),
+        note(t(plan.consent ? 'sumSendsTo' : 'sumConsent', { provider: plan.provider.name, model: plan.provider.model })),
         h(
           'div',
           { class: 'wv-sum-lengths' },
@@ -161,12 +160,12 @@
         row(button(plan.consent ? 'sumGo' : 'sumAgreeGo', () => run(true), { class: 'wv-btn wv-btn-primary', 'data-action': 'sum-go' }), button('aiCancel', close)),
       ];
     } else if (state.step === 'working') {
-      const text = state.total > 1 ? t('sumWorkingParts', [state.provider, number(Math.min(state.done + 1, state.total)), number(state.total)]) : t('sumWorking', [state.provider]);
+      const text = state.total > 1 ? t('sumWorkingParts', { provider: state.provider, current: Math.min(state.done + 1, state.total), total: state.total }) : t('sumWorking', { provider: state.provider });
       children = [h('div', { class: 'wv-sum-loading', role: 'status' }, h('span', { class: 'wv-spinner' }), text), row(button('aiCancel', cancel, { 'data-action': 'sum-cancel' }))];
     } else if (state.step === 'error') {
       const code = state.error?.code || 'internal';
       children = [
-        h('div', { class: 'wv-sum-error', role: 'alert', text: t(ERRORS[code] || 'aiErrUnknown', [state.provider || '']) }),
+        h('div', { class: 'wv-sum-error', role: 'alert', text: t(ERRORS[code] || 'aiErrUnknown', { provider: state.provider || '' }) }),
         (!ERRORS[code] || DETAILED.has(code)) && state.error?.detail ? h('div', { class: 'wv-sum-detail', text: String(state.error.detail).slice(0, 300) }) : null,
         row(RETRYABLE.has(code) && button('popupRetry', () => run(false)), TO_SETTINGS.has(code) && button('aiOpenSettings', openSettings), button('popupClose', close)),
       ];
@@ -178,8 +177,8 @@
           button('sumAgain', again, { 'data-action': 'sum-again', title: t('sumAgainHint') }),
           state.flash && h('span', { class: 'wv-status', role: 'status', text: state.flash }),
         ),
-        note(t('aiBy', [state.provider || '', state.model || ''])),
-        state.truncated && note(t('sumWasTruncated', [number(state.chars)])),
+        note(t('aiBy', { provider: state.provider || '', model: state.model || '' })),
+        state.truncated && note(t('sumWasTruncated', { limit: state.chars })),
       ];
     }
     ui.body.replaceChildren(...children.filter(Boolean));
@@ -287,6 +286,17 @@
     prepare();
     return true;
   }
+
+  // The interface language changed: the card is built again in it, as it stands.
+  WV.i18n.onChange(() => {
+    if (!ui) return;
+    ui.surface.unmount();
+    ui = build();
+    if (state) {
+      ui.surface.mount(document.body);
+      render();
+    }
+  });
 
   window.addEventListener(
     'keydown',

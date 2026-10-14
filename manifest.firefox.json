@@ -53,6 +53,7 @@
     {
       "matches": ["<all_urls>"],
       "js": [
+        "shared/i18n.js",
         "shared/dom.js",
         "shared/styles.js",
         "shared/language-list.js",

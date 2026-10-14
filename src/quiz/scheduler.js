@@ -62,7 +62,7 @@ const NO_VOICE_MS = 24 * 60 * 60 * 1000;
 
 /**
  * @typedef {Object} QuizState
- * @property {number} sonrakiQuizZamani  When the next quiz is due (ms since the epoch); 0 = none.
+ * @property {number} nextQuizAt  When the next quiz is due (ms since the epoch); 0 = none.
  * @property {number} planInterval       The "how often" setting that plan was made with, in
  *                                       minutes; a different setting means the plan is stale.
  * @property {{ at: number, reason: string } | null} lastAttempt
@@ -86,8 +86,14 @@ const NO_VOICE_MS = 24 * 60 * 60 * 1000;
 /** @returns {Promise<QuizState>} */
 export async function getQuizState() {
   const stored = (await chrome.storage.local.get(STATE_KEY))[STATE_KEY];
-  const defaults = { sonrakiQuizZamani: 0, planInterval: 0, mutedUntil: 0, lastAttempt: null, lastShown: null, lastSkip: null, lastAnswer: null, roundStartedAt: 0, recent: [], speed: [], modeTurn: 0, noVoice: {} };
-  return { ...defaults, ...(stored && typeof stored === 'object' ? stored : {}) };
+  const defaults = { nextQuizAt: 0, planInterval: 0, mutedUntil: 0, lastAttempt: null, lastShown: null, lastSkip: null, lastAnswer: null, roundStartedAt: 0, recent: [], speed: [], modeTurn: 0, noVoice: {} };
+  const state = { ...defaults, ...(stored && typeof stored === 'object' ? stored : {}) };
+  // Versions before the interface language work stored this under a Turkish name.
+  if ('sonrakiQuizZamani' in state) {
+    if (!stored.nextQuizAt) state.nextQuizAt = Number(state.sonrakiQuizZamani) || 0;
+    delete state.sonrakiQuizZamani;
+  }
+  return state;
 }
 
 async function saveQuizState(patch) {
@@ -136,24 +142,24 @@ export function ensureScheduled() {
     if (!settings.quizEnabled) {
       await chrome.alarms.clear(ALARM_NAME);
       // Switching the quiz off and on again also ends a "not today".
-      if (state.sonrakiQuizZamani || state.planInterval || state.mutedUntil) await saveQuizState({ sonrakiQuizZamani: 0, planInterval: 0, mutedUntil: 0 });
+      if (state.nextQuizAt || state.planInterval || state.mutedUntil) await saveQuizState({ nextQuizAt: 0, planInterval: 0, mutedUntil: 0 });
       return;
     }
     const interval = intervalMinutes(settings);
     const now = Date.now();
     // "Not today": nothing before tomorrow.
     const earliest = Math.max(now, state.mutedUntil);
-    let { sonrakiQuizZamani } = state;
+    let { nextQuizAt } = state;
     // No plan yet, or one made for another frequency: the frequency that is set now counts
     // from now. (A plan further away than one interval can only come from a changed clock.)
     // ASSUMPTION: after the frequency is changed the first quiz comes one full new interval
     // later, whatever was left of the old one.
-    if (!sonrakiQuizZamani || state.planInterval !== interval || sonrakiQuizZamani > earliest + interval * MINUTE) {
-      sonrakiQuizZamani = Math.max(now + interval * MINUTE, state.mutedUntil);
-      await saveQuizState({ sonrakiQuizZamani, planInterval: interval });
+    if (!nextQuizAt || state.planInterval !== interval || nextQuizAt > earliest + interval * MINUTE) {
+      nextQuizAt = Math.max(now + interval * MINUTE, state.mutedUntil);
+      await saveQuizState({ nextQuizAt, planInterval: interval });
     }
     // A time that has already passed (the browser was closed) means "at the next opportunity".
-    await setAlarm(sonrakiQuizZamani, interval);
+    await setAlarm(nextQuizAt, interval);
   });
 }
 
@@ -360,14 +366,14 @@ export function runScheduledQuiz() {
     const settings = await getSettings();
     if (!settings.quizEnabled) {
       const now = Date.now();
-      await saveQuizState({ sonrakiQuizZamani: 0, planInterval: 0, mutedUntil: 0, lastAttempt: { at: now, reason: 'disabled' } });
+      await saveQuizState({ nextQuizAt: 0, planInterval: 0, mutedUntil: 0, lastAttempt: { at: now, reason: 'disabled' } });
       await chrome.alarms.clear(ALARM_NAME);
       return 'disabled';
     }
     const interval = intervalMinutes(settings);
     // The stored plan decides, not the alarm: an alarm left over from an older plan only
     // makes sure the right one is set.
-    const planned = (await getQuizState()).sonrakiQuizZamani;
+    const planned = (await getQuizState()).nextQuizAt;
     if (planned - Date.now() > EARLY_MS) {
       await setAlarm(planned, interval);
       return 'not_due';
@@ -377,10 +383,10 @@ export function runScheduledQuiz() {
     const now = Date.now();
     // Blocked for the moment: not skipped, tried again shortly. Otherwise the regular interval.
     const wait = TRANSIENT.has(reason) ? Math.min(RETRY_MINUTES, interval) : interval;
-    const sonrakiQuizZamani = now + wait * MINUTE;
+    const nextQuizAt = now + wait * MINUTE;
     const outcome = reason === 'shown' ? { lastShown: { at: now, method, tried } } : { lastSkip: { at: now, reason, ...(tried.length > 0 ? { tried } : {}) } };
-    await saveQuizState({ sonrakiQuizZamani, planInterval: interval, lastAttempt: { at: now, reason }, ...outcome });
-    await setAlarm(sonrakiQuizZamani, interval);
+    await saveQuizState({ nextQuizAt, planInterval: interval, lastAttempt: { at: now, reason }, ...outcome });
+    await setAlarm(nextQuizAt, interval);
     return reason;
   });
 }
@@ -532,16 +538,16 @@ export function muteToday() {
       return { mutedUntil };
     }
     const interval = intervalMinutes(settings);
-    const sonrakiQuizZamani = Math.max(mutedUntil, (await getQuizState()).sonrakiQuizZamani);
-    await saveQuizState({ mutedUntil, sonrakiQuizZamani, planInterval: interval });
-    await setAlarm(sonrakiQuizZamani, interval);
+    const nextQuizAt = Math.max(mutedUntil, (await getQuizState()).nextQuizAt);
+    await saveQuizState({ mutedUntil, nextQuizAt, planInterval: interval });
+    await setAlarm(nextQuizAt, interval);
     return { mutedUntil };
   });
 }
 
 /** Takes "not today" back: quizzes come again, the first one an interval from now. */
 export async function unmute() {
-  await saveQuizState({ mutedUntil: 0, sonrakiQuizZamani: 0 });
+  await saveQuizState({ mutedUntil: 0, nextQuizAt: 0 });
   await ensureScheduled();
 }
 
@@ -656,7 +662,7 @@ export async function getDiagnostics() {
     targetLang: status.targetLang,
     /** Why no quiz can come at all ('' if one can). */
     standingReason: standingReason(settings, status, state, now),
-    nextAt: state.sonrakiQuizZamani,
+    nextAt: state.nextQuizAt,
     /** When the browser will wake the extension up for it (0: no alarm is set). */
     alarmAt: alarm ? alarm.scheduledTime : 0,
     lastAttempt: state.lastAttempt,

@@ -174,7 +174,7 @@
     const { source, sourceLang, sourceMode } = session;
     let sourceText = t('langAuto');
     if (source) sourceText = languages.name(source);
-    else if (sourceLang) sourceText = sourceMode === 'auto' ? t('langAutoDetected', [languages.name(sourceLang)]) : languages.name(sourceLang);
+    else if (sourceLang) sourceText = sourceMode === 'auto' ? t('langAutoDetected', { language: languages.name(sourceLang) }) : languages.name(sourceLang);
     ui.sourceLabel.textContent = sourceText;
     ui.targetLabel.textContent = languages.name(prefs?.targetLang || session.result?.targetLang || '') || '…';
 
@@ -183,7 +183,7 @@
 
     const needsSetup = Boolean(prefs) && !prefs.targetChosen;
     ui.setup.hidden = !needsSetup;
-    if (needsSetup) ui.setupText.textContent = t('firstRunText', [languages.name(prefs.targetLang)]);
+    if (needsSetup) ui.setupText.textContent = t('firstRunText', { language: languages.name(prefs.targetLang) });
   }
 
   async function loadPrefs() {
@@ -339,7 +339,7 @@
     const { result, credit } = session;
     ui.foot.replaceChildren(
       ...[
-        result?.translation && h('span', { text: t('popupTranslatedBy', [result.provider.name]) }),
+        result?.translation && h('span', { text: t('popupTranslatedBy', { provider: result.provider.name }) }),
         credit &&
           h('a', { href: credit.page, target: '_blank', rel: 'noopener noreferrer', title: credit.title, text: t('speakCredit') }),
       ].filter(Boolean),
@@ -356,7 +356,7 @@
     return h(
       'div',
       { class: 'wv-note' },
-      t('noteSameLanguage', [languages.name(data.targetLang)]),
+      t('noteSameLanguage', { language: languages.name(data.targetLang) }),
       ' ',
       linkButton('linkChangeSource', () => openSheet('source')),
       ' · ',
@@ -367,16 +367,16 @@
   /** What an error is called, in the user's language. */
   function errorText(error) {
     const code = error?.code || 'internal';
-    if (code === 'passage_too_long') return t('errPassageTooLong', [Number(error.detail).toLocaleString(), Number(error.context?.length || 0).toLocaleString()]);
+    if (code === 'passage_too_long') return t('errPassageTooLong', { max: Number(error.detail), selected: Number(error.context?.length || 0) });
     const service = error?.context?.provider?.name || session?.result?.provider?.name || '';
-    return t(ERROR_MESSAGES[code] || 'errUnknown', [service, code === 'provider_language' ? languages.name(error.detail) : '']);
+    return t(ERROR_MESSAGES[code] || 'errUnknown', { provider: service, language: code === 'provider_language' ? languages.name(error.detail) : '' });
   }
 
   /** A passage: its translation with the line breaks of the selection; a part of it, with what went wrong, if that is all there is. */
   function showPassage(data) {
     setBody(
       data.translation && h('div', { class: 'wv-translation wv-long wv-passage-text', dir: 'auto', lang: data.targetLang, tabindex: '0', text: data.translation }),
-      data.partial && h('div', { class: 'wv-error wv-partial', role: 'alert', text: t('passagePartial', [String(data.partial.done), String(data.pieces), errorText({ ...data.partial, context: { provider: data.provider } })]) }),
+      data.partial && h('div', { class: 'wv-error wv-partial', role: 'alert', text: t('passagePartial', { done: data.partial.done, total: data.pieces, reason: errorText({ ...data.partial, context: { provider: data.provider } }) }) }),
       data.sameLanguage && sameLanguageNote(data),
     );
     renderFoot();
@@ -386,7 +386,7 @@
   function showProgress({ done, total, translation }) {
     setBody(
       h('div', { class: 'wv-translation wv-long wv-passage-text', dir: 'auto', lang: prefs?.targetLang || null, text: translation }),
-      h('div', { class: 'wv-loading' }, h('span', { class: 'wv-spinner' }), t('passageProgress', [String(done), String(total)])),
+      h('div', { class: 'wv-loading' }, h('span', { class: 'wv-spinner' }), t('passageProgress', { done: done, total: total })),
     );
   }
 
@@ -412,7 +412,7 @@
           h('span', { dir: 'auto', lang: data.targetLang, text: data.alternatives.join(', ') }),
         ),
       // The service lost letters on its side ("e?itle"): said, not hidden; saving still works.
-      data.damaged && h('div', { class: 'wv-note', text: t('noteDamaged', [data.provider.name]) }),
+      data.damaged && h('div', { class: 'wv-note', text: t('noteDamaged', { provider: data.provider.name }) }),
       // Informational only: it never replaces the result above.
       data.sameLanguage && sameLanguageNote(data),
     );
@@ -429,7 +429,7 @@
       // For errors we have no message for, the provider's own wording is better than nothing.
       !known && error?.detail && h('div', { class: 'wv-error-detail', text: error.detail }),
       // Not the default service: said by name, and nothing is switched unless the user asks.
-      fallback && h('div', { class: 'wv-note', text: t('noteProviderFailed', [service, fallback.name]) }),
+      fallback && h('div', { class: 'wv-note', text: t('noteProviderFailed', { provider: service, fallback: fallback.name }) }),
     );
     renderFoot();
   }
@@ -457,7 +457,7 @@
           class: 'wv-btn',
           type: 'button',
           'data-action': 'fallback',
-          text: t('popupContinueWith', [fallback.name]),
+          text: t('popupContinueWith', { provider: fallback.name }),
           onclick: () => {
             session.provider = fallback.id;
             lookup();
@@ -654,20 +654,20 @@
     } else if (ai.state === 'setup') {
       children = [
         note(t('aiNeedsKey')),
-        row(aiButton('aiOpenSettings', openAiSettings), h('button', { class: 'wv-btn wv-btn-sm', type: 'button', 'data-action': 'ai-copy-prompt', text: t('aiCopyPrompt', [ai.site || '']), onclick: copyPromptAndOpen }), ai.flash && h('span', { class: 'wv-status', role: 'status', text: ai.flash })),
+        row(aiButton('aiOpenSettings', openAiSettings), h('button', { class: 'wv-btn wv-btn-sm', type: 'button', 'data-action': 'ai-copy-prompt', text: t('aiCopyPrompt', { site: ai.site || '' }), onclick: copyPromptAndOpen }), ai.flash && h('span', { class: 'wv-status', role: 'status', text: ai.flash })),
         note(t('aiCopyPromptHint')),
       ];
     } else if (ai.state === 'consent') {
       children = [
-        note(t(session.mode === 'passage' ? 'aiConsentPassage' : 'aiConsentWord', [ai.provider])),
+        note(t(session.mode === 'passage' ? 'aiConsentPassage' : 'aiConsentWord', { provider: ai.provider })),
         row(aiButton('aiConsentYes', () => runAi(true), { class: 'wv-btn wv-btn-sm wv-btn-primary', 'data-action': 'ai-agree' }), aiButton('aiCancel', resetAi)),
       ];
     } else if (ai.state === 'loading') {
-      children = [h('div', { class: 'wv-loading' }, h('span', { class: 'wv-spinner' }), t('aiThinking', [ai.provider || ''])), row(aiButton('aiCancel', cancelAi))];
+      children = [h('div', { class: 'wv-loading' }, h('span', { class: 'wv-spinner' }), t('aiThinking', { provider: ai.provider || '' })), row(aiButton('aiCancel', cancelAi))];
     } else if (ai.state === 'error') {
       const code = ai.error?.code || 'internal';
       children = [
-        note(t(AI_ERRORS[code] || 'aiErrUnknown', [ai.provider || '']), true),
+        note(t(AI_ERRORS[code] || 'aiErrUnknown', { provider: ai.provider || '' }), true),
         // The provider's own words help with a request it did not accept; they never hold the key.
         !AI_ERRORS[code] || AI_DETAILED.has(code) ? ai.error?.detail && h('div', { class: 'wv-error-detail', text: ai.error.detail }) : null,
         row(AI_RETRYABLE.has(code) && aiButton('popupRetry', () => runAi(false)), AI_SETTINGS.has(code) && aiButton('aiOpenSettings', openAiSettings), aiButton('aiCancel', resetAi)),
@@ -682,7 +682,7 @@
           session.saved && !ai.noted && aiButton('aiAddToNote', addAiToNote, { 'data-action': 'ai-note', title: t('aiAddToNoteHint') }),
           ai.flash && h('span', { class: 'wv-status', role: 'status', text: ai.flash }),
         ),
-        h('div', { class: 'wv-ai-note', text: t('aiBy', [ai.provider || '', ai.model || '']) }),
+        h('div', { class: 'wv-ai-note', text: t('aiBy', { provider: ai.provider || '', model: ai.model || '' }) }),
       ];
     }
     ui.ai.replaceChildren(...children.filter(Boolean));
@@ -976,7 +976,8 @@
    *                                    that stands in on pages nothing can be drawn on):
    *                                    it fills it, and closing it closes the window.
    */
-  function open({ text, range, point, sentence = '', sample = '', pageLang = '', rect: lastRect = null, avoid = null, mode = 'word', standalone = false, fromField = false }) {
+  function open(args) {
+    const { text, range, point, sentence = '', sample = '', pageLang = '', rect: lastRect = null, avoid = null, mode = 'word', standalone = false, fromField = false } = args;
     ui ||= build();
     if (!session) {
       for (const [type, listener, options] of LISTENERS) window.addEventListener(type, listener, options);
@@ -987,6 +988,7 @@
     const rect = range?.getBoundingClientRect();
     const pinned = rect && (rect.width > 0 || rect.height > 0) ? null : lastRect || new DOMRect(point?.x || 0, point?.y || 0, 0, 0);
     session = {
+      args, // (to open it again in another interface language)
       mode: mode === 'passage' ? 'passage' : 'word',
       standalone: standalone === true,
       fromField: fromField === true,
@@ -1068,6 +1070,18 @@
       pageLang: hit.lang,
     });
   }
+
+  // The interface language changed: the card is built again in it, and what is on screen is
+  // looked up again (from the cache, as a rule). An AI explanation on screen is not kept.
+  WV.i18n.onChange(() => {
+    if (!ui) return;
+    const args = session?.args;
+    if (session?.ai.requestId) WV.send('wv:ai:cancel', { requestId: session.ai.requestId }).catch(() => {});
+    session?.controller?.abort();
+    ui.surface.unmount();
+    ui = null;
+    if (args) open(args);
+  });
 
   WV.popup = {
     open,

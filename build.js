@@ -6,9 +6,15 @@
 //   node build.js            build both targets
 //   node build.js firefox    build one target
 //   node build.js --watch    rebuild whenever src/ or a manifest changes
+//   node build.js --release  a build for the stores: missing interface strings are not
+//                            reported on the browser's console (shared/i18n.js: DEV)
+//
+// The interface translations are checked first (tools/i18n/check.js): a missing key is a
+// warning (English is shown there), a broken one (placeholders, braces, JSON) stops the build.
 
 import fs from 'node:fs';
 import path from 'node:path';
+import { checkRepository, report } from './tools/i18n/check.js';
 
 const ROOT = import.meta.dirname;
 const SRC = path.join(ROOT, 'src');
@@ -97,14 +103,25 @@ function injectClientIds(out) {
   return used;
 }
 
+const RELEASE = process.argv.includes('--release');
+
 function build(targets) {
   const manifests = Object.fromEntries(targets.map((target) => [target, readManifest(target)]));
   check(manifests);
+  const locales = checkRepository(ROOT);
+  if (locales.errors.length || locales.warnings.length) report({ ...locales, notes: [] });
+  if (locales.errors.length) throw new Error('Build check failed: the interface translations have errors (npm run i18n:check)');
   for (const target of targets) {
     const out = path.join(DIST, target);
     fs.rmSync(out, { recursive: true, force: true });
     fs.cpSync(SRC, out, { recursive: true, filter: (file) => !path.basename(file).startsWith('.') });
     fs.writeFileSync(path.join(out, 'manifest.json'), `${JSON.stringify(manifests[target], null, 2)}\n`);
+    if (RELEASE) {
+      const loader = path.join(out, 'shared/i18n.js');
+      const source = fs.readFileSync(loader, 'utf8');
+      if (!source.includes('const DEV = true;')) throw new Error('shared/i18n.js: "const DEV = true;" not found');
+      fs.writeFileSync(loader, source.replace('const DEV = true;', 'const DEV = false;'));
+    }
     const ids = injectClientIds(out);
     console.log(`built dist/${target} (v${manifests[target].version})${ids.length ? `, client IDs from oauth.local.json: ${ids.join(', ')}` : ''}`);
   }

@@ -4,6 +4,7 @@
 import { supportCard } from '../support/support.js';
 
 const { h, t } = globalThis.WV;
+await globalThis.WV.i18n.startPage();
 globalThis.WV.adoptStyles(globalThis.WV.styles.tokens + globalThis.WV.styles.controls);
 document.title = t('welcomeTitle');
 

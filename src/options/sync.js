@@ -234,11 +234,11 @@ export function createSyncControls({ onSaved }) {
     return h(
       'div',
       { class: 'sync-box', 'data-panel': 'confirm' },
-      h('strong', { text: t('syncConfirmTitle', [name]) }),
-      h('p', { class: 'help', text: t('syncConfirmWhat', [name]) }),
-      h('p', { class: 'help', text: t('syncConfirmWhere', [`${whereOf(step.providerId)}${step.input?.url ? ` ${step.input.url}` : ''}`]) }),
+      h('strong', { text: t('syncConfirmTitle', { service: name }) }),
+      h('p', { class: 'help', text: t('syncConfirmWhat', { service: name }) }),
+      h('p', { class: 'help', text: t('syncConfirmWhere', { place: `${whereOf(step.providerId)}${step.input?.url ? ` ${step.input.url}` : ''}` }) }),
       h('p', { class: 'help', text: t('syncConfirmMerge') }),
-      config.mode !== 'off' && h('p', { class: 'help', text: t('syncConfirmReplace', [nameOf(config.providerId)]) }),
+      config.mode !== 'off' && h('p', { class: 'help', text: t('syncConfirmReplace', { service: nameOf(config.providerId) }) }),
       h(
         'div',
         { class: 'buttons' },
@@ -253,7 +253,7 @@ export function createSyncControls({ onSaved }) {
     return h(
       'div',
       { class: 'sync-box', 'data-panel': 'disconnect' },
-      h('strong', { text: t('syncDisconnectTitle', [nameOf(config.providerId)]) }),
+      h('strong', { text: t('syncDisconnectTitle', { service: nameOf(config.providerId) }) }),
       h('p', { class: 'help', text: t('syncDisconnectNote') }),
       h('label', { class: 'switch' }, remove, h('span', { class: 'switch-text' }, h('strong', { text: t('syncDeleteRemote') }), h('span', { class: 'help', text: t('syncDeleteRemoteHelp') }))),
       h(
@@ -268,8 +268,8 @@ export function createSyncControls({ onSaved }) {
   /** How it is going, in one line. */
   function stateText(status, kind) {
     if (status.state === 'syncing') return t('syncStateSyncing');
-    if (status.state === 'waiting') return t('syncStateWaiting', [errorText(status.error, kind)]);
-    if (status.state === 'error') return t('syncStateError', [errorText(status.error, kind)]);
+    if (status.state === 'waiting') return t('syncStateWaiting', { reason: errorText(status.error, kind) });
+    if (status.state === 'error') return t('syncStateError', { reason: errorText(status.error, kind) });
     if (status.pending) return t('syncStatePending');
     return status.lastSyncAt ? t('syncStateIdle') : t('syncStateNotYet');
   }
@@ -284,7 +284,7 @@ export function createSyncControls({ onSaved }) {
         'dd',
         {},
         h('span', { class: 'sync-meter', role: 'meter', 'aria-valuemin': '0', 'aria-valuemax': '100', 'aria-valuenow': String(percent) }, h('span', { class: share >= USAGE_WARNING ? 'sync-meter-bar full' : 'sync-meter-bar', style: `width: ${percent}%` })),
-        h('span', { text: t('syncUsageValue', [String(percent), String(Math.ceil(status.usage.used / 1024)), String(Math.round(status.usage.total / 1024))]) }),
+        h('span', { text: t('syncUsageValue', { percent: percent, used: Math.ceil(status.usage.used / 1024), total: Math.round(status.usage.total / 1024) }) }),
         share >= USAGE_WARNING && h('p', { class: 'sync-notice bad', role: 'alert', text: t('syncUsageWarning') }),
       ),
     ];
@@ -374,7 +374,7 @@ export function createSyncControls({ onSaved }) {
         onsubmit: (event) => {
           event.preventDefault();
           // Said in words, before anything is sent anywhere.
-          if (password.input.value.length < MIN_PASSWORD_CHARS) say(t('syncEncTooShort', [String(MIN_PASSWORD_CHARS)]), true);
+          if (password.input.value.length < MIN_PASSWORD_CHARS) say(t('syncEncTooShort', { min: MIN_PASSWORD_CHARS }), true);
           else if (password.input.value !== repeat.input.value) say(t('syncEncMismatch'), true);
           else return unlock(password.input.value, remember.input.checked);
           return render();

@@ -23,7 +23,7 @@ function sizeOf(dir) {
   return total;
 }
 
-execFileSync(process.execPath, [path.join(ROOT, 'build.js')], { stdio: 'inherit' });
+execFileSync(process.execPath, [path.join(ROOT, 'build.js'), '--release'], { stdio: 'inherit' });
 fs.mkdirSync(OUT, { recursive: true });
 for (const target of ['chrome', 'firefox']) {
   const source = path.join(ROOT, 'dist', target);

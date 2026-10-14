@@ -4,6 +4,7 @@
 // is put into a tab only when its user asks for it. Nothing is read from the page, let alone
 // sent, before the user has seen how much it is and said yes on the card.
 
+import { t } from '../../background/i18n.js';
 import { activeAi } from '../../ai/config.js';
 import { addMenuItem } from '../../background/menus.js';
 import { openCard } from '../summary/background.js';
@@ -16,7 +17,7 @@ export const openPageTranslation = (tab) => openCard(tab, FILES, 'wv:page-transl
 
 async function menuItem() {
   if (!(await activeAi()).ready) return null;
-  return { id: MENU_ID, title: chrome.i18n.getMessage('ptMenu'), contexts: ['page'] };
+  return { id: MENU_ID, title: t('ptMenu'), contexts: ['page'] };
 }
 
 /** Registers the listeners. Called once, synchronously, when the background script starts. */

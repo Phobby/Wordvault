@@ -170,5 +170,16 @@
     });
   }
 
+  // The interface language changed: the selector is built again in it, as it stands.
+  WV.i18n.onChange(() => {
+    if (!ui) return;
+    ui.surface.unmount();
+    ui = build();
+    if (state) {
+      ui.surface.mount();
+      render();
+    }
+  });
+
   WV.ocrSelector = { choose, isOpen: () => Boolean(state), cancel: () => finish(undefined) };
 })(globalThis.WV);

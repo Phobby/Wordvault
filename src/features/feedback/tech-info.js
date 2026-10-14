@@ -85,7 +85,8 @@ export async function collectTechInfo() {
     // ASSUMPTION: the name of the operating system is enough; its exact version is not collected.
     os: OS_NAMES[platform?.os] || platform?.os || 'unknown',
     extensionVersion: chrome.runtime.getManifest().version,
-    uiLanguage: chrome.i18n.getUILanguage(),
+    // Wordvault's interface language, then the browser's: "tr / en-US"
+    uiLanguage: [globalThis.WV?.i18n?.lang(), chrome.i18n.getUILanguage()].filter(Boolean).join(' / '),
     features: featureFlags(settings, syncConfig),
     // the kind only ('off', 'browser', 'cloud', 'server'): not which service, not which account
     syncMode: syncConfig.mode,

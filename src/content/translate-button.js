@@ -197,6 +197,12 @@
     place();
   }
 
+  // The interface language changed: the button is built again in it the next time.
+  WV.i18n.onChange(() => {
+    hide();
+    ui = null;
+  });
+
   function schedule() {
     clearTimeout(timer);
     timer = enabled && !pointerDown ? setTimeout(check, SETTLE_MS) : 0;

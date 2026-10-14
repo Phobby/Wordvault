@@ -21,7 +21,6 @@ const CHECK_ERRORS = { auth: 'optDeeplBadKey', quota: 'optDeeplQuota', rate_limi
  * @returns {{ element: HTMLElement, render: () => Promise<void> }}
  */
 export function createProviderSection({ flashSaved }) {
-  const number = (value) => Number(value).toLocaleString(languages.uiLanguage());
   const choices = Object.fromEntries(
     listProviders().map((provider) => [
       provider.id,
@@ -53,7 +52,7 @@ export function createProviderSection({ flashSaved }) {
   const status = h('p', { class: 'provider-status', role: 'status', hidden: true });
   const test = h('button', { class: 'wv-btn', type: 'button', 'data-action': 'test-key', text: t('optDeeplTest'), onclick: () => testKey() });
   const warning = h('p', { class: 'ocr-warning', role: 'status', hidden: true });
-  const backToDefault = h('button', { class: 'wv-btn wv-btn-sm', type: 'button', text: t('optProviderUse', [getProvider(DEFAULT_PROVIDER_ID).name]), onclick: () => choose(DEFAULT_PROVIDER_ID) });
+  const backToDefault = h('button', { class: 'wv-btn wv-btn-sm', type: 'button', text: t('optProviderUse', { provider: getProvider(DEFAULT_PROVIDER_ID).name }), onclick: () => choose(DEFAULT_PROVIDER_ID) });
 
   const deeplPanel = h(
     'div',
@@ -128,9 +127,9 @@ export function createProviderSection({ flashSaved }) {
     try {
       const usage = await globalThis.WV.send('wv:provider:check', { provider: DEEPL, config: { apiKey } });
       const plan = t(usage.plan === 'free' ? 'optDeeplPlanFree' : 'optDeeplPlanPro');
-      say(usage.limit > 0 ? t('optDeeplOkUsage', [plan, number(usage.used), number(usage.limit)]) : t('optDeeplOk', [plan]));
+      say(usage.limit > 0 ? t('optDeeplOkUsage', { plan: plan, used: usage.used, limit: usage.limit }) : t('optDeeplOk', { plan: plan }));
     } catch (error) {
-      say(t(CHECK_ERRORS[error?.code] || 'optDeeplFailed', [String(error?.detail || '')]), true);
+      say(t(CHECK_ERRORS[error?.code] || 'optDeeplFailed', { reason: String(error?.detail || '') }), true);
     }
     test.disabled = false;
   }
@@ -146,7 +145,7 @@ export function createProviderSection({ flashSaved }) {
     const supported = await active.getLanguages(settings.providerConfig?.[active.id] || {});
     const unsupported = settings.targetLang && !matchSupported(settings.targetLang, supported);
     warning.hidden = !unsupported;
-    if (unsupported) warning.replaceChildren(t('optProviderLanguage', [active.name, languages.name(settings.targetLang)]), ' ', backToDefault);
+    if (unsupported) warning.replaceChildren(t('optProviderLanguage', { provider: active.name, language: languages.name(settings.targetLang) }), ' ', backToDefault);
   }
 
   return { element, render };
@@ -188,7 +187,7 @@ export function createCacheSection() {
     const stats = await globalThis.WV.send('wv:cache:stats').catch(() => null);
     if (!stats) return;
     const size = stats.entries === 0 ? '0 KB' : `${Math.max(1, Math.round(stats.bytes / 1024))} KB`;
-    facts.textContent = t('optCacheFacts', [String(stats.entries), size]) + (stats.hasSession ? '' : ` ${t('optCacheNoSession')}`);
+    facts.textContent = t('optCacheFacts', { count: stats.entries, size: size }) + (stats.hasSession ? '' : ` ${t('optCacheNoSession')}`);
   }
 
   return { element, render };

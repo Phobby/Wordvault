@@ -5,6 +5,7 @@
 // The background script may be stopped at any time, so nothing is kept in memory: the wake-up
 // call is a chrome.alarms alarm, and the day a reminder was last shown is in storage.
 
+import { ready, t } from '../background/i18n.js';
 import { getSettings } from '../lib/settings.js';
 import { notificationsAllowed } from './display.js';
 import { localDay } from './progress.js';
@@ -50,10 +51,9 @@ export function inQuietHours(now, start, end) {
 
 /** What the reminder says. Encouraging, not pressing; no word of the vault is in it. */
 export function reminderText(count) {
-  const t = (key, substitutions) => chrome.i18n.getMessage(key, substitutions);
   return {
     title: t('reminderTitle'),
-    message: count > 1 ? t('reminderStreak', [String(count)]) : count === 1 ? t('reminderStreakOne') : t('reminderNoStreak'),
+    message: count >= 1 ? t('reminderStreak', { count }) : t('reminderNoStreak'),
   };
 }
 
@@ -88,6 +88,7 @@ export async function runReminder(now = Date.now()) {
     const streak = await streakStatus(now, settings);
     if (streak.todayDone) return 'done_today';
     if (!(await notificationsAllowed())) return 'not_allowed';
+    await ready(); // (in the interface language chosen now)
     const { title, message } = reminderText(streak.count);
     try {
       await chrome.notifications.create(REMINDER_NOTIFICATION, { type: 'basic', iconUrl: chrome.runtime.getURL('icons/icon-128.png'), title, message });

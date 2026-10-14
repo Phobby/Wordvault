@@ -9,12 +9,9 @@
   let uiNames = null;
   const nativeNames = new Map();
 
+  /** The interface language (shared/i18n.js), which language names and sorting follow. */
   function uiLanguage() {
-    try {
-      return chrome.i18n.getUILanguage();
-    } catch {
-      return 'en';
-    }
+    return WV.i18n?.lang() || 'en';
   }
 
   function displayName(code, locale, formatter) {
@@ -27,10 +24,11 @@
     return '';
   }
 
-  /** "en" -> "English" / "İngilizce", in the browser's UI language. */
+  /** "en" -> "English" / "İngilizce", in the interface language. */
   function name(code) {
     if (!code) return '';
     try {
+      if (uiNames?.resolvedOptions().locale.split('-')[0] !== uiLanguage().split('-')[0]) uiNames = null; // the language changed
       uiNames ||= new Intl.DisplayNames([uiLanguage()], { type: 'language' });
     } catch {
       return code;

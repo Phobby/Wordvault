@@ -17,6 +17,7 @@
 //     places the window.
 //   - the card needs a page that content scripts run on; it leaves the focus where it is.
 
+import { ready, t } from '../background/i18n.js';
 import { updateSession, viewOf } from './session.js';
 
 export const METHODS = Object.freeze(['popup', 'window', 'card', 'notification']);
@@ -163,11 +164,12 @@ export async function notificationsAllowed() {
 async function byNotification() {
   if (!(await notificationsAllowed())) return failed('notification_not_allowed');
   try {
+    await ready(); // (in the interface language chosen now)
     await chrome.notifications.create(NOTIFICATION_ID, {
       type: 'basic',
       iconUrl: chrome.runtime.getURL('icons/icon-96.png'),
-      title: chrome.i18n.getMessage('quizNotificationTitle'),
-      message: chrome.i18n.getMessage('quizNotificationText'),
+      title: t('quizNotificationTitle'),
+      message: t('quizNotificationText'),
     });
   } catch (error) {
     return failed('notification_refused', error);

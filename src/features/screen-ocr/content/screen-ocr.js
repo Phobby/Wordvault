@@ -140,7 +140,7 @@
     // The picture has been taken: from here on something may be shown over the page again.
     else if (message?.type === 'wv:ocr:stage' && busy && pending) {
       const percent = String(Math.round(Math.max(0, Math.min(1, Number(message.progress) || 0)) * 100));
-      WV.ocrLayer.showBusy(pending, t(message.stage === 'reading' ? 'ocrReadingPercent' : 'ocrLoadingData', [percent]));
+      WV.ocrLayer.showBusy(pending, t(message.stage === 'reading' ? 'ocrReadingPercent' : 'ocrLoadingData', { percent }));
     }
     return false;
   });

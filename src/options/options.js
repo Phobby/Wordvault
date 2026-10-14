@@ -18,8 +18,8 @@ import { createSyncControls } from './sync.js';
 
 const { h, t, languages, speech } = globalThis.WV;
 
+await globalThis.WV.i18n.startPage();
 globalThis.WV.adoptStyles(globalThis.WV.styles.tokens + globalThis.WV.styles.controls + globalThis.WV.styles.progress);
-document.documentElement.lang = languages.uiLanguage();
 document.title = t('optionsTitle');
 catchUncaught('options');
 
@@ -32,6 +32,30 @@ function flashSaved() {
   saved.classList.add('visible');
   clearTimeout(savedTimer);
   savedTimer = setTimeout(() => saved.classList.remove('visible'), 1500);
+}
+
+// --- Interface language --------------------------------------------------------------------------
+// The language of Wordvault's own text, independent of the language translations are made into.
+// Each language is listed by its own name. Choosing one switches every open part of Wordvault
+// (this page reloads itself: shared/i18n.js, startPage).
+
+const uiLanguage = h('select', {
+  id: 'ui-language',
+  onchange: async () => {
+    await globalThis.WV.i18n.setLanguage(uiLanguage.value);
+    flashSaved();
+  },
+});
+
+async function renderUiLanguage() {
+  const { i18n } = globalThis.WV;
+  const browser = i18n.resolve('', i18n.browserLanguage());
+  const nameOf = (code) => i18n.LANGUAGES.find((language) => language.code === code)?.name || code;
+  uiLanguage.replaceChildren(
+    h('option', { value: '', text: t('optUiLangAuto', { language: nameOf(browser) }) }),
+    ...i18n.LANGUAGES.map(({ code, name }) => h('option', { value: code, lang: code, dir: i18n.dir(code), text: name })),
+  );
+  uiLanguage.value = await i18n.getChoice();
 }
 
 // --- Target language -----------------------------------------------------------------------------
@@ -47,7 +71,7 @@ const targetList = languages.createList({
 async function renderTarget() {
   const prefs = await getPreferences();
   const name = languages.name(prefs.targetLang);
-  currentTarget.textContent = t(prefs.targetChosen ? 'optTargetLangCurrent' : 'optTargetLangUnset', [name]);
+  currentTarget.textContent = t(prefs.targetChosen ? 'optTargetLangCurrent' : 'optTargetLangUnset', { language: name });
   targetList.setOptions({ codes: prefs.languages, value: prefs.targetLang });
 }
 
@@ -101,7 +125,7 @@ const filePicker = h('input', {
     try {
       if (file.size > MAX_BACKUP_BYTES) throw new Error('too large');
       const { added, skipped, invalid } = await restoreBackup(await file.text());
-      backupStatus.textContent = t('bkImported', [String(added), String(skipped), String(invalid)]);
+      backupStatus.textContent = t('bkImported', { added: added, duplicates: skipped, failed: invalid });
     } catch {
       backupStatus.textContent = t('bkBadFile');
     }
@@ -120,7 +144,7 @@ const backupSection = h(
       type: 'button',
       text: t('tbExport'),
       onclick: async () => {
-        backupStatus.textContent = t('bkExported', [String(await downloadBackup())]);
+        backupStatus.textContent = t('bkExported', { count: await downloadBackup() });
       },
     }),
     h('button', { class: 'wv-btn', type: 'button', text: t('tbImport'), onclick: () => filePicker.click() }),
@@ -145,8 +169,8 @@ let developmentInstall = false;
 
 function intervalLabel(minutes) {
   if (minutes === 1) return t('quizEveryMinute');
-  if (minutes % 60 !== 0) return t('quizEveryMinutes', [String(minutes)]);
-  return minutes === 60 ? t('quizEveryHour') : t('quizEveryHours', [String(minutes / 60)]);
+  if (minutes % 60 !== 0) return t('quizEveryMinutes', { count: minutes });
+  return minutes === 60 ? t('quizEveryHour') : t('quizEveryHours', { count: minutes / 60 });
 }
 
 /** Stores quiz settings. The background script rebuilds the timer when the settings change;
@@ -389,7 +413,7 @@ async function renderQuizSettings(rejected) {
   quizInterval.value = custom ? 'custom' : String(minutes);
   quizIntervalCustomRow.hidden = !custom;
   const counts = QUESTION_COUNTS.includes(d.questionsPerQuiz) ? QUESTION_COUNTS : [...QUESTION_COUNTS, d.questionsPerQuiz].sort((a, b) => a - b);
-  quizQuestions.replaceChildren(...counts.map((count) => h('option', { value: String(count), text: count === 1 ? t('quizQuestionsOne') : t('quizQuestionsMany', [String(count)]) })));
+  quizQuestions.replaceChildren(...counts.map((count) => h('option', { value: String(count), text: t('quizQuestions', { count }) })));
   quizQuestions.value = String(d.questionsPerQuiz);
   quizDisplay.value = d.display;
   quizNotifyButton.dataset.allowed = d.notifications ? 'yes' : 'no';
@@ -449,7 +473,7 @@ const QUIZ_REASONS = {
 function reasonText(reason, diagnostics) {
   const key = QUIZ_REASONS[reason];
   if (!key) return reason; // an unexpected error: show it as it is
-  return t(key, [String(diagnostics.total), String(diagnostics.minCards), languages.name(diagnostics.targetLang), String(diagnostics.meanings), String(diagnostics.neededMeanings)]);
+  return t(key, { total: diagnostics.total, min: diagnostics.minCards, language: languages.name(diagnostics.targetLang), meanings: diagnostics.meanings, needed: diagnostics.neededMeanings });
 }
 
 /** "toolbar popup: the browser refused to open it (…); separate window: …" */
@@ -462,7 +486,7 @@ function triedText(tried, diagnostics) {
 /** How a quiz was shown, and which ways were tried in vain before that one. */
 function shownText(shown, diagnostics) {
   const how = t(DISPLAY_NAMES[shown.method] || 'quizWhyShown');
-  return shown.tried?.length > 0 ? t('quizShownAfter', [how, triedText(shown.tried, diagnostics)]) : how;
+  return shown.tried?.length > 0 ? t('quizShownAfter', { method: how, failed: triedText(shown.tried, diagnostics) }) : how;
 }
 
 /** Why no quiz was shown; with the ways that were tried, if it got that far. */
@@ -514,17 +538,17 @@ async function renderQuiz() {
   quizProgress.render();
   const d = await getDiagnostics();
   quizDiagnostics = d;
-  quizVerdict.textContent = d.standingReason ? t('quizVerdictNo', [reasonText(d.standingReason, d)]) : t('quizVerdictYes', [d.nextAt ? timeText(d.nextAt) : t('quizDiagNotScheduled')]);
+  quizVerdict.textContent = d.standingReason ? t('quizVerdictNo', { reason: reasonText(d.standingReason, d) }) : t('quizVerdictYes', { time: d.nextAt ? timeText(d.nextAt) : t('quizDiagNotScheduled') });
   quizVerdict.className = d.standingReason ? 'verdict no' : 'verdict yes';
   quizUnmute.hidden = !d.mutedUntil;
 
   // What the timer itself is doing; "Test now" leaves none of this behind.
   // The alarm is what wakes the extension up: a plan without one would never be carried out.
-  const alarm = d.alarmAt ? t('quizDiagAlarmSet', [timeText(d.alarmAt)]) : t(d.enabled ? 'quizDiagAlarmMissing' : 'quizDiagAlarmOff');
+  const alarm = d.alarmAt ? t('quizDiagAlarmSet', { time: timeText(d.alarmAt) }) : t(d.enabled ? 'quizDiagAlarmMissing' : 'quizDiagAlarmOff');
   const facts = [
     ['quizDiagEnabled', t(d.enabled ? 'quizOn' : 'quizOff')],
-    ['quizDiagCards', t('quizDiagCardsValue', [String(d.total), String(d.minCards)])],
-    ['quizDiagAskable', t('quizDiagAskableValue', [String(d.askable), languages.name(d.targetLang), String(d.meanings), String(d.neededMeanings)])],
+    ['quizDiagCards', t('quizDiagCardsValue', { count: d.total, needed: d.minCards })],
+    ['quizDiagAskable', t('quizDiagAskableValue', { words: d.askable, language: languages.name(d.targetLang), meanings: d.meanings, needed: d.neededMeanings })],
     ['quizDiagDue', String(d.due)],
     ['quizDiagInterval', intervalLabel(d.intervalMinutes)],
     ['quizDiagDisplay', d.displayOrder.map((method) => t(DISPLAY_NAMES[method])).join(' → ')],
@@ -553,7 +577,7 @@ async function testQuiz() {
     return;
   }
   const diagnostics = quizDiagnostics || (await getDiagnostics());
-  quizTestResult.textContent = result.ok ? t('quizTestShown', [shownText(result, diagnostics)]) : skipText(result, diagnostics);
+  quizTestResult.textContent = result.ok ? t('quizTestShown', { method: shownText(result, diagnostics) }) : skipText(result, diagnostics);
 }
 
 const quizProgress = createProgressPanel({ celebrateIn: null });
@@ -635,6 +659,13 @@ const panels = {
     h(
       'section',
       { class: 'card' },
+      h('h2', null, h('label', { for: 'ui-language', text: t('optUiLang') })),
+      h('p', { class: 'help', text: t('optUiLangHelp') }),
+      h('div', { class: 'field' }, uiLanguage),
+    ),
+    h(
+      'section',
+      { class: 'card' },
       h('h2', { text: t('optTargetLang') }),
       h('p', { class: 'help', text: t('optTargetLangHelp') }),
       currentTarget,
@@ -698,6 +729,7 @@ if (location.hash === '#backup') {
 }
 
 function render() {
+  renderUiLanguage();
   renderTarget();
   renderSwitches();
   renderQuizSettings();

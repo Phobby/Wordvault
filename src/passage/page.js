@@ -5,6 +5,7 @@
 // right-click menu shows its result here. It is the same translation popup, filling the window.
 
 (async function (WV) {
+  await WV.i18n.startPage({ reload: false }); // (the translation popup redraws itself)
   const params = new URLSearchParams(location.search);
   let text = '';
   try {

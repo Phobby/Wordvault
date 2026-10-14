@@ -99,18 +99,15 @@
     const bar = h('div', { class: 'wv-quiz-timer-bar' });
     const timerBar = h('div', { class: 'wv-quiz-timer', hidden: true }, bar);
     const muteButton = h('button', { class: 'wv-quiz-action', type: 'button', 'data-action': 'mute', title: t('quizMuteHint'), text: t('quizMute'), onclick: () => muteToday() });
+    const title = h('span', { class: 'wv-quiz-title', text: t('quizTitle') });
+    const closeButton = h('button', { class: 'wv-quiz-action', type: 'button', 'data-action': 'close', text: t('quizClose'), onclick: close });
     const card = h(
       'div',
       { class: floating ? 'wv-quiz wv-quiz-floating' : 'wv-quiz', role: 'dialog', 'aria-label': t('quizTitle') },
-      h('div', { class: 'wv-quiz-head' }, h('span', { class: 'wv-quiz-title', text: t('quizTitle') }), streakSlot, progress),
+      h('div', { class: 'wv-quiz-head' }, title, streakSlot, progress),
       body,
       // Always there, whatever the quiz is showing.
-      h(
-        'div',
-        { class: 'wv-quiz-bottom' },
-        muteButton,
-        h('button', { class: 'wv-quiz-action', type: 'button', 'data-action': 'close', text: t('quizClose'), onclick: close }),
-      ),
+      h('div', { class: 'wv-quiz-bottom' }, muteButton, closeButton),
       warning,
       timerBar,
     );
@@ -150,6 +147,7 @@
       if (closed) return;
       const reported = finish('closed'); // unless the question already ended some other way
       closed = true;
+      stopRelabel();
       clearTimeout(advanceTimer);
       current = null;
       root.replaceChildren();
@@ -163,7 +161,7 @@
       // second press does what the button says.
       if (!warned && streak && streak.alive && !streak.todayDone && streak.count > 0) {
         warned = true;
-        warning.textContent = t(streak.count === 1 ? 'quizMuteWarningOne' : 'quizMuteWarning', [String(streak.count)]);
+        warning.textContent = t('quizMuteWarning', { count: streak.count });
         warning.hidden = false;
         muteButton.textContent = t('quizMuteAnyway');
         return;
@@ -248,7 +246,7 @@
       const parts = choiceParts(question);
       body.replaceChildren(
         h('div', { class: 'wv-quiz-word', dir: 'auto', lang: question.sourceLang || null, text: question.word }),
-        h('div', { class: 'wv-quiz-prompt', text: t('quizPrompt', [languages.name(question.targetLang)]) }),
+        h('div', { class: 'wv-quiz-prompt', text: t('quizPrompt', { language: languages.name(question.targetLang) }) }),
         h('div', { class: 'wv-quiz-choices' }, parts.buttons),
         h('div', { class: 'wv-quiz-foot' }, parts.actions, parts.feedback),
       );
@@ -302,7 +300,7 @@
         speaker.classList.remove('wv-busy');
         if (result === 'said' || !asked()) return;
         lock();
-        notice.textContent = t('quizNoVoice', [languages.name(question.sourceLang)]);
+        notice.textContent = t('quizNoVoice', { language: languages.name(question.sourceLang) });
         notice.hidden = false;
         const following = finish('no_voice', { scope: result === 'no_voice_word' ? 'word' : 'lang' });
         if (following) moveOn(following, NO_VOICE_MS);
@@ -333,7 +331,7 @@
       });
       body.replaceChildren(
         voice.row,
-        h('div', { class: 'wv-quiz-prompt', text: t(question.choiceKind === 'spelling' ? 'quizListenPromptSpelling' : 'quizListenPrompt', [languages.name(question.targetLang)]) }),
+        h('div', { class: 'wv-quiz-prompt', text: t(question.choiceKind === 'spelling' ? 'quizListenPromptSpelling' : 'quizListenPrompt', { language: languages.name(question.targetLang) }) }),
         voice.notice,
         h('div', { class: 'wv-quiz-choices' }, parts.buttons),
         h('div', { class: 'wv-quiz-foot' }, parts.actions, parts.feedback),
@@ -361,7 +359,7 @@
         spellcheck: 'false',
         dir: 'auto',
         lang: question.sourceLang || null,
-        'aria-label': t(heard ? 'quizExpertPrompt' : 'quizWritePrompt', [languages.name(question.sourceLang)]),
+        'aria-label': t(heard ? 'quizExpertPrompt' : 'quizWritePrompt', { language: languages.name(question.sourceLang) }),
       });
       const voice = heard
         ? voiceRow(question, () => {
@@ -461,7 +459,7 @@
 
       body.replaceChildren(
         heard ? voice.row : h('div', { class: 'wv-quiz-word', dir: 'auto', lang: question.targetLang || null, text: question.word }),
-        h('div', { class: 'wv-quiz-prompt', text: t(heard ? 'quizExpertPrompt' : 'quizWritePrompt', [languages.name(question.sourceLang)]) }),
+        h('div', { class: 'wv-quiz-prompt', text: t(heard ? 'quizExpertPrompt' : 'quizWritePrompt', { language: languages.name(question.sourceLang) }) }),
         heard && voice.notice,
         hintLine,
         h(
@@ -507,8 +505,8 @@
     const BODIES = { classic: classicBody, writing: writingBody, listening: listeningBody, expert: writingBody };
 
     function showQuestion(question, index) {
-      progress.textContent = total > 1 ? t('quizProgress', [String(index || 1), String(total)]) : '';
-      const asked = { question, buttons: [], actions: null, feedback: null, stopwatch: WV.createStopwatch(), outcome: '', countdown: null, timeoutTimer: 0 };
+      progress.textContent = total > 1 ? t('quizProgress', { current: index || 1, total: total }) : '';
+      const asked = { index, question, buttons: [], actions: null, feedback: null, stopwatch: WV.createStopwatch(), outcome: '', countdown: null, timeoutTimer: 0 };
       current = asked;
       Object.assign(asked, (BODIES[question.mode] || classicBody)(question));
 
@@ -537,16 +535,49 @@
     function showSummary(summary) {
       current = null;
       progress.textContent = '';
+      shownSummary = summary;
+      drawSummary(summary);
+      advanceTimer = setTimeout(close, SUMMARY_MS);
+    }
+
+    function drawSummary(summary) {
       body.replaceChildren(
         h(
           'div',
           { class: 'wv-quiz-summary', role: 'status' },
-          h('div', { class: 'wv-quiz-score', text: t('quizSummary', [String(summary.right), String(summary.answered)]) }),
-          summary.skipped > 0 && h('div', { class: 'wv-quiz-prompt', text: t('quizSummarySkipped', [String(summary.skipped)]) }),
+          h('div', { class: 'wv-quiz-score', text: t('quizSummary', { correct: summary.right, total: summary.answered }) }),
+          summary.skipped > 0 && h('div', { class: 'wv-quiz-prompt', text: t('quizSummarySkipped', { count: summary.skipped }) }),
         ),
       );
-      advanceTimer = setTimeout(close, SUMMARY_MS);
     }
+
+    /**
+     * The interface language changed while the quiz is on screen: its frame follows at once. The
+     * question follows too if nothing has been done in it yet (no letter typed, no hint taken);
+     * otherwise it stays as it is, and the next one comes in the new language. The clocks run on.
+     */
+    let shownSummary = null;
+    function relabel() {
+      if (closed) return;
+      card.setAttribute('aria-label', t('quizTitle'));
+      title.textContent = t('quizTitle');
+      closeButton.textContent = t('quizClose');
+      muteButton.title = t('quizMuteHint');
+      muteButton.textContent = t(warned ? 'quizMuteAnyway' : 'quizMute');
+      if (warned && streak) warning.textContent = t('quizMuteWarning', { count: streak.count });
+      if (streak) streakSlot.replaceChildren(WV.progressUi.flame(streak));
+      if (!current) {
+        if (shownSummary) drawSummary(shownSummary);
+        return;
+      }
+      progress.textContent = total > 1 ? t('quizProgress', { current: current.index || 1, total }) : '';
+      const untouched = !current.outcome && !body.querySelector('.wv-quiz-input')?.value && body.querySelector('.wv-quiz-hint')?.hidden !== false;
+      if (!untouched) return;
+      const focused = body.contains(body.getRootNode().activeElement);
+      Object.assign(current, (BODIES[current.question.mode] || classicBody)(current.question), { onShown: null });
+      if (focused) body.querySelector('.wv-quiz-input, button')?.focus({ preventScroll: true });
+    }
+    const stopRelabel = WV.i18n.onChange(relabel);
 
     root.replaceChildren(card);
     refreshStreak();

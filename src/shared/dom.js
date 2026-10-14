@@ -15,14 +15,7 @@ globalThis.WV = globalThis.WV || {};
   /** False for SVG/XML documents, where an HTML shadow host cannot be created. */
   WV.supported = document.documentElement?.namespaceURI === XHTML_NS;
 
-  /** Localized string from _locales. */
-  WV.t = function t(key, substitutions) {
-    try {
-      return chrome.i18n.getMessage(key, substitutions) || key;
-    } catch {
-      return key; // extension was reloaded underneath this page
-    }
-  };
+  // WV.t (the interface text for a key) comes from shared/i18n.js, which is loaded first.
 
   /**
    * Tiny element builder. All Wordvault UI is built with DOM APIs and textContent, never with

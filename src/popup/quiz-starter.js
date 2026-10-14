@@ -54,7 +54,7 @@ function failureText(result, level) {
     case 'not_enough_choices':
     case 'nothing_due':
       // four choices need four different meanings; the typing levels only need a word that fits
-      return level.mode === 'classic' || level.mode === 'listening' ? t('quizStartFewWords', [String(result.needed ?? 4), String(result.have ?? 0)]) : t('quizStartNoFit', [mode]);
+      return level.mode === 'classic' || level.mode === 'listening' ? t('quizStartFewWords', { needed: result.needed ?? 4, have: result.have ?? 0 }) : t('quizStartNoFit', { mode: mode });
     case 'no_voice':
       return t('quizStartNoVoice');
     default:
@@ -98,7 +98,7 @@ export function createQuizStarter() {
     selector.dataset.level = level.id;
     name.textContent = t(level.nameKey);
     mode.textContent = t(level.modeKey);
-    const label = t('diffLabel', [t(level.nameKey), t(level.modeKey)]);
+    const label = t('diffLabel', { level: t(level.nameKey), mode: t(level.modeKey) });
     selector.title = label;
     selector.setAttribute('aria-label', label);
     // A fresh drawing for every click: the one before it, and whatever of its animation was

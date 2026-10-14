@@ -8,6 +8,7 @@
 // nothing is read from the page, let alone sent, before the user has seen how much it is and
 // said yes.
 
+import { t } from '../../background/i18n.js';
 import { activeAi } from '../../ai/config.js';
 import { addMenuItem, rebuildMenus } from '../../background/menus.js';
 import { inject, sayOnButton } from '../passage/background.js';
@@ -50,7 +51,7 @@ export const openSummary = (tab) => openCard(tab, FILES, 'wv:summary:open', 'sum
 
 async function menuItem() {
   if (!(await activeAi()).ready) return null;
-  return { id: MENU_ID, title: chrome.i18n.getMessage('sumMenu'), contexts: ['page'] };
+  return { id: MENU_ID, title: t('sumMenu'), contexts: ['page'] };
 }
 
 /** Registers the listeners. Called once, synchronously, when the background script starts. */

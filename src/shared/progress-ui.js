@@ -30,7 +30,7 @@
   function flame(streak) {
     const count = Number(streak?.count) || 0;
     const state = streak?.todayDone ? 'lit' : streak?.alive ? 'waiting' : 'out';
-    const label = count === 0 ? t('streakNone') : t(streak.todayDone ? 'streakDone' : 'streakWaiting', [String(count)]);
+    const label = count === 0 ? t('streakNone') : t(streak.todayDone ? 'streakDone' : 'streakWaiting', { count });
     return h(
       'span',
       { class: `wv-streak wv-streak-${state}`, role: 'img', 'aria-label': label, title: label, 'data-count': String(count), 'data-state': state },
@@ -67,7 +67,7 @@
     // set through the style object, not a style attribute: a page's content security policy may forbid those
     const fill = h('div', { class: 'wv-rank-fill' });
     fill.style.width = `${percent}%`;
-    const remaining = rank.next ? t(rank.remaining === 1 ? 'rankRemainingOne' : 'rankRemaining', [String(rank.remaining), t(rank.next.nameKey)]) : t('rankTop');
+    const remaining = rank.next ? t('rankRemaining', { count: rank.remaining, rank: t(rank.next.nameKey) }) : t('rankTop');
     return h(
       'div',
       { class: 'wv-rank', 'data-rank': rank.id },
@@ -75,7 +75,7 @@
       h(
         'div',
         { class: 'wv-rank-text' },
-        h('div', { class: 'wv-rank-line' }, h('strong', { class: 'wv-rank-name', text: name }), h('span', { class: 'wv-rank-learned', text: t(rank.learned === 1 ? 'rankLearnedOne' : 'rankLearned', [String(rank.learned)]) })),
+        h('div', { class: 'wv-rank-line' }, h('strong', { class: 'wv-rank-name', text: name }), h('span', { class: 'wv-rank-learned', text: t('rankLearned', { count: rank.learned }) })),
         h('div', { class: 'wv-rank-bar', role: 'progressbar', 'aria-valuemin': '0', 'aria-valuemax': '100', 'aria-valuenow': String(percent), 'aria-label': remaining }, fill),
         h('div', { class: 'wv-rank-remaining', text: remaining }),
       ),

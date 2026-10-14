@@ -7,8 +7,13 @@
 (async function (WV) {
   const surface = new URLSearchParams(location.search).get('surface') === 'window' ? 'window' : 'popup';
   document.documentElement.dataset.surface = surface;
-  document.documentElement.lang = WV.languages.uiLanguage();
-  document.title = `${WV.t('quizTitle')} · Wordvault`;
+  // (the quiz card redraws itself when the language changes: the page is not reloaded, a question is under way)
+  await WV.i18n.startPage({ reload: false });
+  const title = () => {
+    document.title = `${WV.t('quizTitle')} · Wordvault`;
+  };
+  title();
+  WV.i18n.onChange(title);
   WV.adoptStyles(WV.styles.tokens + WV.styles.controls + WV.styles.quiz);
 
   function leave() {

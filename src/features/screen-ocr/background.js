@@ -3,6 +3,7 @@
 // All of these are things the user does, which is what lets `activeTab` cover the screenshot:
 // the extension has no standing permission to look at any tab.
 
+import { ready, t } from '../../background/i18n.js';
 import { addMenuItem } from '../../background/menus.js';
 import { scanTab } from './scan.js';
 
@@ -21,7 +22,8 @@ async function sayNotHere(tab) {
   try {
     await chrome.action.setBadgeBackgroundColor({ tabId: tab.id, color: '#b42318' });
     await chrome.action.setBadgeText({ tabId: tab.id, text: '!' });
-    await chrome.action.setTitle({ tabId: tab.id, title: chrome.i18n.getMessage('ocrErrForbidden') });
+    await ready();
+    await chrome.action.setTitle({ tabId: tab.id, title: t('ocrErrForbidden') });
     setTimeout(() => {
       chrome.action.setBadgeText({ tabId: tab.id, text: '' }).catch(() => {});
       chrome.action.setTitle({ tabId: tab.id, title: 'Wordvault' }).catch(() => {});
@@ -77,7 +79,7 @@ export async function startScan(tab) {
 /** The item in the right-click menu; the menu itself is built in background/menus.js. */
 const menuItem = () => ({
   id: MENU_ID,
-  title: chrome.i18n.getMessage('ocrMenuScan'),
+  title: t('ocrMenuScan'),
   // 'action': the menu of the toolbar button.
   contexts: ['page', 'frame', 'image', 'video', 'selection', 'link', 'action'],
 });

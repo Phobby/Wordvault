@@ -7,6 +7,7 @@
 // Both are things the user does, which is what lets `activeTab` reach a tab whose content
 // scripts are missing (Chrome, after the extension was installed or reloaded).
 
+import { ready, t } from '../../background/i18n.js';
 import { addMenuItem, rebuildMenus } from '../../background/menus.js';
 import { getSettings } from '../../lib/settings.js';
 
@@ -74,7 +75,8 @@ export async function sayOnButton(tab, messageKey) {
   try {
     await chrome.action.setBadgeBackgroundColor({ tabId: tab.id, color: '#b42318' });
     await chrome.action.setBadgeText({ tabId: tab.id, text: '!' });
-    await chrome.action.setTitle({ tabId: tab.id, title: chrome.i18n.getMessage(messageKey) });
+    await ready();
+    await chrome.action.setTitle({ tabId: tab.id, title: t(messageKey) });
     setTimeout(() => {
       chrome.action.setBadgeText({ tabId: tab.id, text: '' }).catch(() => {});
       chrome.action.setTitle({ tabId: tab.id, title: 'Wordvault' }).catch(() => {});
@@ -133,7 +135,7 @@ export async function translateSelection(tab, { text = '', frameId, menu }) {
 
 async function menuItem() {
   if ((await getSettings()).contextMenuTranslate === false) return null;
-  return { id: MENU_ID, title: chrome.i18n.getMessage('menuTranslate'), contexts: ['selection'] };
+  return { id: MENU_ID, title: t('menuTranslate'), contexts: ['selection'] };
 }
 
 /** Registers the listeners. Called once, synchronously, when the background script starts. */

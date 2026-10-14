@@ -53,8 +53,21 @@
     const tools = h('div', { class: 'wv-ocr-tools' }, status, close);
     const layer = h('div', { class: 'wv-ocr-layer' }, frame, words, tools);
     surface.root.append(layer);
-    return { surface, layer, frame, words, status, tools };
+    return { surface, layer, frame, words, status, tools, close };
   }
+
+  // The interface language changed. A result on screen keeps its status line (it says what
+  // happened, in the language of that moment); the button is relabelled, and the next layer is
+  // built in the new language.
+  WV.i18n.onChange(() => {
+    if (!ui) return;
+    if (!current) {
+      ui = null;
+      return;
+    }
+    ui.close.title = t('ocrClose');
+    ui.close.setAttribute('aria-label', t('ocrClose'));
+  });
 
   function place(element, rect) {
     Object.assign(element.style, { left: `${rect.x}px`, top: `${rect.y}px`, width: `${rect.width}px`, height: `${rect.height}px` });
@@ -155,7 +168,7 @@
       }
     }
     ui.status.className = 'wv-ocr-status';
-    ui.status.textContent = t('ocrResult', [String(result.words.length)]);
+    ui.status.textContent = t('ocrResult', { count: result.words.length });
     placeTools(result.area);
   }
 

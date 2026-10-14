@@ -129,14 +129,14 @@ export function createFeedbackPanel() {
 
   async function renderLog() {
     const count = (await getErrorLog()).length;
-    errorsHelp.textContent = t(count > 0 ? 'fbErrorsHelpCount' : 'fbErrorsHelpNone', [String(count)]);
+    errorsHelp.textContent = t(count > 0 ? 'fbErrorsHelpCount' : 'fbErrorsHelpNone', { count });
     clearLog.hidden = count === 0;
   }
 
   async function openPreview() {
     const problems = validateDraft(draft).filter((code) => PROBLEMS[code]);
     if (problems.length > 0) {
-      problem.textContent = t(PROBLEMS[problems[0]], [String(LIMITS.messageMin), String(LIMITS.messageMax)]);
+      problem.textContent = t(PROBLEMS[problems[0]], { min: LIMITS.messageMin, max: LIMITS.messageMax });
       problem.hidden = false;
       (problems[0] === 'email' ? email : message).focus();
       return;
@@ -145,7 +145,7 @@ export function createFeedbackPanel() {
     payload = buildPayload({ draft, tech: techInfo, errors: log });
     dataConsent = Array.isArray(all.data_collection);
     json.textContent = JSON.stringify(payload, null, 2);
-    destination.textContent = endpoint ? t('fbDestination', [new URL(endpoint).hostname]) : t('fbNotConfigured');
+    destination.textContent = endpoint ? t('fbDestination', { host: new URL(endpoint).hostname }) : t('fbNotConfigured');
     status.hidden = true;
     show('preview');
     renderSend();
@@ -157,12 +157,12 @@ export function createFeedbackPanel() {
     const left = endpoint ? await getCooldown() : 0;
     send.disabled = busy || !endpoint || left > 0;
     back.disabled = busy;
-    send.textContent = left > 0 ? t('fbSendIn', [String(Math.ceil(left / 1000))]) : t('fbSend');
+    send.textContent = left > 0 ? t('fbSendIn', { seconds: Math.ceil(left / 1000) }) : t('fbSend');
   }
 
   function fail(code, detail) {
     status.className = 'fb-status bad';
-    status.textContent = t(ERRORS[code] || 'fbErrServer', [String(detail || '')]);
+    status.textContent = t(ERRORS[code] || 'fbErrServer', { reason: String(detail || ''), seconds: String(detail || '') });
     status.hidden = false;
   }
 

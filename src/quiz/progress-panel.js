@@ -23,8 +23,8 @@ export function createProgressPanel({ celebrateIn = null } = {}) {
     const progress = await globalThis.WV.send('wv:progress').catch(() => null);
     if (!progress) return;
     const { streak, rank } = progress;
-    const days = streak.count === 1 ? t('streakDaysOne') : t('streakDays', [String(streak.count)]);
-    const today = streak.todayDone ? t('streakTodayDone') : t('streakToday', [String(Math.min(streak.answered, streak.goal)), String(streak.goal)]);
+    const days = t('streakDays', { count: streak.count });
+    const today = streak.todayDone ? t('streakTodayDone') : t('streakToday', { done: Math.min(streak.answered, streak.goal), goal: streak.goal });
     element.replaceChildren(
       h(
         'div',
@@ -37,7 +37,7 @@ export function createProgressPanel({ celebrateIn = null } = {}) {
         h(
           'div',
           { class: 'progress-freeze', role: 'status' },
-          h('span', { text: t(streak.freezeSaves === 1 ? 'freezeOfferOne' : 'freezeOffer', [String(streak.freezeSaves)]) }),
+          h('span', { text: t('freezeOffer', { count: streak.freezeSaves }) }),
           h('button', { class: 'wv-btn wv-btn-sm', type: 'button', 'data-action': 'freeze', text: t('freezeUse'), onclick: freeze }),
         ),
       progressUi.rankPanel(rank),

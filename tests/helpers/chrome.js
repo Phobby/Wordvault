@@ -184,8 +184,36 @@ export function createDevice(name = 'device', { uiLanguage = 'en-US', detect = (
     },
     clear: async () => true,
   };
+  // storage.onChanged: every write to local storage is told to the listeners, as the browser
+  // tells every part of the extension.
+  const changeListeners = new Set();
+  const writeLocal = local.set;
+  local.set = async (items) => {
+    const changes = Object.fromEntries(Object.entries(items).map(([key, value]) => [key, { oldValue: local.data.has(key) ? structuredClone(local.data.get(key)) : undefined, newValue: structuredClone(value) }]));
+    await writeLocal(items);
+    for (const listener of [...changeListeners]) listener(structuredClone(changes), 'local');
+  };
+  const onChanged = { addListener: (listener) => changeListeners.add(listener), removeListener: (listener) => changeListeners.delete(listener) };
+  /** The right-click menu: id -> properties. */
+  const menu = new Map();
+  const contextMenus = {
+    create: (item, done) => {
+      menu.set(item.id, { ...item });
+      done?.();
+    },
+    update: (id, changes, done) => {
+      if (menu.has(id)) Object.assign(menu.get(id), changes);
+      done?.();
+    },
+    removeAll: (done) => {
+      menu.clear();
+      done?.();
+    },
+    onClicked: { addListener: () => {} },
+  };
   const api = {
-    storage: { local, sync, session },
+    storage: { local, sync, session, onChanged },
+    contextMenus,
     i18n,
     alarms,
     tabs,
@@ -216,6 +244,7 @@ export function createDevice(name = 'device', { uiLanguage = 'en-US', detect = (
     local,
     sync,
     detected,
+    menu,
     browser,
     /** Name -> time of every alarm that is set. */
     alarmTimes: () => Object.fromEntries([...alarmMap].map(([alarmName, alarm]) => [alarmName, alarm.scheduledTime])),

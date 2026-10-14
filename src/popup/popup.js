@@ -12,8 +12,8 @@ import { listEntries, removeEntry } from '../lib/vault.js';
 const WV = globalThis.WV;
 const { h, t, icon, languages } = WV;
 
+await WV.i18n.startPage();
 WV.adoptStyles(WV.styles.tokens + WV.styles.controls + WV.styles.progress);
-document.documentElement.lang = languages.uiLanguage();
 
 const ICON_BACK = 'M15 6l-6 6 6 6';
 const ICON_SETTINGS = 'M4 7h9M17 7h3M15 5v4M4 17h3M11 17h9M9 15v4';
@@ -127,7 +127,7 @@ function renderTabs() {
   }
   tabBar.hidden = state.entries.length === 0;
   learnedSummary.hidden = state.tab !== 'learned' || state.entries.length === 0;
-  learnedSummary.textContent = learned === 1 ? t('tbLearnedOne') : t('tbLearnedTotal', [String(learned)]);
+  learnedSummary.textContent = t('tbLearnedTotal', { count: learned });
 }
 
 const learnedDate = (time) => new Date(time).toLocaleDateString(languages.uiLanguage(), { day: 'numeric', month: 'short', year: 'numeric' });
@@ -150,7 +150,7 @@ function renderDamaged() {
   const total = state.entries.filter(isDamaged).length;
   if (total === 0) state.onlyDamaged = false;
   damagedNotice.hidden = total === 0;
-  damagedText.textContent = t('tbDamaged', [String(total)]);
+  damagedText.textContent = t('tbDamaged', { count: total });
   damagedToggle.textContent = t(state.onlyDamaged ? 'tbDamagedAll' : 'tbDamagedShow');
 }
 const list = h('div', { class: 'list' });
@@ -238,13 +238,13 @@ function show(view, openId = null) {
 
 function renderHeader() {
   const total = state.entries.length;
-  count.textContent = total === 1 ? t('tbCountOne') : t('tbCount', [String(total)]);
+  count.textContent = t('tbCount', { count: total });
   const { prefs } = state;
-  targetLabel.textContent = prefs ? t('tbTarget', [languages.name(prefs.targetLang)]) : '';
+  targetLabel.textContent = prefs ? t('tbTarget', { language: languages.name(prefs.targetLang) }) : '';
   targetChip.hidden = !prefs;
   const needsSetup = Boolean(prefs) && !prefs.targetChosen;
   setup.hidden = !needsSetup;
-  if (needsSetup) setupText.textContent = t('firstRunText', [languages.name(prefs.targetLang)]);
+  if (needsSetup) setupText.textContent = t('firstRunText', { language: languages.name(prefs.targetLang) });
 }
 
 function renderFilters() {
@@ -305,7 +305,7 @@ function renderList() {
           h('span', { class: 'row-translation', dir: 'auto', lang: entry.targetLang || null, text: entry.translation || t('dtNoTranslation') }),
           // when it was learned, in "My vocabulary"; a small mark in the list of everything
           entry.kind === 'phrase' && h('span', { class: 'row-badge row-phrase', text: t('tbPhraseBadge') }),
-          learnedView ? h('span', { class: 'row-learned', text: t('tbLearnedOn', [learnedDate(entry.quiz.g)]) }) : isLearned(entry) && h('span', { class: 'row-badge', title: t('tbLearnedOn', [learnedDate(entry.quiz.g)]), text: t('tbLearnedBadge') }),
+          learnedView ? h('span', { class: 'row-learned', text: t('tbLearnedOn', { date: learnedDate(entry.quiz.g) }) }) : isLearned(entry) && h('span', { class: 'row-badge', title: t('tbLearnedOn', { date: learnedDate(entry.quiz.g) }), text: t('tbLearnedBadge') }),
         ),
         confirming
           ? h('button', { class: 'wv-btn wv-btn-sm confirm', type: 'button', text: t('tbDeleteConfirm'), onclick: () => remove(entry.id) })
@@ -376,7 +376,7 @@ function originSection(entry) {
       { class: 'origin' },
       entry.sentence && h('blockquote', { dir: 'auto', lang: entry.sourceLang || null, text: entry.sentence }),
       link,
-      h('span', { class: 'date', text: t('dtSavedOn', [date]) }),
+      h('span', { class: 'date', text: t('dtSavedOn', { date: date }) }),
     ),
   ];
 }
@@ -490,7 +490,7 @@ async function chooseTarget(code) {
 
 async function exportVault() {
   const exported = await downloadBackup();
-  status.textContent = t('bkExported', [String(exported)]);
+  status.textContent = t('bkExported', { count: exported });
 }
 
 function openImport() {

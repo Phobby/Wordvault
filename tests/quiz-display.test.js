@@ -179,7 +179,7 @@ test('nothing can show the quiz: a notification if that is allowed, otherwise it
   assert.equal(await runScheduledQuiz(), 'no_display');
   let state = await getQuizState();
   assert.deepEqual(ways(state.lastSkip.tried), ['popup: popup_unsupported', 'window: window_unsupported', 'card: page_not_supported', 'notification: notification_not_allowed']);
-  assert.equal(state.sonrakiQuizZamani, T0 + 23 * MINUTE, 'tried again in a few minutes');
+  assert.equal(state.nextQuizAt, T0 + 23 * MINUTE, 'tried again in a few minutes');
   assert.equal(await readSession(), null, 'no quiz is left waiting');
   assert.deepEqual(state.recent, [], 'and no word counts as asked');
 
@@ -189,7 +189,7 @@ test('nothing can show the quiz: a notification if that is allowed, otherwise it
   assert.equal(await runScheduledQuiz(), 'shown');
   state = await getQuizState();
   assert.equal(state.lastShown.method, 'notification');
-  assert.equal(state.sonrakiQuizZamani, T0 + 43 * MINUTE, 'the regular rhythm');
+  assert.equal(state.nextQuizAt, T0 + 43 * MINUTE, 'the regular rhythm');
   assert.deepEqual(device.browser.notifications.map((n) => [n.id, n.type, n.title, n.message, n.iconUrl]), [['wv:quiz', 'basic', 'quizNotificationTitle', 'quizNotificationText', 'test-extension://icons/icon-96.png']]);
   assert.equal((await getDiagnostics()).notifications, true);
 

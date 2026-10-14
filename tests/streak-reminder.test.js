@@ -11,6 +11,7 @@ import { ackRank, freezeYesterday, getProgress } from '../src/quiz/progress-stat
 import { REMINDER_ALARM, REMINDER_NOTIFICATION, ensureReminder, inQuietHours, minutesOf, nextTimeOfDay, runReminder } from '../src/quiz/reminder.js';
 import { getDiagnostics } from '../src/quiz/scheduler.js';
 import { createDevice, use } from './helpers/chrome.js';
+import { readLocale, useLanguage } from './helpers/i18n.js';
 
 const realZone = process.env.TZ;
 afterEach(() => {
@@ -59,7 +60,7 @@ beforeEach(async () => {
   device = use(createDevice('device', { uiLanguage: 'en-US' }));
   device.browser.can.notification = true;
   shown = device.browser.notifications; // what the stand-in browser was asked to show
-  globalThis.chrome.i18n.getMessage = (key, substitutions) => `${key}${substitutions ? `(${[].concat(substitutions).join(',')})` : ''}`;
+  await useLanguage('en');
   await updateSettings({ quizEnabled: true, quizReminderEnabled: true, quizReminderTime: '20:00', quizDailyGoal: 5 });
 });
 const days = (...offsets) => offsets.map((offset) => new Date(2026, 9, 13 + offset)).map((date) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`);
@@ -83,7 +84,7 @@ test('in the evening, with today\'s quiz not done: one notification that names t
   assert.equal(await runReminder(at(20)), 'shown');
   assert.equal(shown.length, 1);
   assert.equal(shown[0].id, REMINDER_NOTIFICATION);
-  assert.equal(shown[0].message, 'reminderStreak(3)');
+  assert.equal(shown[0].message, 'You have not done a quiz today yet. A few questions keep your 3-day streak going.');
   assert.equal((await chrome.alarms.get(REMINDER_ALARM)).scheduledTime, at(20, 0, 1), 'tomorrow\'s is set');
   assert.equal(await runReminder(at(20, 5)), 'already_today', 'at most once a day');
   assert.equal(shown.length, 1);
@@ -93,10 +94,10 @@ test('in the evening, with today\'s quiz not done: one notification that names t
 test('the wording follows the streak, and holds no word of the vault', async () => {
   await addEntry({ text: 'secretword', translation: 'gizli', sourceLang: 'en', targetLang: 'tr' });
   assert.equal(await runReminder(at(20)), 'shown');
-  assert.equal(shown[0].message, 'reminderNoStreak', 'no streak: an invitation, not a warning');
+  assert.equal(shown[0].message, readLocale('en').reminderNoStreak, 'no streak: an invitation, not a warning');
   await chrome.storage.local.set({ quizDays: { days: days(0), frozen: [] }, streakReminder: null });
   assert.equal(await runReminder(at(20, 0, 1)), 'shown');
-  assert.equal(shown[1].message, 'reminderStreakOne');
+  assert.equal(shown[1].message, 'You have not done a quiz today yet. A few questions keep your streak going.', 'a streak of one day is not counted out');
   assert.ok(!JSON.stringify(shown).includes('secretword'));
 });
 
