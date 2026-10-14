@@ -1,49 +1,55 @@
-# Mağaza hazırlığı
+# Store preparation
 
-Chrome Web Store (ve addons.mozilla.org) gönderimi için hazır metinler ve görseller.
+Ready texts and images for submitting to the Chrome Web Store (and addons.mozilla.org).
 
-| Dosya | İçinde ne var |
+| File | What is in it |
 | --- | --- |
-| `listing.md` | Ad, kısa açıklama (≤ 132 karakter), uzun açıklama (en, tr), kategori, görsellerin listesi |
-| `permissions.md` | Her izin için panele yapıştırılacak gerekçe |
-| `privacy-practices.md` | Tek amaç, uzak kod beyanı, veri kullanım beyanı, AMO beyanı |
-| `test-instructions.md` | İnceleyiciler için test adımları |
-| `screenshots/` | 1280×800 ekran görüntüleri |
-| `promo-440x280.png` | Küçük tanıtım görseli (taslak) |
+| `listing.md` | Name, short description (≤ 132 characters), long description (en, tr), category, list of images |
+| `permissions.md` | The reason to paste into the dashboard for every permission |
+| `privacy-practices.md` | Single purpose, remote code declaration, data use declaration, AMO declaration |
+| `test-instructions.md` | Test steps for reviewers |
+| `screenshots/` | 1280×800 screenshots |
+| `promo-440x280.png` | Small promotional image (draft) |
 
-Gizlilik politikası: `PRIVACY.md` (tr) ve `docs/privacy.html` (en + tr, web sürümü).
+Privacy policy: `PRIVACY.md` (tr) and `docs/privacy.html` (en + tr, web version).
 
-## Paketleme
+The texts in this folder are store-facing content in the languages the stores show, not developer
+documentation; they are kept as they are. The extension's name, short description and shortcut
+descriptions shown by the browsers come from `src/_locales` (see "Interface language" in the README).
+
+## Packaging
 
 ```sh
 npm run package
 ```
 
-`dist/` klasörlerini derler ve `web-ext-artifacts/` altına iki zip yazar (git'e girmez):
-`wordvault-<sürüm>-chrome.zip` ve `wordvault-<sürüm>-firefox.zip`. Zip'in kökünde `manifest.json` durur.
+Builds the `dist/` folders as a release build (`node build.js --release`) and writes two zips under
+`web-ext-artifacts/` (not committed): `wordvault-<version>-chrome.zip` and
+`wordvault-<version>-firefox.zip`. `manifest.json` is at the root of each zip.
 
-## Gönderimden önce kontrol listesi
+## Checklist before submitting
 
-- [ ] `src/config.js`: `SUPPORT_URL` ve `FEEDBACK_ENDPOINT` gerçek adresler (yer tutucu ya da `localhost` değil).
-- [ ] `npm test` ve `npm run lint` temiz (lint: 0 hata; 3 uyarı değiştirilmemiş Tesseract dosyalarından).
-- [ ] `manifest.*.json` ve `package.json` sürümü aynı ve bir öncekinden büyük.
-- [ ] `npm run package`, zip'i temiz bir tarayıcı profilinde yükleyip `test-instructions.md` adımlarını dene.
-- [ ] Gizlilik politikası adresi herkese açık ve açılıyor.
-- [ ] Panelde: açıklamalar, görseller, tek amaç, izin gerekçeleri, veri beyanı, test talimatları.
+- [ ] `src/config.js`: `SUPPORT_URL` and `FEEDBACK_ENDPOINT` are real addresses (not placeholders, not `localhost`).
+- [ ] `npm test`, `npm run i18n:check` and `npm run lint` are clean (lint: 0 errors; the warnings come from the unchanged Tesseract files).
+- [ ] The version in `manifest.*.json` and `package.json` is the same and higher than the previous one.
+- [ ] `npm run package`, load the zip in a clean browser profile and go through the steps in `test-instructions.md`.
+- [ ] The privacy policy's address is public and opens.
+- [ ] In the dashboard: descriptions, images, single purpose, permission reasons, data declaration, test instructions.
 
-## Açık kalanlar (geliştiricinin yapacağı)
+## Still open (for the developer to do)
 
-- **Gizlilik politikasının adresi.** `docs/privacy.html` GitHub Pages için hazır, ama depo özel; ücretsiz
-  GitHub hesabında Pages yalnızca herkese açık depolarda çalışır. Seçenekler: depoyu herkese açmak,
-  yalnızca bu dosyayı içeren ayrı bir herkese açık depo açmak, ya da dosyayı başka bir yerde yayınlamak.
-- **Geliştirici iletişim e-postası.** Chrome Web Store hesabı bir iletişim adresi ister ve onu mağaza
-  sayfasında gösterir. Gizlilik politikası silme talepleri için o adrese de atıf yapıyor. Depoda e-posta
-  adresi yoktur.
-- **Chrome'daki `key` alanı.** Manifestteki `key` geliştirici modunda kimliği sabitlemek içindir.
-  Mağazaya yüklenen pakette durabilir (mağaza kendi anahtarını kullanır ve bu alanı yok sayar ya da
-  kaldırmanı ister); mağazanın verdiği kimlik farklı olursa Google OAuth istemcisindeki yönlendirme
-  adresi ona göre güncellenmelidir (`SETUP-OAUTH.md`).
-- **Bulut sağlayıcıları.** OneDrive ve Dropbox istemci kimlikleri hâlâ yer tutucu; ayarlarda "yapılandırma
-  eksik" görünürler. Google Drive için OAuth izin ekranı "test" kipindeyse yalnızca eklenen test
-  kullanıcıları bağlanabilir; herkese açmak Google'ın doğrulamasını gerektirebilir.
-- **Tanıtım görseli** bir taslaktır.
+- **The privacy policy's address.** `docs/privacy.html` is ready for GitHub Pages, but the repository is
+  private; with a free GitHub account Pages works only for public repositories. Options: make the
+  repository public, open a separate public repository holding only this file, or publish the file
+  elsewhere.
+- **The developer contact e-mail.** A Chrome Web Store account asks for a contact address and shows it on
+  the store page. The privacy policy refers to that address for deletion requests too. There is no
+  e-mail address in the repository.
+- **The `key` field in Chrome.** The manifest's `key` fixes the ID in developer mode. It may stay in the
+  package uploaded to the store (the store uses its own key and ignores this field, or asks you to remove
+  it); if the ID the store gives is different, the redirect address in the Google OAuth client has to be
+  updated accordingly (`SETUP-OAUTH.md`).
+- **Cloud providers.** The OneDrive and Dropbox client IDs are still placeholders; they show as "not
+  configured" in the settings. While Google Drive's OAuth consent screen is in "testing" mode, only the
+  added test users can connect; opening it to everyone may need Google's verification.
+- **The promotional image** is a draft.

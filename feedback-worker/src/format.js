@@ -1,8 +1,8 @@
 // The messages the developer reads. The time is the receiver's own clock, shown for Istanbul;
 // what the sender's clock says is never used.
 
-const TYPE_NAMES = { bug: '🐞 Hata', idea: '💡 Öneri', other: '💬 Diğer' };
-const FEATURE_NAMES = { bubble: 'Çeviri baloncuğu', captions: 'Altyazılar', quiz: 'Flash card / quiz', sync: 'Senkronizasyon', settings: 'Ayarlar', other: 'Diğer' };
+const TYPE_NAMES = { bug: '🐞 Bug', idea: '💡 Idea', other: '💬 Other' };
+const FEATURE_NAMES = { bubble: 'Translation bubble', captions: 'Captions', quiz: 'Flash card / quiz', sync: 'Sync', settings: 'Settings', other: 'Other' };
 
 /** Telegram's limit for one message is 4096 characters; this leaves room for the markup. */
 const TELEGRAM_MAX = 3800;
@@ -25,13 +25,13 @@ function techLines(tech) {
   if (!tech) return [];
   const browser = [tech.browser, tech.browserVersion].filter(Boolean).join(' ');
   const engine = tech.engine && !tech.engine.startsWith(`${tech.browser} `) ? ` (${tech.engine})` : '';
-  const lines = [[`${browser}${engine}`, tech.os, tech.extensionVersion && `Wordvault ${tech.extensionVersion}`, tech.uiLanguage && `dil: ${tech.uiLanguage}`].filter(Boolean).join(' · ')];
+  const lines = [[`${browser}${engine}`, tech.os, tech.extensionVersion && `Wordvault ${tech.extensionVersion}`, tech.uiLanguage && `language: ${tech.uiLanguage}`].filter(Boolean).join(' · ')];
   if (tech.features) {
     const on = Object.keys(tech.features).filter((name) => tech.features[name]);
     const off = Object.keys(tech.features).filter((name) => !tech.features[name]);
-    lines.push(`Açık: ${on.join(', ') || '-'}`, `Kapalı: ${off.join(', ') || '-'}`);
+    lines.push(`On: ${on.join(', ') || '-'}`, `Off: ${off.join(', ') || '-'}`);
   }
-  if (tech.syncMode) lines.push(`Senkron: ${tech.syncMode}`);
+  if (tech.syncMode) lines.push(`Sync: ${tech.syncMode}`);
   return lines;
 }
 
@@ -48,12 +48,12 @@ export function formatMessages(feedback, now, flavour = 'html') {
   const code = (text) => (html ? `<pre>${escapeHtml(text)}</pre>` : `\`\`\`\n${text.replace(/```/g, "'''")}\n\`\`\``);
   const max = html ? TELEGRAM_MAX : DISCORD_MAX;
 
-  const head = [`${bold(TYPE_NAMES[feedback.type])} · ${escape(FEATURE_NAMES[feedback.feature])}`, `🕒 ${istanbulTime(now)} (İstanbul)`];
+  const head = [`${bold(TYPE_NAMES[feedback.type])} · ${escape(FEATURE_NAMES[feedback.feature])}`, `🕒 ${istanbulTime(now)} (Istanbul)`];
   const tail = [];
   if (feedback.email) tail.push(`✉️ ${escape(feedback.email)}`);
   const tech = techLines(feedback.tech).map(escape);
   if (tech.length > 0) tail.push(`🧩 ${tech.join('\n')}`);
-  if (feedback.errors?.length) tail.push(`📎 ${feedback.errors.length} hata kaydı sonraki mesajda`);
+  if (feedback.errors?.length) tail.push(`📎 ${feedback.errors.length} error record(s) in the next message`);
   const messages = [clip([head.join('\n'), escape(feedback.message), tail.join('\n')].filter(Boolean).join('\n\n'), max)];
 
   if (feedback.errors?.length) {
@@ -64,7 +64,7 @@ export function formatMessages(feedback, now, flavour = 'html') {
       if (text.length + entry.length > max - 200) break;
       text += entry;
     }
-    messages.push(`${bold('Hata kayıtları')} (${feedback.errors.length})\n${code(text.trim() || '…')}`);
+    messages.push(`${bold('Error records')} (${feedback.errors.length})\n${code(text.trim() || '…')}`);
   }
   return messages;
 }

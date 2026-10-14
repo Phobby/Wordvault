@@ -1,119 +1,122 @@
-# Kendi sunucunla eşitleme
+# Syncing with your own server
 
-Wordvault kasayı, bir bulut hesabı yerine senin çalıştırdığın (ya da güvendiğin) bir sunucuyla da
-eşitleyebilir: Ayarlar → **Senkronizasyon ve yedekleme** → **Kendi sunucum**. İki tür desteklenir:
+Instead of a cloud account, Wordvault can also sync the vault with a server you run (or trust):
+Settings → **Sync and backup** → **My own server**. Two kinds are supported:
 
-- **WebDAV** (Nextcloud, ownCloud, Apache `mod_dav` …): hazır bir sunucun varsa.
-- **Basit HTTP uç noktası**: aşağıda anlatılan üç isteği karşılayan herhangi bir sunucu. Depoda tek
-  dosyalık bir örneği var (`tools/self-hosted-server.js`).
+- **WebDAV** (Nextcloud, ownCloud, Apache `mod_dav` …): if you already have such a server.
+- **Simple HTTP endpoint**: any server that answers the three requests described below. The repository
+  has a one-file example (`tools/self-hosted-server.js`).
 
-Her iki türde de:
+With both kinds:
 
-- Giden şey tek bir dosyadır: sıkıştırılmış kasa (`wordvault-vault.json.gz` biçimi; README'deki
-  "Senkronizasyonun veri modeli"). Sayfa adresleri, ayarlar ve API anahtarları gitmez.
-- Adres **https** olmalıdır. `http://` yalnızca kendi makinen (`localhost`, `127.0.0.1`) için kabul
-  edilir.
-- Tarayıcı, girdiğin adres için izni **bağlanırken** sorar; eklenti başka hiçbir adres için izin istemez.
-- Kullanıcı adı, parola ve anahtar yalnızca bu tarayıcıda (`chrome.storage.local`) durur.
-- İstersen ayarlardaki şifreleme seçeneğiyle dosyayı sunucuya şifreli gönderebilirsin.
+- What goes is a single file: the compressed vault (the `wordvault-vault.json.gz` format; "The sync
+  data model" in the README). Page addresses, settings and API keys do not go.
+- The address must be **https**. `http://` is accepted only for your own machine (`localhost`,
+  `127.0.0.1`).
+- The browser asks for permission for the address you enter **when connecting**; the extension asks
+  for no other address.
+- The user name, password and key stay only in this browser (`chrome.storage.local`).
+- If you like, the encryption option in the settings sends the file to the server encrypted.
 
 ## WebDAV
 
-Girilecekler: **klasör adresi**, **kullanıcı adı**, **uygulama parolası**.
+To enter: the **folder address**, the **user name**, an **app password**.
 
-Nextcloud için klasör adresi `https://SUNUCU/remote.php/dav/files/KULLANICI/Wordvault/` biçimindedir.
-Uygulama parolasını Nextcloud'da **Ayarlar → Güvenlik → Cihazlar ve oturumlar** altından oluştur; asıl
-parolanı girme. Klasör yoksa Wordvault oluşturur; dosya o klasörde `wordvault-vault.json.gz` adıyla
-durur.
+For Nextcloud the folder address looks like `https://SERVER/remote.php/dav/files/USER/Wordvault/`.
+Create the app password in Nextcloud under **Settings → Security → Devices & sessions**; do not enter
+your real password. If the folder does not exist, Wordvault creates it; the file lives in that folder as
+`wordvault-vault.json.gz`.
 
-Wordvault'un kullandığı istekler:
+The requests Wordvault makes:
 
-| İstek | Ne için |
+| Request | What for |
 | --- | --- |
-| `PROPFIND <klasör>` (`Depth: 0`) | Bağlanırken: klasör var mı, parola doğru mu |
-| `MKCOL <klasör>` | Klasör yoksa oluşturmak |
-| `GET <klasör>/wordvault-vault.json.gz` | Dosyayı ve `ETag`'ini okumak |
-| `PUT <klasör>/wordvault-vault.json.gz` | Yazmak: `If-Match: <etag>` ile, dosya henüz yoksa `If-None-Match: *` ile |
-| `DELETE <klasör>/wordvault-vault.json.gz` | "Buluttaki dosyayı da sil" seçilirse |
+| `PROPFIND <folder>` (`Depth: 0`) | When connecting: does the folder exist, is the password right |
+| `MKCOL <folder>` | To create the folder if it does not exist |
+| `GET <folder>/wordvault-vault.json.gz` | To read the file and its `ETag` |
+| `PUT <folder>/wordvault-vault.json.gz` | To write: with `If-Match: <etag>`, or with `If-None-Match: *` while there is no file yet |
+| `DELETE <folder>/wordvault-vault.json.gz` | If "Delete the file in the cloud too" is chosen |
 
-Kimlik doğrulama HTTP Basic'tir. Sunucu `PUT` cevabında yeni `ETag`'i vermezse Wordvault bir `HEAD` ile
-sorar. Hiç `ETag` vermeyen bir sunucuda koşullu yazma yapılamaz: son yazan kazanır, ezilen değişiklik
-ilgili cihazın bir sonraki eşitlemesinde yeniden birleştirilir (kelime kaybolmaz).
+Authentication is HTTP Basic. If the server does not give the new `ETag` in its answer to `PUT`,
+Wordvault asks with a `HEAD`. On a server that gives no `ETag` at all, conditional writes are not
+possible: the last writer wins, and the overwritten change is merged again at that device's next sync
+(no word is lost).
 
-## Basit HTTP uç noktası
+## Simple HTTP endpoint
 
-Girilecekler: **sunucu adresi** ve **anahtar**. Wordvault adresin sonuna `/vault` ekler.
+To enter: the **server address** and a **key**. Wordvault adds `/vault` to the end of the address.
 
-Her istek `Authorization: Bearer <anahtar>` başlığını taşır.
+Every request carries the `Authorization: Bearer <key>` header.
 
 ### `GET /vault`
 
-- `200`: gövde saklanan belgedir (ikili), `ETag` başlığı belgenin sürümüdür.
-- `404`: henüz saklanan belge yok.
-- `401`: anahtar yok ya da yanlış.
+- `200`: the body is the stored document (binary), the `ETag` header is the document's version.
+- `404`: no document stored yet.
+- `401`: the key is missing or wrong.
 
 ### `PUT /vault`
 
-Gövde yeni belgedir (ikili, `Content-Type: application/octet-stream`). İstek şu iki koşuldan birini
-taşır:
+The body is the new document (binary, `Content-Type: application/octet-stream`). The request carries one
+of these two conditions:
 
-- `If-Match: <etag>`: yalnızca saklanan belge hâlâ o sürümdeyse yaz.
-- `If-None-Match: *`: yalnızca saklanan belge yoksa yaz.
+- `If-Match: <etag>`: write only if the stored document is still at that version.
+- `If-None-Match: *`: write only if no document is stored.
 
-Cevaplar:
+Answers:
 
-- `200` ya da `201`: yazıldı; `ETag` başlığı yeni sürümdür.
-- `412`: koşul sağlanmıyor (araya başka bir cihaz girdi). Wordvault yeniden okur, birleştirir ve yeniden
-  yazar; en fazla beş kez dener.
-- `413` ya da `507`: yer yok. Wordvault kullanıcıya bildirir, kasa yerelde kalır.
-- `401`: anahtar yok ya da yanlış.
+- `200` or `201`: written; the `ETag` header is the new version.
+- `412`: the condition does not hold (another device got in between). Wordvault reads again, merges and
+  writes again; it tries at most five times.
+- `413` or `507`: no space. Wordvault tells the user; the vault stays local.
+- `401`: the key is missing or wrong.
 
-Koşulun sınanması ile yazma **tek adımda** olmalıdır; aksi halde aynı anda yazan iki cihazın ikisi de
-başarılı olabilir.
+Checking the condition and writing must happen **in one step**; otherwise two devices writing at the
+same moment can both succeed.
 
 ### `DELETE /vault`
 
-Saklanan belgeyi siler (`204`; belge yoksa `404` de kabul edilir).
+Deletes the stored document (`204`; `404` is accepted too if there is none).
 
-### Diğer
+### Other
 
-- `ETag` belgenin içeriğiyle değişen herhangi bir değer olabilir (örnek sunucuda içeriğin özeti).
-  Wordvault onu olduğu gibi geri gönderir.
-- `429` ve `5xx` cevapları "sonra dene" sayılır; Wordvault sessizce 1, 2, 4 … dakika sonra yeniden dener.
-- Eklenti, bağlanırken tarayıcıdan o adrese erişim izni aldığı için CORS başlıkları gerekmez.
+- The `ETag` can be any value that changes with the document's content (a digest of the content in the
+  example server). Wordvault sends it back as it is.
+- `429` and `5xx` answers count as "try later"; Wordvault quietly tries again after 1, 2, 4 … minutes.
+- No CORS headers are needed, because the extension gets the browser's permission for that address when
+  connecting.
 
-## Örnek sunucu
+## Example server
 
-`tools/self-hosted-server.js` bu protokolü uygulayan tek dosyalık bir Node programıdır; bağımlılığı
-yoktur (Node 22 ya da üstü).
+`tools/self-hosted-server.js` is a one-file Node program that implements this protocol; it has no
+dependencies (Node 22 or later).
 
 ```sh
 WORDVAULT_KEY=$(openssl rand -hex 24) node tools/self-hosted-server.js
 ```
 
-Anahtarı kendin belirleyip not al; Wordvault'ta **Anahtar** alanına onu gireceksin.
+Choose the key yourself and note it down; you will enter it in Wordvault's **Key** field.
 
-| Ortam değişkeni | Anlamı | Varsayılan |
+| Environment variable | Meaning | Default |
 | --- | --- | --- |
-| `WORDVAULT_KEY` | Eklentinin göndermesi gereken anahtar (zorunlu, en az 16 karakter) | |
-| `PORT` | Dinlenecek port | `8787` |
-| `HOST` | Dinlenecek adres | `127.0.0.1` (yalnızca bu makine) |
-| `WORDVAULT_DATA` | Belgenin tutulduğu klasör | `./wordvault-data` |
+| `WORDVAULT_KEY` | The key the extension has to send (required, at least 16 characters) | |
+| `PORT` | The port to listen on | `8787` |
+| `HOST` | The address to listen on | `127.0.0.1` (this machine only) |
+| `WORDVAULT_DATA` | The folder the document is kept in | `./wordvault-data` |
 
-Denemek için aynı makinede: Wordvault'ta **Kendi sunucum → Basit HTTP uç noktası**, adres
-`http://localhost:8787`, anahtar yukarıdaki değer.
+To try it on the same machine: in Wordvault **My own server → Simple HTTP endpoint**, address
+`http://localhost:8787`, the key above.
 
-Elle sınamak için:
+To test it by hand:
 
 ```sh
-curl -i -H "Authorization: Bearer $WORDVAULT_KEY" http://localhost:8787/vault            # 404: henüz yok
-printf 'deneme' | curl -i -X PUT --data-binary @- -H "Authorization: Bearer $WORDVAULT_KEY" -H 'If-None-Match: *' http://localhost:8787/vault   # 201 + ETag
-printf 'ikinci' | curl -i -X PUT --data-binary @- -H "Authorization: Bearer $WORDVAULT_KEY" -H 'If-None-Match: *' http://localhost:8787/vault   # 412
+curl -i -H "Authorization: Bearer $WORDVAULT_KEY" http://localhost:8787/vault            # 404: nothing yet
+printf 'test' | curl -i -X PUT --data-binary @- -H "Authorization: Bearer $WORDVAULT_KEY" -H 'If-None-Match: *' http://localhost:8787/vault     # 201 + ETag
+printf 'second' | curl -i -X PUT --data-binary @- -H "Authorization: Bearer $WORDVAULT_KEY" -H 'If-None-Match: *' http://localhost:8787/vault   # 412
 ```
 
-**Başka cihazlardan erişmek için** sunucuyu doğrudan internete açma: düz HTTP konuşur. Önüne TLS
-sonlandıran bir şey koy (Caddy, nginx, bir tünel) ve Wordvault'a o `https://` adresini ver. Örneğin
-Caddy ile:
+**To reach it from other devices**, do not expose the server to the internet directly: it speaks plain
+HTTP. Put something that terminates TLS in front of it (Caddy, nginx, a tunnel) and give Wordvault that
+`https://` address. For example with Caddy:
 
 ```
 vault.example.com {
@@ -121,5 +124,5 @@ vault.example.com {
 }
 ```
 
-Sunucu tek bir belge tutar; birden fazla kişi kullanacaksa her biri için ayrı anahtar ve ayrı veri
-klasörüyle ayrı bir kopya çalıştır.
+The server keeps a single document; if several people will use it, run a separate copy for each, with
+its own key and its own data folder.

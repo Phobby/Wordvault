@@ -1,238 +1,245 @@
-# Wordvault geri bildirim alıcısı
+# Wordvault feedback receiver
 
-Eklentinin "İletişim ve geri bildirim" sekmesinden gelen mesajı alır, denetler, Telegram'a (ya da
-Discord'a) iletir ve unutur. Cloudflare Worker, ücretsiz plan, bağımlılık yok.
-
-```
-eklenti  --POST /feedback-->  Worker  --sendMessage-->  Telegram botu  -->  sen
-```
-
-Eklenti yalnızca Worker'ın adresini bilir. Bot token'ı ve sohbet kimliği yalnızca Worker'ın
-sırlarında durur; depoda, `wrangler.toml` içinde ya da eklenti paketinde **yoktur**.
-
-## Ne yapar
-
-- Tek adres: `POST /feedback`, JSON gövde. Başka her yol ve yöntem `404`.
-- Gövde en fazla 8 KB (`413 too_large`). Alanlar eklentinin kurduğu şemaya uymalı
-  (`src/validate.js`): izinli tür ve özellik listeleri, 10-1500 karakter metin, listede olmayan tek
-  bir alan bile olmamalı. Kontrol karakterleri temizlenir. Uymayan istek `400` ve nedenini söyleyen
-  bir kodla döner: `bad_json`, `bad_shape`, `bad_type`, `bad_feature`, `message_too_short`,
-  `message_too_long`, `bad_email`, `bad_tech`, `bad_errors`.
-- Gizli alan (`website`) doluysa `200 {"ok":true}` döner ama mesaj **iletilmez** (eklenti bu alanı
-  hiç göndermez; dolduran bir bottur).
-- Mesaj Telegram'a HTML kipinde gider; kullanıcının yazdığı her şey kaçışlanır (`<`, `>`, `&`).
-- Saat alıcının kendi saatidir (istemcinin saatine güvenilmez), `Europe/Istanbul`, `tr-TR`.
-- Hata kayıtları eklenmişse ikinci, kısaltılmış bir mesaj olarak gider (en yeniler, kayıt başına
-  yığının ilk iki satırı).
-- CORS başlığı yoktur: istek eklentinin arka plan betiğinden gelir, bir web sayfasından değil.
-
-Mesaj biçimi:
+Takes the message from the extension's "Contact and feedback" tab, checks it, passes it on to Telegram
+(or Discord) and forgets it. A Cloudflare Worker, free plan, no dependencies.
 
 ```
-🐞 Hata · Flash card / quiz
-🕒 13.10.2026 14:35 (İstanbul)
-
-Kart sol kenardan kırpılıyor, şıklar boş görünüyor.
-
-✉️ biri@ornek.com
-🧩 Zen 1.16 (Gecko 143.0) · macOS · Wordvault 0.1.0 · dil: tr
-Açık: doubleClick, quiz
-Kapalı: ttsFallback, ocrRememberArea, ocrShowBoxes, sync, syncEncryption
-Senkron: off
-📎 2 hata kaydı sonraki mesajda
+extension  --POST /feedback-->  Worker  --sendMessage-->  Telegram bot  -->  you
 ```
 
-> Şartnamedeki örnek biçim elime ulaşmadığı için bu biçim bir varsayımdır; `src/format.js` içinde
-> tek bir işlevdir, değiştirmesi kolaydır.
+The extension only knows the Worker's address. The bot token and the chat ID live only in the Worker's
+secrets; they are **not** in the repository, in `wrangler.toml` or in the extension package.
 
-## Ne saklar, ne kaydeder
+## What it does
 
-**Hiçbir mesajı saklamaz, hiçbir şeyi günlüğe yazmaz.**
+- One address: `POST /feedback`, JSON body. Every other path and method is `404`.
+- The body is at most 8 KB (`413 too_large`). The fields must match the schema the extension builds
+  (`src/validate.js`): allowed type and feature lists, a text of 10-1500 characters, not a single field
+  that is not on the list. Control characters are removed. A request that does not match comes back as
+  `400` with a code saying why: `bad_json`, `bad_shape`, `bad_type`, `bad_feature`,
+  `message_too_short`, `message_too_long`, `bad_email`, `bad_tech`, `bad_errors`.
+- If the hidden field (`website`) is filled in, it answers `200 {"ok":true}` but the message is **not**
+  passed on (the extension never sends this field; whoever fills it is a bot).
+- The message goes to Telegram in HTML mode; everything the user wrote is escaped (`<`, `>`, `&`).
+- The time is the receiver's own clock (the client's clock is not trusted), `Europe/Istanbul`,
+  formatted `tr-TR` (day.month.year).
+- If error records were added they go as a second, shortened message (the newest ones, the first two
+  lines of the stack per record).
+- There are no CORS headers: the request comes from the extension's background script, not from a web
+  page.
 
-- Kodda tek bir `console` çağrısı yoktur; `wrangler.toml` içinde Cloudflare'in günlük toplaması da
-  kapalıdır (`[observability] enabled = false`).
-- IP adresi tek bir yerde, hız sınırı için okunur ve Cloudflare'in sınırlayıcısına anahtar olarak
-  verilir; Worker onu saklamaz, iletmez, yazmaz. IP'yi Cloudflare'in altyapısı her istekte zaten görür;
-  bunu Worker engelleyemez.
-- İsteğin `Origin` başlığı (Firefox'ta kuruluma özgü bir kimlik taşır), yönlendiren adres ve
-  kullanıcı aracısı hiç okunmaz.
-- Günlük tavan açıksa saklanan tek şey gün başına bir **sayıdır** (`count:2026-10-13` → `"37"`), iki
-  gün sonra kendiliğinden silinir. Mesajla ya da gönderenle ilgili hiçbir şey içermez.
-- Hata olursa yanıt yalnızca bir koddur; ayrıntı (içinde token ya da mesaj olabilir) dışarı verilmez.
+Message format:
 
-Bunların testi var: `test/worker.test.js` kaynakta `console` çağrısı, başka başlık okuması ya da
-birden fazla yazma olmadığını da denetler.
+```
+🐞 Bug · Flash card / quiz
+🕒 13.10.2026 14:35 (Istanbul)
 
-## Hız sınırı: neyi seçtim, neden
+The card is cut off at the left edge, the choices look empty.
 
-İki katman var.
+✉️ someone@example.com
+🧩 Zen 1.16 (Gecko 143.0) · macOS · Wordvault 0.1.0 · language: tr / en-US
+On: doubleClick, quiz
+Off: ttsFallback, ocrRememberArea, ocrShowBoxes, sync, syncEncryption
+Sync: off
+📎 2 error record(s) in the next message
+```
 
-**1. Gönderen başına: Workers Rate Limiting bağlayıcısı** (`[[ratelimits]]`, 60 saniyede 3 istek).
+> The example format from the specification never reached me, so this format is an assumption; it is a
+> single function in `src/format.js` and easy to change.
 
-Şartnamedeki iki seçenekten bunu seçtim. Diğeri (KV'de tuzlanmış IP özeti, 1 gün TTL) şu yüzden
-elendi:
+## What it keeps, what it logs
 
-- IP'nin özetini bir gün boyunca **saklar**; tuzlansa da bu, gönderenden türetilmiş bir kaydın
-  tutulmasıdır ve "hiçbir şeyi kalıcı saklama" kuralına aykırıdır. Bağlayıcıda sayaçlar Cloudflare'in
-  o konumdaki makinelerinde geçici olarak durur, Worker'ın eriştiği bir depoya yazılmaz.
-- KV'nin ücretsiz planında günde 1000 yazma hakkı vardır; her istek bir yazma demek olur ve bir
-  saldırgan bu hakkı dakikalar içinde bitirip sınırlayıcıyı işlemez hale getirir.
-- KV yazmaları geç yayılır (aynı anahtara saniyede bir yazma, okumada gecikme); hızlı art arda
-  gelen istekleri kaçırır.
+**It keeps no message and logs nothing.**
 
-Bağlayıcının bilinen sınırları (Cloudflare'in belgesinden): sayaç **konum başınadır** (başka bir
-veri merkezine düşen istek ayrı sayılır), kesin değil "yaklaşık"tır ve süre yalnızca 10 ya da 60
-saniye olabilir. Cloudflare IP'yi anahtar olarak önermez, çünkü aynı IP'yi birçok kişi paylaşabilir
-(mobil ağlar); kimliksiz bir uç noktada başka bir anahtar olmadığı için yine de IP kullanılıyor.
-Sonuç: aynı ağdan dakikada 3'ten fazla mesaj atan dürüst kullanıcılar `429` alır ve eklenti "sonra
-yeniden dene" der; taslak kaybolmaz.
+- There is not a single `console` call in the code; Cloudflare's log collection is switched off in
+  `wrangler.toml` too (`[observability] enabled = false`).
+- The IP address is read in one place, for the rate limit, and handed to Cloudflare's limiter as the
+  key; the Worker does not keep, pass on or write it. Cloudflare's infrastructure sees the IP on every
+  request anyway; the Worker cannot prevent that.
+- The request's `Origin` header (in Firefox it carries an installation-specific ID), the referrer and
+  the user agent are never read.
+- With the daily cap on, the only thing kept is one **number** per day (`count:2026-10-13` → `"37"`),
+  deleted by itself after two days. It contains nothing about the message or the sender.
+- On an error the answer is only a code; details (which could contain the token or the message) are not
+  given out.
 
-**2. Herkes için günlük tavan: KV'de tek bir sayaç** (`DAILY_LIMIT`, varsayılan 200; isteğe bağlı).
+This is tested: `test/worker.test.js` also checks that the source has no `console` call, reads no other
+header and writes no more than once.
 
-Birinci katman tek bir saldırganı yavaşlatır ama çok sayıda IP'den gelen bir saldırıyı durdurmaz.
-Tavan, en kötü günde bile Telegram'a düşecek mesaj sayısını sınırlar; aşılınca `429 daily_limit`
-döner. Yalnızca **iletilen** mesajlar sayılır, yani günde en fazla 200 yazma yapılır (ücretsiz hak
-1000). Sayaç da yaklaşıktır (KV geç yayılır); birkaç mesaj fazla geçebilir. `DAILY` bağlayıcısı
-tanımlı değilse tavan uygulanmaz.
+## Rate limit: what I chose and why
 
-> **Doğrulanmayan:** Rate Limiting bağlayıcısının ücretsiz planda kullanılabildiğini Cloudflare'in
-> belgesinde açıkça yazılı bulamadım; `wrangler deploy --dry-run` yapılandırmayı kabul ediyor ama
-> gerçek bir hesapta denemedim. Dağıtımda bağlayıcı reddedilirse `wrangler.toml` içindeki
-> `[[ratelimits]]` bölümünü sil: kod bağlayıcı yokken de çalışır (o durumda yalnızca günlük tavan
-> korur, bu yüzden 5. adımı mutlaka yap).
+There are two layers.
 
-## Kurulum
+**1. Per sender: the Workers Rate Limiting binding** (`[[ratelimits]]`, 3 requests in 60 seconds).
 
-Gerekenler: bir Cloudflare hesabı (ücretsiz), Node.js, Telegram.
+Of the two options in the specification I chose this one. The other (a salted IP digest in KV, 1 day
+TTL) was dropped because:
 
-### 1. Bot oluştur
+- It **keeps** a digest of the IP for a day; salted or not, that is a record derived from the sender,
+  against the rule "keep nothing permanently". With the binding the counters sit temporarily on
+  Cloudflare's machines at that location and are not written to a store the Worker can reach.
+- KV's free plan allows 1000 writes a day; every request would be a write, and an attacker could use up
+  that allowance within minutes and make the limiter useless.
+- KV writes propagate late (one write per second to the same key, delayed reads); requests coming
+  quickly one after another would slip through.
 
-1. Telegram'da **@BotFather**'ı aç, `/newbot` yaz.
-2. Bir ad ve `bot` ile biten bir kullanıcı adı ver (ör. `wordvault_feedback_bot`).
-3. BotFather bir **token** verir (`123456789:AA…`). Bunu kimseyle paylaşma, hiçbir dosyaya yazma.
+The binding's known limits (from Cloudflare's documentation): the counter is **per location** (a request
+landing in another data centre counts separately), it is "approximate" rather than exact, and the
+period can only be 10 or 60 seconds. Cloudflare does not recommend the IP as the key, because many people
+can share one IP (mobile networks); an endpoint without identities has no other key, so the IP is used
+anyway. As a result, honest users sending more than 3 messages a minute from the same network get `429`
+and the extension says "try again later"; the draft is not lost.
 
-### 2. Sohbet kimliğini al
+**2. A daily cap for everyone: a single counter in KV** (`DAILY_LIMIT`, 200 by default; optional).
 
-1. Yeni botunu aç ve **Start**'a bas (ya da herhangi bir mesaj yaz). Bot, sen yazmadan sana yazamaz.
-2. Tarayıcıda şunu aç (token'ı yerine koy):
+The first layer slows a single attacker down but does not stop an attack from many IPs. The cap limits
+the number of messages that reach Telegram even on the worst day; above it the answer is
+`429 daily_limit`. Only messages that were **passed on** are counted, so there are at most 200 writes a
+day (the free allowance is 1000). The counter is approximate too (KV propagates late); a few messages
+may get through above it. If the `DAILY` binding is not defined, no cap applies.
+
+> **Not verified:** I could not find it written clearly in Cloudflare's documentation that the Rate
+> Limiting binding is available on the free plan; `wrangler deploy --dry-run` accepts the configuration,
+> but I did not try it on a real account. If the binding is refused at deployment, delete the
+> `[[ratelimits]]` section in `wrangler.toml`: the code works without the binding too (then only the
+> daily cap protects it, so be sure to do step 5).
+
+## Setup
+
+What you need: a Cloudflare account (free), Node.js, Telegram.
+
+### 1. Create the bot
+
+1. Open **@BotFather** in Telegram and type `/newbot`.
+2. Give it a name and a user name ending in `bot` (e.g. `wordvault_feedback_bot`).
+3. BotFather gives you a **token** (`123456789:AA…`). Do not share it, do not write it into any file.
+
+### 2. Get the chat ID
+
+1. Open your new bot and press **Start** (or write any message). A bot cannot write to you before you
+   write to it.
+2. Open this in a browser (put your token in):
    `https://api.telegram.org/bot<TOKEN>/getUpdates`
-3. Yanıttaki `"chat":{"id":123456789,…}` sayısı sohbet kimliğindir.
+3. The number in `"chat":{"id":123456789,…}` in the answer is the chat ID.
 
-Mesajların bir gruba düşmesini istersen botu gruba ekle, grupta bir mesaj yaz ve aynı adresten
-grubun kimliğini al (eksi işaretiyle başlar).
+If you want the messages to go to a group, add the bot to the group, write a message there and take the
+group's ID from the same address (it starts with a minus sign).
 
-### 3. Cloudflare'e giriş
+### 3. Sign in to Cloudflare
 
 ```sh
 cd feedback-worker
 npx wrangler login
 ```
 
-### 4. Sırları koy
+### 4. Put the secrets in
 
 ```sh
 npx wrangler secret put TELEGRAM_BOT_TOKEN
 npx wrangler secret put TELEGRAM_CHAT_ID
 ```
 
-Her komut değeri sorar; yapıştır ve Enter'a bas. Değerler Cloudflare'de şifreli durur, depoya girmez.
-(İlk komut Worker henüz yoksa oluşturmayı önerir; kabul et.)
+Each command asks for the value; paste it and press Enter. The values are stored encrypted at
+Cloudflare and never enter the repository. (If the Worker does not exist yet, the first command offers
+to create it; accept.)
 
-### 5. Günlük tavanı aç (önerilir)
+### 5. Switch on the daily cap (recommended)
 
 ```sh
 npx wrangler kv namespace create DAILY
 ```
 
-Çıktıdaki `id` değerini `wrangler.toml` içindeki `[[kv_namespaces]]` bölümüne yaz ve o üç satırın
-başındaki `#` işaretlerini kaldır. Bu kimlik bir sır değildir, depoda durabilir.
+Write the `id` value from the output into the `[[kv_namespaces]]` section of `wrangler.toml` and remove
+the `#` at the start of those three lines. This ID is not a secret and may stay in the repository.
 
-### 6. Dağıt
+### 6. Deploy
 
 ```sh
 npx wrangler deploy
 ```
 
-Çıktıda adres görünür: `https://wordvault-feedback.<hesap-adın>.workers.dev`.
+The output shows the address: `https://wordvault-feedback.<your-account>.workers.dev`.
 
-### 7. `curl` ile dene
+### 7. Try it with `curl`
 
 ```sh
-curl -i -X POST https://wordvault-feedback.<hesap-adın>.workers.dev/feedback \
+curl -i -X POST https://wordvault-feedback.<your-account>.workers.dev/feedback \
   -H 'Content-Type: application/json' \
-  -d '{"v":1,"type":"other","feature":"other","message":"curl ile deneme mesajı"}'
+  -d '{"v":1,"type":"other","feature":"other","message":"a test message from curl"}'
 ```
 
-`200` ve `{"ok":true}` dönmeli, Telegram'a mesaj düşmeli. Sonra:
+It should answer `200` and `{"ok":true}`, and a message should arrive in Telegram. Then:
 
 ```sh
-# 404 olmalı
-curl -i https://wordvault-feedback.<hesap-adın>.workers.dev/feedback
-# 400 message_too_short olmalı
-curl -i -X POST https://wordvault-feedback.<hesap-adın>.workers.dev/feedback -d '{"v":1,"type":"bug","feature":"quiz","message":"kısa"}'
+# should be 404
+curl -i https://wordvault-feedback.<your-account>.workers.dev/feedback
+# should be 400 message_too_short
+curl -i -X POST https://wordvault-feedback.<your-account>.workers.dev/feedback -d '{"v":1,"type":"bug","feature":"quiz","message":"short"}'
 ```
 
-`502 delivery_failed` dönerse token ya da sohbet kimliği yanlıştır ya da bota hiç yazmamışsındır.
+If it answers `502 delivery_failed`, the token or the chat ID is wrong, or you never wrote to the bot.
 
-### 8. Eklentiye adresi yaz
+### 8. Put the address into the extension
 
-`src/config.js` içinde:
+In `src/config.js`:
 
 ```js
-export const FEEDBACK_ENDPOINT = 'https://wordvault-feedback.<hesap-adın>.workers.dev/feedback';
+export const FEEDBACK_ENDPOINT = 'https://wordvault-feedback.<your-account>.workers.dev/feedback';
 ```
 
-`node build.js`, eklentiyi yenile. İlk gönderimde tarayıcı yalnızca bu alan adı için izin sorar.
+Run `node build.js` and reload the extension. On the first send the browser asks for permission for
+this domain only.
 
-## Dağıtmadan denemek
+## Trying it without deploying
 
 ```sh
 node feedback-worker/dev-server.js
 ```
 
-Alıcıyı bu bilgisayarda `http://localhost:8787/feedback` adresinde çalıştırır. Telegram'a hiçbir şey
-gitmez; gidecek mesaj terminale yazılır. `FEEDBACK_ENDPOINT`'e bu adresi yazıp derlersen formu uçtan
-uca deneyebilirsin (yayınlamadan önce gerçek adrese geri çevir).
+Runs the receiver on this computer at `http://localhost:8787/feedback`. Nothing goes to Telegram; the
+message that would go is printed in the terminal. If you put this address into `FEEDBACK_ENDPOINT` and
+build, you can try the form end to end (change it back to the real address before publishing).
 
-## Discord'a göndermek
+## Sending to Discord
 
-`wrangler.toml` içinde `FEEDBACK_CHANNEL = "discord"` yap, kanalın webhook adresini sır olarak koy
-ve yeniden dağıt:
+Set `FEEDBACK_CHANNEL = "discord"` in `wrangler.toml`, store the channel's webhook address as a secret and
+deploy again:
 
 ```sh
 npx wrangler secret put DISCORD_WEBHOOK_URL
 npx wrangler deploy
 ```
 
-Mesajlarda kimse etiketlenemez (`allowed_mentions` boş), bağlantı önizlemesi kapalıdır.
+Nobody can be mentioned in the messages (`allowed_mentions` is empty), and link previews are off.
 
-## Spam olursa
+## If spam comes
 
-Sırayla, hafiften ağıra:
+In order, from light to heavy:
 
-1. **Sessize al.** Telegram'da botun sohbetini sessize almak anında etkilidir.
-2. **Tavanı düşür.** `wrangler.toml` içinde `DAILY_LIMIT = "20"` yap, `npx wrangler deploy`.
-3. **Uç noktayı kapat.** Sırrı silmek alıcıyı susturur; istekler `502` alır, sana hiçbir şey düşmez:
+1. **Mute it.** Muting the bot's chat in Telegram takes effect at once.
+2. **Lower the cap.** Set `DAILY_LIMIT = "20"` in `wrangler.toml`, then `npx wrangler deploy`.
+3. **Close the endpoint.** Deleting the secret silences the receiver; requests get `502` and nothing
+   reaches you:
    ```sh
    npx wrangler secret delete TELEGRAM_BOT_TOKEN
    ```
-   Tamamen kaldırmak için: `npx wrangler delete`.
-4. **Sırrı değiştir.** Token'ın sızdığından şüphelenirsen (Worker'dan sızamaz; ama başka bir yere
-   yazdıysan) BotFather'da `/revoke` ile yenisini al ve `npx wrangler secret put TELEGRAM_BOT_TOKEN`
-   ile koy. Eski token o anda geçersiz olur.
-5. **Adresi değiştir.** `wrangler.toml` içinde `name`'i değiştirip dağıt, eskisini `npx wrangler
-   delete --name wordvault-feedback` ile sil, `FEEDBACK_ENDPOINT`'i güncelleyip eklentinin yeni
-   sürümünü yayınla. Eski sürümdeki kullanıcılar "gönderilemedi" görür, taslakları kaybolmaz.
+   To remove it completely: `npx wrangler delete`.
+4. **Change the secret.** If you suspect the token leaked (it cannot leak from the Worker, but you may
+   have written it somewhere else), get a new one with `/revoke` in BotFather and put it in with
+   `npx wrangler secret put TELEGRAM_BOT_TOKEN`. The old token stops working at once.
+5. **Change the address.** Change `name` in `wrangler.toml` and deploy, delete the old one with
+   `npx wrangler delete --name wordvault-feedback`, update `FEEDBACK_ENDPOINT` and publish a new version
+   of the extension. Users of the old version see "could not be sent"; their drafts are not lost.
 
-Not: adres eklenti paketinde herkese açıktır; gizli tutulamaz. Koruma adresin gizliliğinde değil,
-yukarıdaki sınırlardadır.
+Note: the address is public in the extension package; it cannot be kept secret. The protection is not
+the address being secret but the limits above.
 
-## Testler
+## Tests
 
 ```sh
-npm test            # depo kökünde: eklenti + Worker testleri
-cd feedback-worker && npm test   # yalnızca Worker
+npm test            # at the repository's root: extension + Worker tests
+cd feedback-worker && npm test   # the Worker only
 ```
 
-Şema doğrulama, kaçış, boyut sınırı, gizli alan, mesaj biçimi, hız sınırı, günlük tavan, Telegram
-hatası, Discord ve "hiçbir şey günlüğe yazılmaz" denetimleri (`test/worker.test.js`).
+Schema validation, escaping, the size limit, the hidden field, the message format, the rate limit, the
+daily cap, a Telegram error, Discord and the "nothing is logged" checks (`test/worker.test.js`).

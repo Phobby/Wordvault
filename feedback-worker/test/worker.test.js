@@ -88,17 +88,17 @@ test('the message: type, feature, Istanbul time from the receiver, text, e-mail,
   assert.equal(rest.length, 0);
   assert.equal(
     text,
-    ['<b>🐞 Hata</b> · Flash card / quiz', '🕒 13.10.2026 14:35 (İstanbul)', '', 'The card is cut off on the left.', '', '✉️ someone@example.com', '🧩 Zen 1.16 (Gecko 143.0) · macOS · Wordvault 0.1.0 · dil: tr', 'Açık: quiz, doubleClick', 'Kapalı: sync', 'Senkron: off'].join('\n'),
+    ['<b>🐞 Bug</b> · Flash card / quiz', '🕒 13.10.2026 14:35 (Istanbul)', '', 'The card is cut off on the left.', '', '✉️ someone@example.com', '🧩 Zen 1.16 (Gecko 143.0) · macOS · Wordvault 0.1.0 · language: tr', 'On: quiz, doubleClick', 'Off: sync', 'Sync: off'].join('\n'),
   );
   const plain = formatMessages(validate(body()).value, NOW)[0];
-  assert.equal(plain, '<b>🐞 Hata</b> · Flash card / quiz\n🕒 13.10.2026 14:35 (İstanbul)\n\nThe card is cut off on the left.');
+  assert.equal(plain, '<b>🐞 Bug</b> · Flash card / quiz\n🕒 13.10.2026 14:35 (Istanbul)\n\nThe card is cut off on the left.');
 });
 
 test('error records go as a second, shortened message', () => {
   const messages = formatMessages(validate(body({ errors: Array.from({ length: 20 }, (_, index) => ({ ...record(19 - index), message: `TypeError: <boom> ${'m'.repeat(180)}`, stack: `${'s'.repeat(100)}\n`.repeat(3) })) })).value, NOW);
   assert.equal(messages.length, 2);
-  assert.ok(messages[0].includes('📎 20 hata kaydı sonraki mesajda'));
-  assert.ok(messages[1].startsWith('<b>Hata kayıtları</b> (20)\n<pre>'));
+  assert.ok(messages[0].includes('📎 20 error record(s) in the next message'));
+  assert.ok(messages[1].startsWith('<b>Error records</b> (20)\n<pre>'));
   assert.ok(messages.every((text) => text.length <= 4096), 'within what Telegram takes');
   assert.ok(messages[1].includes('&lt;boom&gt;') && !messages[1].includes('<boom>'));
   assert.ok(messages[1].indexOf('13.10.2026 14:35') < messages[1].indexOf('13.10.2026 14:34'), 'newest first');
@@ -108,7 +108,7 @@ test('error records go as a second, shortened message', () => {
 
 test('for Discord the same messages, as Markdown, within its limit', () => {
   const messages = formatMessages(validate(body({ message: `@everyone ${'x'.repeat(1490)}`, tech: tech(), errors: Array.from({ length: 20 }, (_, index) => record(index)) })).value, NOW, 'markdown');
-  assert.ok(messages[0].startsWith('**🐞 Hata** · Flash card / quiz'));
+  assert.ok(messages[0].startsWith('**🐞 Bug** · Flash card / quiz'));
   assert.ok(messages[0].includes('\\@everyone'));
   assert.ok(messages.every((text) => text.length <= 2000));
 });
@@ -133,7 +133,7 @@ test('two messages when error records came along', async () => {
   const net = telegram();
   await handle(post(body({ errors: [record(), record(1)] })), ENV, { fetchImpl: net.fetchImpl, now: () => NOW });
   assert.equal(net.calls.length, 2);
-  assert.ok(net.calls[1].body.text.startsWith('<b>Hata kayıtları</b> (2)'));
+  assert.ok(net.calls[1].body.text.startsWith('<b>Error records</b> (2)'));
 });
 
 test('everything but POST /feedback is 404', async () => {
