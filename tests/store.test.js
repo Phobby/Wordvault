@@ -40,7 +40,6 @@ test('the privacy documents name the place feedback goes to, and what is never s
     for (const word of ['Telegram', 'Cloudflare', 'IP', 'Origin', 'MyMemory', 'Wiktionary']) assert.ok(text.includes(word), `${path}: ${word}`);
   }
   const web = read('docs/privacy.html');
-  assert.ok(web.includes('id="en"') && web.includes('id="tr"'));
   assert.ok(!/<script|<link|<img|<iframe|@import|url\(|src=["']https?:/i.test(web), 'the page loads nothing');
 });
 

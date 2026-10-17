@@ -150,7 +150,9 @@ or installation ID (the extension creates none).
 message and forwards it to the developer's Telegram chat through a bot.
 **What is kept:** the receiver stores and logs nothing, except one number per day (how many messages
 were forwarded, as an abuse limit), deleted after two days. Your IP address is seen by Cloudflare, as
-with any request; the receiver uses it only for a per-minute rate limit and does not store it. The
+with any request; the receiver uses it only for a per-minute rate limit and does not store it.
+Firefox-based browsers add an `Origin` header with the extension's per-installation internal address;
+the browser does this, and the receiver does not read, store or forward it. The
 forwarded message stays in the developer's Telegram chat until the developer deletes it; Telegram's
 privacy policy applies to it there.
 
