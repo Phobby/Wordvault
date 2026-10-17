@@ -11,6 +11,12 @@ code, and the picture never leaves the browser).
 | `lang/eng.traineddata.gz` | `@tesseract.js-data/eng` (`4.0.0_best_int/`) | 1.0.0 | Apache-2.0 (tessdata) |
 | `lang/tur.traineddata.gz` | `@tesseract.js-data/tur` (`4.0.0_best_int/`) | 1.0.0 | Apache-2.0 (tessdata) |
 
+**The Chrome build differs in one respect** (`build.js`, `TESSERACT_CDN`): the three jsDelivr addresses
+Tesseract.js falls back to when no path is given are blanked to `""`, because the Chrome Web Store asks
+for code that could load remote code to be removed even when it is unused. Wordvault always passes its
+packaged paths, so behaviour is the same. The files in this folder, and the Firefox build, are the
+unmodified release; the checksums below are of these files.
+
 Only the LSTM builds of the core are included (the worker picks one of the three by what the
 browser's WebAssembly supports: plain, SIMD, relaxed SIMD). The legacy engine is not shipped.
 

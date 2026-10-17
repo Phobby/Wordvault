@@ -105,6 +105,33 @@ function injectClientIds(out) {
 
 const RELEASE = process.argv.includes('--release');
 
+/**
+ * Tesseract.js names jsDelivr as the place to fetch its worker, core and language data from when
+ * no path is given. Wordvault always gives its own packaged paths
+ * (features/screen-ocr/engines/tesseract.js), so those addresses are never used; but the Chrome Web
+ * Store asks for code that could load remote code to be removed "whether it is dead or unused"
+ * (developer.chrome.com/docs/extensions/develop/migrate/remote-hosted-code). In the Chrome copy the
+ * three addresses are therefore blanked. The Firefox copy stays byte for byte the official release,
+ * which is what addons.mozilla.org checks third-party libraries against.
+ */
+const TESSERACT_CDN = [
+  ['vendor/tesseract/tesseract.esm.min.js', '"https://cdn.jsdelivr.net/npm/tesseract.js@v"'],
+  ['vendor/tesseract/worker.min.js', '"https://cdn.jsdelivr.net/npm/tesseract.js-core@v"'],
+  ['vendor/tesseract/worker.min.js', '"https://cdn.jsdelivr.net/npm/@tesseract.js-data/"'],
+];
+
+function blankRemoteAddresses(out) {
+  for (const [file, literal] of TESSERACT_CDN) {
+    const full = path.join(out, file);
+    const source = fs.readFileSync(full, 'utf8');
+    if (!source.includes(literal)) throw new Error(`${file}: ${literal} not found (Tesseract.js updated? check TESSERACT_CDN in build.js)`);
+    fs.writeFileSync(full, source.split(literal).join('""'));
+  }
+  for (const file of new Set(TESSERACT_CDN.map(([name]) => name))) {
+    if (fs.readFileSync(path.join(out, file), 'utf8').includes('cdn.jsdelivr.net')) throw new Error(`${file}: a jsDelivr address is left`);
+  }
+}
+
 function build(targets) {
   const manifests = Object.fromEntries(targets.map((target) => [target, readManifest(target)]));
   check(manifests);
@@ -116,6 +143,7 @@ function build(targets) {
     fs.rmSync(out, { recursive: true, force: true });
     fs.cpSync(SRC, out, { recursive: true, filter: (file) => !path.basename(file).startsWith('.') });
     fs.writeFileSync(path.join(out, 'manifest.json'), `${JSON.stringify(manifests[target], null, 2)}\n`);
+    if (target === 'chrome') blankRemoteAddresses(out);
     if (RELEASE) {
       const loader = path.join(out, 'shared/i18n.js');
       const source = fs.readFileSync(loader, 'utf8');

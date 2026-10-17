@@ -32,9 +32,20 @@ for (const target of ['chrome', 'firefox']) {
   for (const [name, bad] of [['SUPPORT_URL', /SUPPORT_URL = '[^']*YOUR_/], ['FEEDBACK_ENDPOINT', /FEEDBACK_ENDPOINT = '(?:[^']*YOUR_|http:)/]]) {
     if (bad.test(config)) console.warn(`warning: ${name} in src/config.js is a placeholder or a local address`);
   }
+  // The Chrome Web Store assigns the item's own ID: the `key` that fixes the ID of the unpacked
+  // copy (developer mode) is left out of the store package (SETUP-OAUTH.md, section 2).
+  let packed = source;
+  if (target === 'chrome') {
+    packed = path.join(ROOT, 'dist', 'chrome-store');
+    fs.rmSync(packed, { recursive: true, force: true });
+    fs.cpSync(source, packed, { recursive: true });
+    const manifest = JSON.parse(fs.readFileSync(path.join(packed, 'manifest.json'), 'utf8'));
+    delete manifest.key;
+    fs.writeFileSync(path.join(packed, 'manifest.json'), `${JSON.stringify(manifest, null, 2)}\n`);
+  }
   const zip = path.join(OUT, `wordvault-${version}-${target}.zip`);
   fs.rmSync(zip, { force: true });
   // -X: no extra file attributes; -r: recursive; hidden files are left out
-  execFileSync('zip', ['-q', '-r', '-X', zip, '.', '-x', '.*', '-x', '*/.*'], { cwd: source });
-  console.log(`${path.relative(ROOT, zip)}: ${mb(fs.statSync(zip).size)} (unpacked ${mb(sizeOf(source))})`);
+  execFileSync('zip', ['-q', '-r', '-X', zip, '.', '-x', '.*', '-x', '*/.*'], { cwd: packed });
+  console.log(`${path.relative(ROOT, zip)}: ${mb(fs.statSync(zip).size)} (unpacked ${mb(sizeOf(packed))})`);
 }
