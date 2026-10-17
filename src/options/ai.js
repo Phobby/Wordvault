@@ -125,7 +125,6 @@ export function createAiSection({ flashSaved, switchRow, fieldRow }) {
     [
       h('p', { class: 'help', text: t('optAiDirect') }),
       h('p', { class: 'help', text: t('optAiPrivacy') }),
-      h('p', { class: 'help', 'data-ai': 'summary-note', text: t('aiSummaryNote') }),
       h('p', { class: 'help', 'data-ai': 'page-note', text: t('aiPageNote') }),
       h('p', { class: 'help', text: t('optAiCacheHelp') }),
       h('p', { class: 'help', text: t('optAiBuiltInNote') }),

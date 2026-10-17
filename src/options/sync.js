@@ -34,8 +34,6 @@ const MODES = [
  */
 const CLOUD_PROVIDERS = [
   { id: 'gdrive', nameKey: 'syncGdriveName', whereKey: 'syncGdriveWhere' },
-  { id: 'onedrive', nameKey: 'syncOnedriveName', whereKey: 'syncOnedriveWhere' },
-  { id: 'dropbox', nameKey: 'syncDropboxName', whereKey: 'syncDropboxWhere' },
 ];
 
 /** What an error code means, in words (lib/errors.js and sync/providers/index.js). */

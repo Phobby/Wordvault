@@ -49,7 +49,6 @@ Builds the `dist/` folders as a release build (`node build.js --release`) and wr
   package uploaded to the store (the store uses its own key and ignores this field, or asks you to remove
   it); if the ID the store gives is different, the redirect address in the Google OAuth client has to be
   updated accordingly (`SETUP-OAUTH.md`).
-- **Cloud providers.** The OneDrive and Dropbox client IDs are still placeholders; they show as "not
-  configured" in the settings. While Google Drive's OAuth consent screen is in "testing" mode, only the
-  added test users can connect; opening it to everyone may need Google's verification.
+- **Google Drive.** While Google Drive's OAuth consent screen is in "testing" mode, only the added test
+  users can connect; it has to be published ("In production") before the release (`SETUP-OAUTH.md`).
 - **The promotional image** is a draft.

@@ -2,31 +2,20 @@
 // (identity.launchWebAuthFlow), which works the same way in Chrome and Firefox.
 //
 // The extension is a public client: whatever is in its package can be read by anyone, so there
-// is no client secret anywhere. Two flows are used, depending on what the provider allows a
-// public client to do (see SETUP-OAUTH.md for the findings per provider):
-//
-//   authorization code + PKCE   the provider hands out a code that is exchanged for tokens
-//                               together with a one-time verifier (Microsoft, Dropbox)
-//   implicit                    the provider hands out a short-lived access token directly; it
-//                               is renewed by repeating the request silently (Google, whose
-//                               token endpoint insists on a secret for the client type that
-//                               can be redirected to an extension)
+// is no client secret anywhere. Google Drive is signed in with the implicit flow: Google hands
+// out a short-lived access token directly, which is renewed by repeating the request silently
+// (its token endpoint insists on a secret for the client type that can be redirected to an
+// extension; see SETUP-OAUTH.md).
 //
 // Tokens are returned to the caller, who keeps them in chrome.storage.local and nowhere else.
 
 import { WordvaultError } from '../lib/errors.js';
-import { excerpt, send } from './request.js';
 
 /** A token is renewed this long before it runs out. */
 export const EXPIRY_MARGIN_MS = 60_000;
 
 const base64url = (bytes) => btoa(String.fromCharCode(...bytes)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 const random = (length) => base64url(crypto.getRandomValues(new Uint8Array(length)));
-
-/** The PKCE challenge for a verifier: base64url(SHA-256(verifier)). */
-export async function challengeFor(verifier) {
-  return base64url(new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(verifier))));
-}
 
 /**
  * The address the provider sends the user back to, which the browser intercepts. It is derived
@@ -64,7 +53,7 @@ async function launch(url, interactive) {
 
 /** What the provider said in the address it sent the user back to. */
 function answerOf(url, state, interactive) {
-  // Codes come in the query, tokens in the fragment; errors in either.
+  // Tokens come in the fragment; errors in the fragment or the query.
   const answer = new URLSearchParams(url.hash.slice(1) || url.search);
   for (const [key, value] of url.searchParams) if (!answer.has(key)) answer.set(key, value);
   const error = answer.get('error');
@@ -86,7 +75,7 @@ function authorizeAddress(authorizeUrl, params) {
   return url.href;
 }
 
-/** Tokens as the provider's token endpoint returns them, in the form they are stored. */
+/** Tokens as the provider returns them, in the form they are stored. */
 function tokensFrom(body, now) {
   if (!body || typeof body.access_token !== 'string') throw new WordvaultError('sync_provider', 'the token answer has no access token');
   const lifetime = Number(body.expires_in);
@@ -96,61 +85,6 @@ function tokensFrom(body, now) {
     expiresAt: now + (Number.isFinite(lifetime) && lifetime > 0 ? lifetime : 3600) * 1000,
     ...(typeof body.refresh_token === 'string' ? { refreshToken: body.refresh_token } : {}),
   };
-}
-
-async function tokenRequest(tokenUrl, form) {
-  const response = await send(tokenUrl, { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: new URLSearchParams(form).toString() });
-  if (!response.ok) {
-    const detail = await excerpt(response);
-    // The grant (code or refresh token) is no longer good: only signing in again helps.
-    if (response.status === 400 || response.status === 401) throw new WordvaultError('sync_auth', detail);
-    throw new WordvaultError(response.status === 429 || response.status >= 500 ? 'network' : 'sync_provider', detail);
-  }
-  let body = null;
-  try {
-    body = await response.json();
-  } catch {
-    // handled below
-  }
-  return tokensFrom(body, Date.now());
-}
-
-/**
- * Authorization code flow with PKCE.
- *
- * @param {Object} options
- * @param {string} options.authorizeUrl
- * @param {string} options.tokenUrl
- * @param {string} options.clientId
- * @param {string[]} options.scopes
- * @param {Record<string, string>} [options.extra]  Further parameters for the authorize request.
- * @param {boolean} [options.interactive]  false: no window; fails with 'sync_auth' if the
- *   provider would have to ask the user something.
- * @returns {Promise<{ accessToken: string, expiresAt: number, refreshToken?: string }>}
- */
-export async function authorizeWithCode({ authorizeUrl, tokenUrl, clientId, scopes, extra = {}, interactive = true }) {
-  const verifier = random(48);
-  const state = random(16);
-  const redirect = redirectUrl();
-  const url = authorizeAddress(authorizeUrl, {
-    client_id: clientId,
-    response_type: 'code',
-    redirect_uri: redirect,
-    scope: scopes.join(' '),
-    state,
-    code_challenge: await challengeFor(verifier),
-    code_challenge_method: 'S256',
-    ...extra,
-  });
-  const answer = answerOf(await launch(url, interactive), state, interactive);
-  const code = answer.get('code');
-  if (!code) throw new WordvaultError('sync_provider', 'the answer has no authorization code');
-  return tokenRequest(tokenUrl, { grant_type: 'authorization_code', code, code_verifier: verifier, client_id: clientId, redirect_uri: redirect });
-}
-
-/** Trades a refresh token for a new access token (and, with some providers, a new refresh token). */
-export function refreshTokens({ tokenUrl, clientId, refreshToken, scopes }) {
-  return tokenRequest(tokenUrl, { grant_type: 'refresh_token', refresh_token: refreshToken, client_id: clientId, ...(scopes ? { scope: scopes.join(' ') } : {}) });
 }
 
 /**

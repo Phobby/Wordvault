@@ -1,5 +1,5 @@
-// "Translate this page with AI" (experimental): how it is started. Like the summary
-// (features/summary/background.js): an item in the right-click menu of a page and a button in
+// "Translate this page with AI" (experimental): how it is started: an item in the right-click
+// menu of a page and a button in
 // the vault popup, both only there while an AI provider is set up, and what works on the page
 // is put into a tab only when its user asks for it. Nothing is read from the page, let alone
 // sent, before the user has seen how much it is and said yes on the card.
@@ -7,13 +7,13 @@
 import { t } from '../../background/i18n.js';
 import { activeAi } from '../../ai/config.js';
 import { addMenuItem } from '../../background/menus.js';
-import { openCard } from '../summary/background.js';
+import { openCard } from '../../background/cards.js';
 
 const MENU_ID = 'wv-translate-page';
 const FILES = ['features/page-translate/content/collect.js', 'features/page-translate/content/card.js'];
 
 /** @returns {Promise<'opened' | 'unreachable'>} */
-export const openPageTranslation = (tab) => openCard(tab, FILES, 'wv:page-translate:open', 'sumNotHere');
+export const openPageTranslation = (tab) => openCard(tab, FILES, 'wv:page-translate:open', 'pageNotReachable');
 
 async function menuItem() {
   if (!(await activeAi()).ready) return null;
@@ -22,7 +22,7 @@ async function menuItem() {
 
 /** Registers the listeners. Called once, synchronously, when the background script starts. */
 export function registerPageTranslation() {
-  addMenuItem(menuItem); // (the menu is rebuilt when the provider changes: features/summary/background.js)
+  addMenuItem(menuItem); // (the menu is rebuilt when the provider changes: background/cards.js)
   chrome.contextMenus.onClicked.addListener((info, tab) => {
     if (info.menuItemId === MENU_ID) openPageTranslation(tab).catch(() => {});
   });

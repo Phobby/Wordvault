@@ -16,7 +16,7 @@ import { applyDocument, readLocalDocument } from './local.js';
 import { withoutKeys } from './prefs.js';
 import { mergeDocuments, purgeTombstones, serializeDocument } from './merge.js';
 import { getSyncProvider } from './providers/index.js';
-import { getSyncConfig, getSyncStatus, saveSyncStatus, setSyncConfig, updateConnection } from './state.js';
+import { defaultConfig, getSyncConfig, getSyncStatus, resetSyncStatus, saveSyncStatus, setSyncConfig, updateConnection } from './state.js';
 
 export const SYNC = Object.freeze({
   /** How often a write that lost a race is tried again within one run. */
@@ -44,6 +44,24 @@ const STANDING = new Set(['sync_auth', 'sync_quota', 'sync_config', 'sync_bad_do
 
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 const offline = () => typeof navigator !== 'undefined' && navigator.onLine === false;
+
+/** Providers earlier test versions offered (OneDrive, Dropbox) and this one no longer has. */
+const REMOVED_PROVIDERS = new Set(['onedrive', 'dropbox']);
+
+/**
+ * A connection to a provider that is gone (chosen in a test version) is let go of quietly: its
+ * tokens and the key of its document are forgotten and synchronisation is back to "this device
+ * only". Nothing of the vault, the settings or the past tests is touched. Runs at start-up.
+ * @returns {Promise<boolean>} Whether there was such a connection.
+ */
+export async function dropRemovedProviders() {
+  const config = await getSyncConfig();
+  if (!REMOVED_PROVIDERS.has(config.providerId)) return false;
+  await setSyncConfig(defaultConfig());
+  await resetSyncStatus();
+  await clearSecret();
+  return true;
+}
 
 /**
  * This device's document as the engine sends it: the API keys only when the stored copy is

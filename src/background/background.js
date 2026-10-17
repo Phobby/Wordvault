@@ -15,7 +15,7 @@ import { pageTranslationHandlers, registerPageTranslation } from '../features/pa
 import { passageHandlers, registerPassage } from '../features/passage/background.js';
 import { registerScreenOcr, screenOcrHandlers } from '../features/screen-ocr/background.js';
 import { imageAskHandlers, registerImageAsk } from '../features/image-ask/background.js';
-import { registerSummary, summaryHandlers } from '../features/summary/background.js';
+import { registerAiMenus } from './cards.js';
 import { i18nHandlers, registerI18n } from './i18n.js';
 import { rebuildMenus } from './menus.js';
 import { WordvaultError, serializeError } from '../lib/errors.js';
@@ -28,7 +28,7 @@ import { NOTIFICATION_ID } from '../quiz/display.js';
 import { ackRank, freezeYesterday, getProgress } from '../quiz/progress-state.js';
 import { REMINDER_ALARM, REMINDER_NOTIFICATION, ensureReminder, runReminder } from '../quiz/reminder.js';
 import { DAYS_KEY } from '../quiz/streak.js';
-import { ensureSyncScheduled, onSyncAlarm, remoteChanged, syncInBackground, turnOffEncryption, unlockEncryption, vaultChanged } from '../sync/engine.js';
+import { dropRemovedProviders, ensureSyncScheduled, onSyncAlarm, remoteChanged, syncInBackground, turnOffEncryption, unlockEncryption, vaultChanged } from '../sync/engine.js';
 import { PREFS_STAMP_KEY, PREFS_STORAGE_KEYS, notePrefsChange } from '../sync/prefs.js';
 import { ALARM_NAME, answerQuestion, claimSession, ensureScheduled, muteToday, openFromNotification, quizPageGone, runScheduledQuiz, startManualQuiz, testQuiz, unmute } from '../quiz/scheduler.js';
 
@@ -150,7 +150,6 @@ const handlers = {
   ...screenOcrHandlers,
   ...imageAskHandlers,
   ...passageHandlers,
-  ...summaryHandlers,
   ...pageTranslationHandlers,
   ...i18nHandlers,
   ...aiHandlers,
@@ -192,7 +191,7 @@ chrome.runtime.onInstalled.addListener(async ({ reason }) => {
 
 // --- Translating a selection, screen text scanning, summarising a page --------------------------
 // Shortcuts and right-click menu items; see features/passage/background.js,
-// features/screen-ocr/background.js and features/summary/background.js. The listeners are registered here, at the top level, so
+// features/screen-ocr/background.js and features/page-translate/background.js. The listeners are registered here, at the top level, so
 // that a click wakes this script up; the menu itself is kept by the browser and built when the
 // extension is installed or updated and when the browser starts (background/menus.js).
 
@@ -200,7 +199,7 @@ registerI18n();
 registerPassage();
 registerScreenOcr();
 registerImageAsk();
-registerSummary();
+registerAiMenus();
 registerPageTranslation();
 chrome.runtime.onInstalled.addListener(rebuildMenus);
 chrome.runtime.onStartup.addListener(rebuildMenus);
@@ -251,7 +250,8 @@ scheduleCacheCleanup();
 // on its own periodic alarm, a moment after the vault changes, and when the options page asks.
 // While synchronisation is switched off none of this does anything, and no alarm is set.
 
-const scheduleSync = () => ensureSyncScheduled().catch(() => {});
+// A connection to a provider this version no longer has is let go of first (sync/engine.js).
+const scheduleSync = () => dropRemovedProviders().then(ensureSyncScheduled).catch(() => {});
 
 chrome.runtime.onInstalled.addListener(scheduleSync);
 chrome.runtime.onStartup.addListener(() => {

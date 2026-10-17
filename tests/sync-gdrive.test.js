@@ -11,7 +11,7 @@ import { OAUTH_CLIENT_IDS, clientIdFor } from '../src/sync/config.js';
 import { syncNow } from '../src/sync/engine.js';
 import { readLocalDocument } from '../src/sync/local.js';
 import { serializeDocument } from '../src/sync/merge.js';
-import { challengeFor, redirectUrl } from '../src/sync/oauth.js';
+import { redirectUrl } from '../src/sync/oauth.js';
 import { gdrive } from '../src/sync/providers/gdrive.js';
 import { getSyncProvider } from '../src/sync/providers/index.js';
 import { getSyncConfig, setSyncConfig } from '../src/sync/state.js';
@@ -269,9 +269,4 @@ test('disconnecting gives the access back; the file goes only if that was asked 
   await connect(a);
   await gdrive.disconnect(await session(), { deleteRemote: true });
   assert.equal(drive.files.length, 0);
-});
-
-test('PKCE: the challenge is the base64url SHA-256 of the verifier', async () => {
-  // the example from RFC 7636, appendix B
-  assert.equal(await challengeFor('dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk'), 'E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM');
 });

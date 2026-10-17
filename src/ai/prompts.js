@@ -6,9 +6,8 @@
 
 import { PASSAGE_MAX_CHARS } from '../lib/passage.js';
 import { PAGE_CHUNK_CHARS, itemLines } from './page-translate.js';
-import { PART_SUMMARY_CHARS, SUMMARY_MAX_CHARS } from './summary.js';
 
-export const LIMITS = Object.freeze({ word: 200, sentence: 600, title: 200, passage: PASSAGE_MAX_CHARS, article: SUMMARY_MAX_CHARS, note: PART_SUMMARY_CHARS });
+export const LIMITS = Object.freeze({ word: 200, sentence: 600, title: 200, passage: PASSAGE_MAX_CHARS });
 /** A ceiling for the answer where a provider wants one (it also has to cover a model's thinking). */
 export const MAX_ANSWER_TOKENS = 4096;
 
@@ -153,61 +152,6 @@ export function imageQuestionPrompt({ question, title = '', targetLang }, marker
     'Answer in plain text only: no HTML, no Markdown markup, no links. Keep it under about 200 words. Do not ask questions back.',
   ].join('\n');
   return { system, prompt: `The user's question: ${asked}\n\n${data.block}` };
-}
-
-/** How long a summary is asked to be. */
-const SUMMARY_SIZE = {
-  short: 'Write 3 to 4 short sentences, or at most 4 lines starting with "- ". Under about 80 words.',
-  medium: 'Write one opening sentence that says what the page is about, then 5 to 8 lines starting with "- " with the main points. Under about 200 words.',
-  detailed: 'Write a short opening paragraph, then the main points in the order of the text as lines starting with "- ", with the important names, numbers and reasons. Under about 450 words.',
-};
-
-/**
- * The whole main text of a page, in one request.
- * @param {{ text: string, title?: string, targetLang: string, length: 'short' | 'medium' | 'detailed' }} input
- * @param {string} [marker]
- * @returns {{ system: string, prompt: string }}
- */
-export function summaryPrompt({ text, title = '', targetLang, length }, marker) {
-  const data = dataBlock(
-    [
-      ['TITLE OF THE PAGE', oneLine(title, LIMITS.title)],
-      ['TEXT OF THE PAGE', clip(text, LIMITS.article)],
-    ],
-    marker,
-  );
-  const task = ['Summarise the TEXT OF THE PAGE in the data block.', SUMMARY_SIZE[length] || SUMMARY_SIZE.medium, 'Do not comment on the text and do not add anything it does not say.'].join('\n');
-  return { system: system(targetLang, data, SUMMARISER), prompt: `${task}\n\n${data.block}` };
-}
-
-/**
- * One part of a page that is too long for one request.
- * @param {{ text: string, title?: string, part: number, parts: number, targetLang: string }} input
- */
-export function summaryPartPrompt({ text, title = '', part, parts, targetLang }, marker) {
-  const data = dataBlock(
-    [
-      ['TITLE OF THE PAGE', oneLine(title, LIMITS.title)],
-      [`PART ${part} OF ${parts} OF THE TEXT`, clip(text, LIMITS.article)],
-    ],
-    marker,
-  );
-  const task = [
-    `The data block holds part ${part} of ${parts} of a longer text. Note down what this part says, as lines starting with "- ": the facts, names, numbers and conclusions that a summary of the whole text will need.`,
-    'Under about 150 words. Do not write an introduction or a conclusion.',
-  ].join('\n');
-  return { system: system(targetLang, data, SUMMARISER), prompt: `${task}\n\n${data.block}` };
-}
-
-/**
- * The notes on all parts, made into one summary. The notes were written by the model from
- * page text, so they are as little to be obeyed as the page: they go into the data block too.
- * @param {{ notes: string[], title?: string, targetLang: string, length: 'short' | 'medium' | 'detailed' }} input
- */
-export function summaryJoinPrompt({ notes, title = '', targetLang, length }, marker) {
-  const data = dataBlock([['TITLE OF THE PAGE', oneLine(title, LIMITS.title)], ...notes.map((note, index) => [`NOTES ON PART ${index + 1} OF ${notes.length}`, clip(note, LIMITS.note)])], marker);
-  const task = ['The data block holds notes on the consecutive parts of one long text. Write one summary of the whole text from them.', SUMMARY_SIZE[length] || SUMMARY_SIZE.medium, 'Do not mention the parts or the notes. Do not add anything the notes do not say.'].join('\n');
-  return { system: system(targetLang, data, SUMMARISER), prompt: `${task}\n\n${data.block}` };
 }
 
 /**

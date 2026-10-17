@@ -36,8 +36,6 @@ export const DEFAULT_AI_CONFIG = Object.freeze({
   allowed: [],
   /** Which site "Copy the prompt and open" opens: a key of PROMPT_SITES. */
   promptSite: 'chatgpt',
-  /** The length last asked for in "Summarise this page": 'short', 'medium' or 'detailed'. */
-  summaryLength: 'medium',
   /** The provider the user has agreed to send pictures to ("Ask about the image"); asked apart from text. */
   imageConsent: '',
   /** The provider the user has agreed to send vault words and their translations to ("Create a test with AI"); asked apart from page text. */

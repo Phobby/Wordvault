@@ -28,14 +28,6 @@ Wordvault'a kullanıcının kendi yapay zekâ sağlayıcısını bağlayarak ça
    - Sonuç pencerede düz metin olarak gösterilsin, kopyalanabilir olsun. İsteğe bağlı olarak kasadaki kelimenin notuna eklenebilsin (kullanıcı onaylarsa).
    - Sağlayıcı yapılandırılmamışsa yerine "İstemi kopyala ve aç" seçeneği sun: hazır istemi panoya kopyalar ve kullanıcının seçeceği bir yapay zekâ sitesini yeni sekmede açar (anahtarsız çalışır, cevap eklentiye dönmez).
 
-## AŞAMA 2 — SAYFAYI ÖZETLE
-
-1. Sağ tık menüsü ve eklenti penceresinde "Sayfayı özetle" (yalnızca sağlayıcı yapılandırılmışsa).
-2. Ana metin çıkarma: sayfanın menü, reklam ve yan içeriklerini ayıklayıp ana metni al. Gerekirse değiştirilmemiş resmi bir kütüphaneyi vendor/ içinde kullan (uzak kod yok).
-3. Uzun sayfa için üst sınır ve parçalı özetleme (map-reduce): parçaları ayrı özetleyip birleştir. Göndermeden önce yaklaşık boyutu ve parça sayısını göster ve kullanıcıdan onay al.
-4. Çıktı dili hedef dil, uzunluk seçeneği (kısa/orta/ayrıntılı).
-5. Sonuç bir yan panelde ya da sayfa içi kartta (Shadow DOM) gösterilsin.
-
 ## AŞAMA 3 — SAYFAYI YAPAY ZEKÂ İLE ÇEVİR (isteğe bağlı, en riskli kısım)
 
 1. Sayfa yapısını bozmadan, görünür metin düğümlerini parça parça çevirip yerinde göster. DOM'u kalıcı olarak değiştirme, bir "orijinale dön" düğmesi olsun. Dinamik sayfalar için (MutationObserver) sınırlı ve dikkatli çalış.
@@ -53,5 +45,5 @@ Wordvault'a kullanıcının kendi yapay zekâ sağlayıcısını bağlayarak ça
 ## TEST
 
 - Birim testleri: anahtarın senkron/yedek/dışa aktarma/günlük/önbelleğe girmediği, sağlayıcı arayüzü (sahte sunucuyla), istek iptali, hata eşlemesi, ana metin çıkarma, parçalama ve boyut tahmini, hassas alan ve engelleme listesi filtreleri, prompt injection içeren sahte bir sayfa metninin sınırlandırılmış blok içinde kaldığı.
-- Chrome ve Firefox'ta elle: her sağlayıcı için (mümkün olanlarla) "Test et", kelime ve cümle açıklama, sayfa özeti, yanlış anahtar, kota hatası, Ollama kapalıyken davranış, izin reddedildiğinde davranış, hassas sayfada özelliğin devre dışı kalması.
+- Chrome ve Firefox'ta elle: her sağlayıcı için (mümkün olanlarla) "Test et", kelime ve cümle açıklama, yanlış anahtar, kota hatası, Ollama kapalıyken davranış, izin reddedildiğinde davranış, hassas sayfada özelliğin devre dışı kalması.
 - Sonunda neyi değiştirdiğini, resmi belgelerden doğruladığın sağlayıcı bilgilerini, kendi verdiğin kararları, kalan sınırlamaları ve gerçekten test ettiklerini ayrı ayrı yaz. İlk aşama bitince dur ve bana raporla, diğer aşamalara ben onay vereyim.

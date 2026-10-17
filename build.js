@@ -81,7 +81,7 @@ function check(manifests) {
  * Client IDs of the cloud providers that are kept out of the repository: `oauth.local.json`
  * next to this file (ignored by git) may name them, and they are then written into the built
  * copy of sync/config.js in place of the placeholders. The source file is never changed.
- *   { "gdrive": "….apps.googleusercontent.com", "onedrive": "…", "dropbox": "…" }
+ *   { "gdrive": "….apps.googleusercontent.com" }
  */
 const LOCAL_OAUTH = path.join(ROOT, 'oauth.local.json');
 

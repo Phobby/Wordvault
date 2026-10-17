@@ -15,7 +15,7 @@ bölümü ekle. Kullanıcı şunlardan birini seçer:
 2. **Tarayıcı senkronu**: `storage.sync` ile. Boyut sınırı (~100 KB) yüzünden küçük listeler
    içindir, ayarlarda bunu açıkça yaz ve doluluğu göster (`getBytesInUse`, %80'de uyar,
    dolunca senkronu durdurup yerelde devam et, veri silme).
-3. **Bulut hesabı bağla**: tıklayınca sağlayıcı listesi açılır: **Google Drive, OneDrive, Dropbox**.
+3. **Bulut hesabı bağla**: tıklayınca sağlayıcı listesi açılır: **Google Drive**.
    Birine tıklayınca o sağlayıcının giriş/onay penceresi açılır, kullanıcı hesabını seçip izin
    verir, bağlantı kurulur.
 4. **Kendi sunucum**: tıklayınca bir form açılır (WebDAV/Nextcloud: URL, kullanıcı adı, uygulama
@@ -47,8 +47,6 @@ kasa birleşsin:
   birleştirme başarılı olduktan sonra sil.
 - Sağlayıcıda veriyi kullanıcının görmediği uygulamaya özel alana yaz:
   - Google Drive: `drive.appdata` kapsamı, `appDataFolder`. Başka hiçbir Drive iznini isteme.
-  - OneDrive (Microsoft Graph): `Files.ReadWrite.AppFolder` + `offline_access`, `approot`.
-  - Dropbox: "App folder" erişimli uygulama, `files.content.read/write`.
   Dosya adı: `wordvault-vault.json.gz` (gzip'lenmiş JSON; binary yükleme kullan, base64 gerekmez).
 - Kullanıcıya "dosya nerede" sorusunun cevabını README ve ayarlar sayfasında ver.
 
@@ -79,7 +77,7 @@ expectedVersion)`, `accountInfo()`. Çeviri sağlayıcılarındaki modül yapıs
 
 Eşitleme motoru (`sync/engine.js`):
 - Akış: oku → yerelle birleştir → değiştiyse yaz → yerel durumu güncelle. Yazarken **iyimser
-  eşzamanlılık** kullan (Dropbox `rev`, Graph `eTag`/`If-Match`, WebDAV `If-Match`, Drive'da
+  eşzamanlılık** kullan (WebDAV `If-Match`, Drive'da
   sürüm/değişiklik zamanı kontrolü). Çakışma hatasında yeniden oku-birleştir-yaz (en fazla 5 deneme,
   üstel bekleme).
 - Tetikleyiciler: kasa değişince 10 sn debounce, tarayıcı açılışında, `chrome.alarms` ile
@@ -104,7 +102,7 @@ Eşitleme motoru (`sync/engine.js`):
 - Token'lar yalnızca `storage.local`'da dursun, asla `storage.sync`'e ya da buluta yazılmasın.
   Süresi dolan token'ı otomatik yenile.
 - Client ID'leri bir yapılandırma dosyasında (`sync/config.js`) tutulan yer tutucu değerler olsun.
-  Benim her sağlayıcıda (Google Cloud, Microsoft Entra, Dropbox App Console) hangi uygulamayı,
+  Benim Google Cloud'da hangi uygulamayı,
   hangi izinlerle, hangi yönlendirme adresleriyle oluşturmam gerektiğini adım adım anlatan
   `SETUP-OAUTH.md` yaz.
 - Sadece gerekli en dar izinleri iste (bölüm 2'deki kapsamlar).
@@ -131,7 +129,7 @@ parola istensin. Bu aşama en sona kalsın.
   yansıtsın: veri yalnızca kullanıcının seçtiği hesaba/sunucuya gider, bende toplanmaz.
 - Manifest'e gereken izinleri (`identity`, `alarms`, sağlayıcı alan adları için `host_permissions`
   ya da isteğe bağlı izinler) ekle, her birinin gerekçesini README'ye yaz. Gereksiz izin isteme.
-- Üçüncü taraf API verisinin kullanımı için Google/Microsoft/Dropbox'ın güncel geliştirici
+- Üçüncü taraf API verisinin kullanımı için Google'ın güncel geliştirici
   politikalarına uyduğunu kontrol et ve README'de belirt.
 
 ## 9. Testler
@@ -153,9 +151,8 @@ Aşamalı ilerle, her aşamadan sonra dur, nasıl test edeceğimi söyle, aşama
 2. Sağlayıcı arayüzü, eşitleme motoru, bellek içi sahte sağlayıcı, iki cihaz testleri
 3. Ayarlar arayüzü (bölüm 1), `storage.sync` modu, durum göstergesi, i18n
 4. Google Drive (OAuth + appDataFolder + bul-ya-da-oluştur), `SETUP-OAUTH.md`
-5. OneDrive ve Dropbox
-6. Kendi sunucu modu (WebDAV + HTTP uç noktası + örnek sunucu)
-7. İsteğe bağlı şifreleme, gizlilik belgeleri, lint ve son kontroller
+5. Kendi sunucu modu (WebDAV + HTTP uç noktası + örnek sunucu)
+6. İsteğe bağlı şifreleme, gizlilik belgeleri, lint ve son kontroller
 
 Belirsiz bir şey olursa makul bir varsayım yap, varsayımı kodda yorum olarak ve aşama sonu
 özetinde belirt. Mevcut çalışan özellikleri bozma, her aşamada eski testler geçmeli.

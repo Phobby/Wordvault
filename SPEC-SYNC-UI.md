@@ -8,8 +8,8 @@ SPEC.md, SYNC-SPEC.md ve `git log` geçmişini oku.
 ## Aşama 1: Teşhis (bu aşamada kod değiştirme, önce rapor yaz)
 Aşağıdakileri **kanıtla** (dosya yolu ve satır numarası ver), sonra bana kısa bir rapor sun:
 
-1. **Özellik yazılmış mı?** `sync/` klasörü, `engine`, sağlayıcı dosyaları (Google Drive, OneDrive,
-   Dropbox, WebDAV), birleştirme/tombstone kodu, `sync/config.js` var mı? Hangi parçalar var,
+1. **Özellik yazılmış mı?** `sync/` klasörü, `engine`, sağlayıcı dosyaları (Google Drive,
+   WebDAV), birleştirme/tombstone kodu, `sync/config.js` var mı? Hangi parçalar var,
    hangileri eksik, hangileri yarım ya da sadece iskelet? Git geçmişinde SYNC-SPEC'in hangi
    aşamalarına karşılık gelen commit'ler var?
 2. **Arka planda bağlı mı?** Arka plan betiği (background) sync motorunu içe alıyor ve
@@ -43,7 +43,7 @@ görünmüyor, (D) yarım yazılmış.
   **altında** senkronizasyon seçenekleri açıkça görünsün.
 
 ## OAuth yapılandırması henüz yokken arayüz görünür kalmalı
-Google/Microsoft/Dropbox için benim henüz client ID'm yok (`sync/config.js` içinde yer tutucu).
+Google için benim henüz client ID'm yok (`sync/config.js` içinde yer tutucu).
 Bu yüzden sağlayıcı bölümünü gizleme. Bunun yerine:
 - Sağlayıcı kartları **her zaman görünsün**. Client ID yer tutucuysa kart "Yapılandırma eksik" rozeti
   göstersin ve "Bağlan" düğmesine basınca kullanıcıya hatayı değil, açıklayıcı bir mesaj

@@ -63,14 +63,12 @@
  */
 
 import { browser } from './browser.js';
-import { dropbox } from './dropbox.js';
 import { gdrive } from './gdrive.js';
 import { http } from './http.js';
-import { onedrive } from './onedrive.js';
 import { webdav } from './webdav.js';
 
 /** @type {Map<string, SyncProvider>} */
-const providers = new Map([browser, gdrive, onedrive, dropbox, webdav, http].map((provider) => [provider.id, provider]));
+const providers = new Map([browser, gdrive, webdav, http].map((provider) => [provider.id, provider]));
 
 /** Adds a provider (the built-in ones below, and the in-memory one the tests use). */
 export function registerSyncProvider(provider) {
