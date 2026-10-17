@@ -16,6 +16,7 @@ import { INTERVAL_MINUTES, LEARNED_STREAK, QUESTIONS_PER_QUIZ, TIMEOUT_SECONDS, 
 import { DAILY_GOAL } from '../quiz/streak.js';
 import { createProgressPanel } from '../quiz/progress-panel.js';
 import { createShortcutsSection } from './shortcuts.js';
+import { createVoiceSection } from './voice.js';
 import { createSyncControls } from './sync.js';
 
 const { h, t, languages, speech } = globalThis.WV;
@@ -543,6 +544,8 @@ async function renderQuiz() {
     ['quizDiagLastShown', d.lastShown ? `${timeText(d.lastShown.at)}: ${shownText(d.lastShown, d)}` : t('quizDiagNever')],
     ['quizDiagLastSkip', d.lastSkip ? `${timeText(d.lastSkip.at)}: ${skipText(d.lastSkip, d)}` : t('quizDiagNever')],
     ['quizDiagLastAnswer', lastAnswerText(d.lastAnswer)],
+    // The voice the listening questions use (options/voice.js).
+    ['quizDiagVoice', voiceSection.describe()],
   ];
   quizFacts.replaceChildren(...facts.flatMap(([labelKey, value]) => [h('dt', { text: t(labelKey) }), h('dd', { text: value })]));
 }
@@ -567,6 +570,8 @@ async function testQuiz() {
 }
 
 const quizProgress = createProgressPanel({ celebrateIn: null });
+// The voice: rate, remote voices and recordings, and the voice of each language (options/voice.js).
+const voiceSection = createVoiceSection({ flashSaved, switchRow, fieldRow });
 // Everything the switch in the heading turns off. A disabled fieldset greys out and locks all
 // the controls inside it; "Why is there no quiz?" stays outside, since it says why.
 // In view: how often, the daily goal and the evening reminder; the rest is under "Advanced".
@@ -619,6 +624,7 @@ const quizSection = h(
   h('div', { class: 'card-head' }, h('h2', { id: 'quiz-title', text: t('optQuizTitle') }), h('label', { class: 'head-switch' }, quizEnabled)),
   quizProgress.element,
   quizBody,
+  voiceSection.element,
   h(
     'details',
     { class: 'more', id: 'quiz-diagnostics' },
@@ -743,6 +749,7 @@ function render() {
   ocrSection.render();
   passageSection.render();
   shortcutsSection.render();
+  voiceSection.render();
   aiSection.render();
   providerSection.render();
 }

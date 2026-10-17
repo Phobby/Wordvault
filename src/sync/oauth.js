@@ -39,7 +39,9 @@ export async function challengeFor(verifier) {
  *   for providers that will not redirect to a domain the developer does not own.
  */
 export function redirectUrl({ loopback = false } = {}) {
-  const url = chrome.identity.getRedirectURL();
+  // Opera lists only launchWebAuthFlow() of this API (help.opera.com/en/extensions/apis/); the
+  // address getRedirectURL() gives in Chromium is built the same way there.
+  const url = typeof chrome.identity.getRedirectURL === 'function' ? chrome.identity.getRedirectURL() : `https://${chrome.runtime.id}.chromiumapp.org/`;
   if (loopback) {
     const { hostname } = new URL(url);
     if (hostname.endsWith('.extensions.allizom.org')) return `http://127.0.0.1/mozoauth2/${hostname.split('.')[0]}`;

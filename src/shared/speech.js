@@ -9,8 +9,36 @@
 (function (WV) {
   if (WV.speech) return;
 
-  /** Set from the stored settings by whoever loads this file (content/triggers.js). */
-  const options = { ttsFallback: false };
+  /**
+   * What the user set (lib/settings.js; the voices per language are this device's own,
+   * "speechVoices"). Read from storage here, so every part that speaks follows the settings;
+   * content/triggers.js still sets ttsFallback as it always did.
+   *   rate         speaking rate (shared/voices.js: RATE)
+   *   allowOnline  remote voices may be used (they send the word to their vendor)
+   *   recordings   a human recording is played where one exists (the word goes to Wiktionary)
+   *   voices       language -> voiceId() of the voice chosen for it
+   */
+  const options = { ttsFallback: false, rate: WV.voices.RATE.DEFAULT, allowOnline: false, recordings: false, voices: {} };
+  const VOICES_KEY = 'speechVoices';
+
+  function applyStored(settings, voices) {
+    if (settings) {
+      options.rate = WV.voices.clampRate(settings.speechRate ?? WV.voices.RATE.DEFAULT);
+      options.allowOnline = settings.speechOnline === true;
+      options.recordings = settings.speechRecordings === true;
+    }
+    if (voices !== undefined) options.voices = voices && typeof voices === 'object' ? voices : {};
+  }
+  try {
+    chrome.storage.local.get(['settings', VOICES_KEY]).then((items) => applyStored(items.settings || {}, items[VOICES_KEY]), () => {});
+    chrome.storage.onChanged.addListener((changes, area) => {
+      if (area !== 'local') return;
+      if (changes.settings) applyStored(changes.settings.newValue || {}, undefined);
+      if (changes[VOICES_KEY]) applyStored(null, changes[VOICES_KEY].newValue);
+    });
+  } catch {
+    // no storage here (a test); the defaults stand
+  }
 
   /**
    * Below full volume on purpose. System voices are loud at 1.0, and whatever the platform does
@@ -25,88 +53,22 @@
    */
   const MAX_WAIT_MS = 8000;
 
-  // --- Choosing a voice ------------------------------------------------------------------------
-  //
-  // macOS reports its novelty voices as ordinary en-US voices and Chrome lists them first: the
-  // first English voice it returns is "Albert", followed by "Bahh", "Bells", "Boing" ... Taking
-  // the first voice that matches a language therefore picks a joke voice. Their names are also
-  // translated on non-English systems ("Good News" is "İyi Haber" in Turkish), so they cannot
-  // all be recognised by name. Hence both lists: known novelty voices are avoided, and known
-  // natural voices (personal names, which are not translated) are preferred over unknown ones.
-  const NOVELTY_VOICES = new Set([
-    'albert', 'bad news', 'bahh', 'bells', 'boing', 'bubbles', 'cellos', 'deranged', 'good news',
-    'hysterical', 'jester', 'organ', 'pipe organ', 'superstar', 'trinoids', 'whisper', 'wobble', 'zarvox',
-  ]);
-  // Old formant synthesisers: intelligible, but a natural voice of any region is better.
-  const ROBOTIC_VOICES = new Set([
-    'eddy', 'flo', 'fred', 'grandma', 'grandpa', 'junior', 'kathy', 'princess', 'ralph', 'reed', 'rocko', 'sandy', 'shelley',
-  ]);
-  const NATURAL_ENGLISH_VOICES = new Set([
-    'samantha', 'alex', 'allison', 'ava', 'susan', 'tom', 'evan', 'joelle', 'nathan', 'noelle', 'zoe', 'aaron', 'nicky',
-    'daniel', 'kate', 'oliver', 'serena', 'stephanie', 'jamie', 'karen', 'lee', 'matilda', 'moira', 'fiona', 'rishi',
-    'veena', 'isha', 'sangeeta', 'tessa',
-  ]);
-  // Languages whose voices are filed under a different code than translation services use.
-  const VOICE_CODES = { no: ['no', 'nb', 'nn'], he: ['he', 'iw'], tl: ['tl', 'fil'], id: ['id', 'in'] };
+  // --- Choosing a voice: shared/voices.js ranks them -------------------------------------------
 
-  const engine = () => window.speechSynthesis || null;
-  const tagOf = (voice) => voice.lang.replace(/_/g, '-').toLowerCase();
-  /** "Eddy (English (US))" -> "eddy" */
-  const baseName = (voice) => voice.name.replace(/\s*\(.*$/, '').trim().toLowerCase();
-
-  /** Regions the user reads this language in, from the browser's language list ("en-GB" -> "gb"). */
-  function userRegions(primary) {
-    return (navigator.languages || [])
-      .map((entry) => entry.toLowerCase().split('-'))
-      .filter(([language, region]) => language === primary && region)
-      .map(([, region]) => region);
-  }
-
-  function score(voice, wanted, regions) {
-    const tag = tagOf(voice);
-    const [primary, region = ''] = tag.split('-');
-    const name = baseName(voice);
-    const hints = `${voice.voiceURI} ${voice.name}`.toLowerCase();
-    let points = 0;
-    if (tag === wanted) points += 100; // "pt-BR" asked for, "pt-BR" offered
-    if (voice.default) points += 8;
-    if (regions.includes(region)) points += 6;
-    // The conventional variety: de-DE, fr-FR, tr-TR ...; for English, US and then GB.
-    if (region === primary || (primary === 'en' && region === 'us')) points += 4;
-    else if (primary === 'en' && region === 'gb') points += 2;
-    if (hints.includes('premium')) points += 5;
-    else if (hints.includes('enhanced')) points += 4;
-    if (NOVELTY_VOICES.has(name)) points -= 1000;
-    else if (ROBOTIC_VOICES.has(name) || hints.includes('eloquence')) points -= 50;
-    else if (primary === 'en' && NATURAL_ENGLISH_VOICES.has(name)) points += 20;
-    return points;
-  }
+  const engine = () => globalThis.speechSynthesis || null;
 
   /**
-   * Best on-device voice for a language.
+   * The voice for a language: the user's choice, or the best there is (shared/voices.js).
    * @param {string} lang Language code such as "en" or "pt-BR".
-   * @returns {{ listed: boolean, voice: SpeechSynthesisVoice | null }} `listed` is false while
-   *   the browser has not loaded its voice list yet.
+   * @returns {{ listed: boolean, voice: SpeechSynthesisVoice | null, info: object | null }} `listed`
+   *   is false while the browser has not loaded its voice list yet.
    */
   function pickVoice(lang) {
     const synth = engine();
     const voices = synth ? synth.getVoices() : [];
-    const wanted = lang.replace(/_/g, '-').toLowerCase();
-    const primary = wanted.split('-')[0];
-    const codes = VOICE_CODES[primary] || [primary];
-    const regions = userRegions(primary);
-    let best = null;
-    let bestScore = -Infinity;
-    for (const voice of voices) {
-      // Remote voices would send the text to the voice's vendor.
-      if (voice.localService === false || !codes.includes(tagOf(voice).split('-')[0])) continue;
-      const points = score(voice, wanted, regions);
-      if (points > bestScore) {
-        best = voice;
-        bestScore = points;
-      }
-    }
-    return { listed: voices.length > 0, voice: best };
+    const primary = String(lang || '').replace(/_/g, '-').toLowerCase().split('-')[0];
+    const info = WV.voices.pick(voices, lang, { regions: WV.voices.userRegions(primary), allowOnline: options.allowOnline, chosen: options.voices[primary] });
+    return { listed: voices.length > 0, voice: info ? info.voice : null, info };
   }
 
   /** Whether a pronunciation button makes sense for this language. */
@@ -129,15 +91,17 @@
   let timer = 0;
 
   const isBusy = (synth) => synth.speaking || synth.pending;
-  const sameRequest = (a, b) => Boolean(a) && Boolean(b) && a.text === b.text && a.lang === b.lang;
+  const sameRequest = (a, b) => Boolean(a) && Boolean(b) && a.text === b.text && a.lang === b.lang && a.rate === b.rate;
 
   function begin(synth, request) {
-    const utterance = new SpeechSynthesisUtterance(request.text);
+    // A new utterance every time: one that has been spoken is never handed over again.
+    const utterance = new globalThis.SpeechSynthesisUtterance(request.text);
     const { voice } = pickVoice(request.lang);
-    // With a suitable voice, use it; otherwise at least tell the engine the language.
+    // With a suitable voice, use it; the language is set from the word's in any case.
     if (voice) utterance.voice = voice;
-    utterance.lang = voice ? voice.lang : request.lang;
+    utterance.lang = String(voice ? voice.lang : request.lang).replace(/_/g, '-');
     utterance.volume = VOLUME;
+    utterance.rate = request.rate;
     const finished = () => {
       if (current === request) current = null;
       schedule(); // whatever is waiting may start now
@@ -181,10 +145,10 @@
    *   - Something else is being read: the request waits until that has finished. Only the
    *     newest request is kept, so pressing several buttons in a row reads the last one.
    */
-  function speak(text, lang) {
+  function speak(text, lang, { rate = options.rate } = {}) {
     const synth = engine();
     if (!synth || !text) return;
-    const request = { text, lang, since: Date.now(), retried: false, utterance: null };
+    const request = { text, lang, rate: WV.voices.clampRate(rate), since: Date.now(), retried: false, utterance: null };
     if (!isBusy(synth) && !waiting) {
       begin(synth, request);
       return;
@@ -318,10 +282,13 @@
     };
   }
 
+  /** Whether recordings are tried first: where the browser's voice cannot be used, or where the user asked for them. */
+  const prefersRecordings = () => usesRecordings || options.recordings;
+
   /** Whether a pronunciation button makes sense for this language. */
   function available(lang) {
     if (!lang) return false;
-    return usesRecordings ? true : canSpeak(lang);
+    return prefersRecordings() ? true : canSpeak(lang);
   }
 
   /**
@@ -329,9 +296,9 @@
    * @returns {Promise<{ via: 'voice' | 'recording' | null, credit?: { title: string, page: string } }>}
    *   `via` is null when there was nothing to play; `credit` names the recording that was used.
    */
-  async function pronounce(text, lang) {
-    if (!usesRecordings) {
-      speak(text, lang);
+  async function pronounce(text, lang, { rate } = {}) {
+    if (!prefersRecordings()) {
+      speak(text, lang, rate === undefined ? {} : { rate });
       return { via: 'voice' };
     }
     context(); // created while the click that asked for it is still being handled
@@ -340,12 +307,13 @@
       play(recording);
       return { via: 'recording', credit: recording.credit };
     }
-    if (options.ttsFallback && canSpeak(lang)) {
-      speak(text, lang);
+    // No recording: the voice where it can be used (always, when recordings were only preferred).
+    if ((!usesRecordings || options.ttsFallback) && canSpeak(lang)) {
+      speak(text, lang, rate === undefined ? {} : { rate });
       return { via: 'voice' };
     }
     return { via: null };
   }
 
-  WV.speech = { options, usesRecordings, available, pronounce, canSpeak, pickVoice, speak, onVoicesChanged };
+  WV.speech = { options, usesRecordings, prefersRecordings, available, pronounce, canSpeak, pickVoice, speak, onVoicesChanged };
 })(globalThis.WV);

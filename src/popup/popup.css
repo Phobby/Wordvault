@@ -255,6 +255,11 @@ body {
 
 .count { white-space: nowrap; }
 
+/* Opera only: extensions may not run in its sidebar panels */
+.opera-note { display: flex; align-items: center; gap: 8px; margin: 0; padding: 8px 12px; border-bottom: 1px solid var(--wv-border); background: var(--wv-tint); font-size: 12.5px; }
+.opera-note[hidden] { display: none; }
+.opera-note span { flex: 1 1 auto; }
+
 /* "Create a test with AI": opens the wizard in a tab (exam/exam.html) */
 .exam-starter { padding: 8px 12px; border-bottom: 1px solid var(--wv-border); }
 .exam-start { width: 100%; justify-content: center; }

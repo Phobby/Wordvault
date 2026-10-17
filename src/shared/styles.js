@@ -560,6 +560,22 @@
     .wv-quiz-speaker:hover { background: var(--wv-hover); }
     .wv-quiz-speaker:focus-visible { outline: 2px solid var(--wv-accent); outline-offset: 2px; }
     .wv-quiz-speaker.wv-busy { opacity: 0.6; }
+    .wv-quiz-slow {
+      flex: none;
+      height: 32px;
+      padding: 0 10px;
+      border: 1px solid var(--wv-border);
+      border-radius: 999px;
+      background: transparent;
+      color: var(--wv-fg);
+      font: inherit;
+      font-size: 12.5px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .wv-quiz-slow:hover { background: var(--wv-hover); }
+    .wv-quiz-slow:focus-visible { outline: 2px solid var(--wv-accent); outline-offset: 2px; }
+    .wv-quiz-slow.wv-busy { opacity: 0.6; }
     .wv-quiz-notice { margin: 0 0 8px; padding: 6px 10px; border-radius: 8px; background: var(--wv-tint); font-size: 12.5px; }
 
     .wv-quiz-streak { flex: none; display: inline-flex; align-items: center; }

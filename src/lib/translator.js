@@ -38,13 +38,25 @@ function providerContext(provider) {
 }
 
 /**
+ * The browser's interface language. Opera lists i18n.getUILanguage() as not supported
+ * (help.opera.com/en/extensions/apis/); the browser's own language list stands in there.
+ */
+function browserLanguage() {
+  try {
+    return chrome.i18n.getUILanguage();
+  } catch {
+    return globalThis.navigator?.language || '';
+  }
+}
+
+/**
  * The one place that decides which language translations are made into: the language the user
  * chose, or, until they have chosen one, the browser's UI language.
  */
 function resolveTarget(settings, languages) {
   return (
     matchSupported(settings.targetLang, languages) ||
-    matchSupported(chrome.i18n.getUILanguage(), languages) ||
+    matchSupported(browserLanguage(), languages) ||
     matchSupported(FALLBACK_TARGET, languages) ||
     languages[0]
   );

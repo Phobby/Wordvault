@@ -67,6 +67,16 @@ the `dist/chrome` folder. After a code change press the reload icon on the exten
 Reload the open tabs too after the extension was reloaded; the content script in old tabs loses its
 connection to the extension.
 
+**Opera** runs the Chrome package (`dist/chrome`), in normal tabs. Opera's sidebar panels (X/Twitter,
+messengers) are not tabs: extensions' content scripts may not run in them (Opera forum reports differ
+by panel; there is no official statement), so double-click, selection and screen scanning may do nothing
+there. Open the page in a normal tab instead; the toolbar popup says this once in Opera. Opera lists
+`i18n.getUILanguage()` and `identity.getRedirectURL()` as unsupported (help.opera.com/en/extensions/apis/);
+the code falls back to `navigator.language` and to the Chromium redirect address. Not tested in Opera.
+
+Troubleshooting in Opera: (1) try the same word in a normal tab; (2) check that the extension is enabled
+in `opera://extensions`; (3) reload the tab after installing or updating the extension.
+
 ## Project layout
 
 ```
@@ -1127,7 +1137,14 @@ the section notes "You can export the JSON and save it to your iCloud Drive fold
 
 ### Pronunciation
 
-Words are normally spoken with the browser's own voice (`speechSynthesis`, only voices on the device).
+Words are normally spoken with the browser's own voice (`speechSynthesis`). Which voice: `shared/voices.js`,
+one rule for every part: novelty voices never; remote voices (Chrome's Google voices, Edge's natural
+voices) only if allowed in Settings → Quiz → Voice; robotic voices (eSpeak, Eloquence) after all others;
+then region, then quality. In Firefox on Linux speech-dispatcher's voices report `localService: false`
+although they are made on the device (measured: 14,805 eSpeak NG voices); they are treated as local.
+The rate is 0.9 by default (adjustable), "Slow" in listening questions replays at 0.7. The voice per
+language is chosen in the same place and kept on this device only (`speechVoices`). Optionally, human
+recordings (Wiktionary/Wikimedia Commons) can be played first on every platform.
 
 **In Firefox-based browsers (Firefox, Zen …) on macOS** this path is not used: Gecko produces a
 full-scale click there at the end of every utterance, about 200 ms after the last sound. Measured by

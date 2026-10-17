@@ -171,6 +171,7 @@
   }
 
   function renderLanguages() {
+    if (!session) return; // closed meanwhile (the word's node went away, as on pages that redraw themselves)
     const { source, sourceLang, sourceMode } = session;
     let sourceText = t('langAuto');
     if (source) sourceText = languages.name(source);
@@ -863,6 +864,9 @@
       current.saved = Boolean(error?.context?.saved);
       showError(error);
     }
+    // Showing it may have closed the popup: the text it belongs to is gone (X and other pages
+    // that replace their nodes do that). Then there is nothing left to draw.
+    if (session !== current) return;
     renderActions();
     renderAi();
     renderLanguages();

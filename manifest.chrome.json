@@ -61,6 +61,7 @@
         "shared/dom.js",
         "shared/styles.js",
         "shared/language-list.js",
+        "shared/voices.js",
         "shared/speech.js",
         "shared/stopwatch.js",
         "shared/progress-ui.js",

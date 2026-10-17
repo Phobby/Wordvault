@@ -217,6 +217,32 @@ const examStarter = h(
   }),
 );
 
+// Opera: its sidebar panels (X, messengers ...) are not tabs, and extensions may not run in them.
+// The popup cannot tell whether the user is looking at one, so this is said once, generally, and
+// can be put away. (Detected from the browser's own brand: "OPR/" in its user agent.)
+const isOpera = (navigator.userAgentData?.brands || []).some((entry) => /opera/i.test(entry.brand)) || /\bOPR\//.test(navigator.userAgent);
+const OPERA_NOTE_KEY = 'operaSidebarNoteDismissed';
+const operaNote = h(
+  'div',
+  { class: 'opera-note', role: 'note', hidden: true },
+  h('span', { text: t('operaSidebarNote') }),
+  h('button', {
+    class: 'wv-btn wv-btn-sm',
+    type: 'button',
+    text: t('operaSidebarNoteOk'),
+    onclick: () => {
+      operaNote.hidden = true;
+      chrome.storage.local.set({ [OPERA_NOTE_KEY]: true }).catch(() => {});
+    },
+  }),
+);
+if (isOpera) {
+  chrome.storage.local
+    .get(OPERA_NOTE_KEY)
+    .then((stored) => (operaNote.hidden = stored[OPERA_NOTE_KEY] === true))
+    .catch(() => {});
+}
+
 document.getElementById('app').append(
   h(
     'header',
@@ -231,6 +257,7 @@ document.getElementById('app').append(
     iconButton(ICON_SETTINGS, 'tbSettings', openSettings),
   ),
   summaryNotice,
+  operaNote,
   progressPanel.element,
   quizStarter.element,
   examStarter,

@@ -26,6 +26,12 @@ export const DEFAULT_SETTINGS = Object.freeze({
    * used there in the first place.
    */
   ttsFallback: false,
+  /** Speaking rate of the browser's voices (shared/voices.js: RATE): a little slower than normal, for learners. */
+  speechRate: 0.9,
+  /** Remote voices (Chrome's Google voices, Edge's natural voices) may be used: they send the word to their vendor. */
+  speechOnline: false,
+  /** A human recording (Wikimedia Commons, through Wiktionary) is played where one exists: the word goes to Wiktionary. */
+  speechRecordings: false,
   /** Flash cards: ask about a saved word from time to time. */
   quizEnabled: true,
   /** A quiz is shown at most this often. */

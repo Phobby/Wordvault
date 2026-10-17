@@ -262,7 +262,7 @@
      * keeps playback from ending in a click.
      * @returns {Promise<'said' | 'no_voice_lang' | 'no_voice_word'>}
      */
-    async function say(question) {
+    async function say(question, { slow = false } = {}) {
       const speech = WV.speech;
       if (!speech || !question.sourceLang) return 'no_voice_lang';
       if (!speech.usesRecordings) {
@@ -278,7 +278,7 @@
         }
         if (!speech.pickVoice(question.sourceLang).voice) return 'no_voice_lang';
       }
-      const played = await speech.pronounce(question.word, question.sourceLang).catch(() => ({ via: null }));
+      const played = await speech.pronounce(question.word, question.sourceLang, slow ? { rate: WV.voices.RATE.SLOW } : {}).catch(() => ({ via: null }));
       // Where recordings are used there is one per word or none: that says nothing about the language.
       return played.via ? 'said' : speech.usesRecordings ? 'no_voice_word' : 'no_voice_lang';
     }
@@ -293,11 +293,12 @@
       const blank = h('div', { class: 'wv-quiz-blank', 'aria-hidden': 'true', text: '?' });
       const notice = h('div', { class: 'wv-quiz-notice', role: 'status', hidden: true });
       const asked = () => current && current.question === question && !current.outcome;
-      const play = async () => {
+      const play = async ({ slow = false } = {}) => {
         if (!asked()) return;
-        speaker.classList.add('wv-busy');
-        const result = await say(question);
-        speaker.classList.remove('wv-busy');
+        const button = slow ? slower : speaker;
+        button.classList.add('wv-busy');
+        const result = await say(question, { slow });
+        button.classList.remove('wv-busy');
         if (result === 'said' || !asked()) return;
         lock();
         notice.textContent = t('quizNoVoice', { language: languages.name(question.sourceLang) });
@@ -305,9 +306,11 @@
         const following = finish('no_voice', { scope: result === 'no_voice_word' ? 'word' : 'lang' });
         if (following) moveOn(following, NO_VOICE_MS);
       };
-      const speaker = h('button', { class: 'wv-quiz-speaker', type: 'button', 'data-action': 'speak', title: t('quizListenAgain'), 'aria-label': t('quizListenAgain'), onclick: play }, WV.icon(ICON_SPEAKER));
+      const speaker = h('button', { class: 'wv-quiz-speaker', type: 'button', 'data-action': 'speak', title: t('quizListenAgain'), 'aria-label': t('quizListenAgain'), onclick: () => play() }, WV.icon(ICON_SPEAKER));
+      // The same word, slower (shared/voices.js: RATE.SLOW). A recording is played as it is.
+      const slower = h('button', { class: 'wv-quiz-slow', type: 'button', 'data-action': 'speak-slow', title: t('quizListenSlowHelp'), text: t('quizListenSlow'), onclick: () => play({ slow: true }) });
       return {
-        row: h('div', { class: 'wv-quiz-listen' }, blank, speaker),
+        row: h('div', { class: 'wv-quiz-listen' }, blank, speaker, slower),
         notice,
         play,
         /** The word that was only heard is shown. */
