@@ -21,17 +21,27 @@ import { noText, originPattern, parseBase, refusal, trimBase } from './shared.js
 import { WordvaultError } from '../../lib/errors.js';
 
 /**
+ * JSON output (Chat Completions `response_format`, checked 2026-10-17): a schema with strict
+ * adherence, or the older JSON mode, which wants the word "JSON" somewhere in the messages.
+ */
+function responseFormat(json) {
+  if (!json) return {};
+  if (json.mode === 'schema') return { response_format: { type: 'json_schema', json_schema: { name: json.name, strict: true, schema: json.schema } } };
+  return { response_format: { type: 'json_object' } };
+}
+
+/**
  * One answer from a chat-completions endpoint under `base` (a URL). Shared with the providers
  * that speak the same protocol at a fixed address (nvidia.js). `extra` is added to the request
  * body (fields only that service understands).
  */
-export async function chatCompletions(base, { system, prompt, image = null }, config, { signal = null, timeoutMs } = {}, extra = {}) {
+export async function chatCompletions(base, { system, prompt, image = null, json = null, temperature }, config, { signal = null, timeoutMs } = {}, extra = {}) {
   let text = '';
   const content = image ? [{ type: 'text', text: prompt }, { type: 'image_url', image_url: { url: `data:${image.mime};base64,${image.data}` } }] : prompt;
   const fail = (status, error) => refusal({ status: Number(error?.code) || status, message: typeof error === 'string' ? error : error?.message || '', kind: `${error?.type || ''} ${error?.code || ''}` }, [config.apiKey]);
   const outcome = await postForStream(`${trimBase(base)}/chat/completions`, {
     headers: config.apiKey ? { Authorization: `Bearer ${config.apiKey}` } : {},
-    body: { model: config.model, messages: [{ role: 'system', content: system }, { role: 'user', content }], stream: true, ...extra },
+    body: { model: config.model, messages: [{ role: 'system', content: system }, { role: 'user', content }], stream: true, ...(temperature === undefined ? {} : { temperature }), ...responseFormat(json), ...extra },
     signal,
     timeoutMs,
     onData: (data) => {

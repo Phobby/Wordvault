@@ -17,6 +17,17 @@ import { WordvaultError } from '../../lib/errors.js';
 
 const BASE = 'https://generativelanguage.googleapis.com';
 
+/**
+ * JSON output (ai.google.dev/api/generate-content, GenerationConfig, checked 2026-10-17):
+ * `responseFormat.text` with a schema is the current form (`responseSchema` and
+ * `_responseJsonSchema` are deprecated); without a schema, `responseMimeType` alone.
+ */
+function geminiFormat(json) {
+  if (!json) return {};
+  if (json.mode === 'schema') return { responseFormat: { text: { mimeType: 'APPLICATION_JSON', schema: json.schema } } };
+  return { responseMimeType: 'application/json' };
+}
+
 export const gemini = {
   id: 'gemini',
   name: 'Google Gemini',
@@ -28,7 +39,7 @@ export const gemini = {
   keyPage: 'https://aistudio.google.com/apikey',
   origins: () => [`${BASE}/*`],
 
-  async generate({ system, prompt, maxTokens, image = null }, config, { signal = null, timeoutMs } = {}) {
+  async generate({ system, prompt, maxTokens, image = null, json = null, temperature }, config, { signal = null, timeoutMs } = {}) {
     let text = '';
     let blocked = '';
     const parts = image ? [{ inlineData: { mimeType: image.mime, data: image.data } }, { text: prompt }] : [{ text: prompt }];
@@ -37,7 +48,7 @@ export const gemini = {
       body: {
         systemInstruction: { parts: [{ text: system }] },
         contents: [{ role: 'user', parts }],
-        generationConfig: { maxOutputTokens: maxTokens },
+        generationConfig: { maxOutputTokens: maxTokens, ...(temperature === undefined ? {} : { temperature }), ...geminiFormat(json) },
       },
       signal,
       timeoutMs,

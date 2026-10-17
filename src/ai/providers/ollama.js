@@ -44,13 +44,21 @@ export const ollama = {
     return url ? [originPattern(url)] : [];
   },
 
-  async generate({ system, prompt, image = null }, config, { signal = null, timeoutMs } = {}) {
+  // JSON (docs.ollama.com/capabilities/structured-outputs, checked 2026-10-17): `format` takes a
+  // JSON schema or "json"; only answers that are not streamed are documented with it.
+  async generate({ system, prompt, image = null, json = null, temperature }, config, { signal = null, timeoutMs } = {}) {
     const base = parseBase(config.baseUrl);
     if (!base) throw new WordvaultError('ai_address', '');
     let text = '';
     const outcome = await postForStream(`${trimBase(base)}/api/chat`, {
       headers: {},
-      body: { model: config.model, messages: [{ role: 'system', content: system }, image ? { role: 'user', content: prompt, images: [image.data] } : { role: 'user', content: prompt }], stream: true },
+      body: {
+        model: config.model,
+        messages: [{ role: 'system', content: system }, image ? { role: 'user', content: prompt, images: [image.data] } : { role: 'user', content: prompt }],
+        stream: !json,
+        ...(json ? { format: json.mode === 'schema' ? json.schema : 'json' } : {}),
+        ...(temperature === undefined ? {} : { options: { temperature } }),
+      },
       signal,
       timeoutMs: timeoutMs || ollama.timeoutMs,
       onData: (data) => {

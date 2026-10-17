@@ -81,14 +81,14 @@ export async function forgetAnswers() {
  * request on its way. While one is, something small is asked of the browser now and then,
  * which counts as being busy. It ends with the request.
  */
-function keepAwake() {
+export function keepAwake() {
   const timer = setInterval(() => {
     chrome.runtime.getPlatformInfo?.().catch(() => {});
   }, AWAKE_MS);
   return () => clearInterval(timer);
 }
 
-async function allowedToReach(provider, settings) {
+export async function allowedToReach(provider, settings) {
   const origins = provider.origins(settings);
   if (origins.length === 0) return false;
   return chrome.permissions.contains({ origins }).catch(() => false);

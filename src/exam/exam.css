@@ -1,0 +1,86 @@
+/* The test wizard (exam.js). Colours and buttons come from shared/styles.js. */
+
+:root { color-scheme: light dark; }
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: var(--wv-bg, Canvas);
+}
+
+.page { max-width: 600px; margin: 0 auto; padding: 32px 20px 64px; }
+.page-head { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
+.page-head h1 { margin: 0; font-size: 22px; font-weight: 650; }
+
+.card { margin-bottom: 16px; padding: 16px 18px; border: 1px solid var(--wv-border); border-radius: 12px; }
+.card h2 { margin: 0 0 4px; font-size: 16px; font-weight: 650; }
+.help { margin: 0; color: var(--wv-muted); font-size: 13px; }
+.buttons { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
+[hidden] { display: none !important; }
+
+/* Steps */
+.steps { display: flex; gap: 6px; margin: 12px 0 16px; padding: 0; list-style: none; font-size: 12.5px; color: var(--wv-muted); }
+.steps li { flex: 1 1 0; padding-top: 6px; border-top: 3px solid var(--wv-border); }
+.steps li[aria-current="step"] { border-top-color: var(--wv-accent); color: var(--wv-fg); font-weight: 650; }
+.steps li.done { border-top-color: color-mix(in srgb, var(--wv-accent) 45%, transparent); }
+fieldset { min-width: 0; margin: 0; padding: 0; border: 0; }
+legend { padding: 0; margin-bottom: 8px; font-size: 14px; font-weight: 650; }
+
+/* Choices: one card per option */
+.choices { display: grid; gap: 6px; }
+.choices.levels { grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); }
+.choice {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--wv-border);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: border-color 0.15s, box-shadow 0.15s, background-color 0.15s;
+}
+.choice:hover { border-color: var(--wv-accent); box-shadow: 0 6px 16px -6px color-mix(in srgb, var(--wv-accent) 45%, transparent); }
+.choice:has(input:checked) { border-color: var(--wv-accent); background: var(--wv-tint); }
+.choice:has(input:focus-visible) { outline: 2px solid var(--wv-accent); outline-offset: 2px; }
+.choice input { flex: none; width: 16px; height: 16px; margin: 2px 0 0; accent-color: var(--wv-accent); }
+.choice-text { display: grid; gap: 2px; min-width: 0; }
+.choice-text strong { font-weight: 650; }
+@media (prefers-reduced-motion: reduce) { .choice { transition: none; } }
+
+.count-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin-top: 16px; }
+.count-row label { font-weight: 650; font-size: 14px; }
+.count-row input {
+  box-sizing: border-box;
+  width: 84px;
+  height: 32px;
+  padding: 0 8px;
+  border: 1px solid var(--wv-border);
+  border-radius: 8px;
+  background: var(--wv-bg);
+  color: var(--wv-fg);
+  font: inherit;
+}
+.count-row input:focus-visible { outline: 2px solid var(--wv-accent); outline-offset: 1px; }
+
+/* Notices */
+.notice { margin: 12px 0 0; padding: 10px 12px; border-radius: 8px; background: var(--wv-tint); font-size: 13.5px; }
+.notice.bad { background: color-mix(in srgb, var(--wv-danger) 12%, transparent); color: var(--wv-danger); }
+.notice p { margin: 0; }
+.notice p + p { margin-top: 6px; }
+.progress { display: flex; align-items: center; gap: 10px; font-weight: 600; }
+
+/* Result preview and past tests */
+.preview { margin: 12px 0 0; padding-inline-start: 22px; }
+.preview li { margin-bottom: 10px; }
+.preview .q-text { display: block; }
+.preview .q-meta { display: block; color: var(--wv-muted); font-size: 12.5px; }
+.badge { display: inline-block; margin-inline-end: 6px; padding: 1px 7px; border-radius: 999px; background: var(--wv-hover); font-size: 11.5px; font-weight: 650; }
+.history { display: grid; gap: 6px; margin: 12px 0 0; padding: 0; list-style: none; }
+.history li { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px 12px; padding: 8px 12px; border: 1px solid var(--wv-border); border-radius: 10px; }
+.history .meta { display: grid; gap: 2px; font-size: 13.5px; }
+.history .actions { display: flex; gap: 6px; }
+
+@media (max-width: 420px) {
+  .page { padding-inline: 12px; }
+  .steps { font-size: 11.5px; }
+}

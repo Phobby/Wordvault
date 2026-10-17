@@ -38,6 +38,8 @@ export const DEFAULT_AI_CONFIG = Object.freeze({
   summaryLength: 'medium',
   /** The provider the user has agreed to send pictures to ("Ask about the image"); asked apart from text. */
   imageConsent: '',
+  /** The provider the user has agreed to send vault words and their translations to ("Create a test with AI"); asked apart from page text. */
+  examConsent: '',
   /** Which models read pictures, as found out by trying (ai/vision.js): { 'provider|model|address': boolean }. */
   vision: {},
 });

@@ -6,6 +6,7 @@
 // requests would be subject to the CORS and CSP rules of whatever page they run in.
 
 import { aiHandlers } from '../ai/background.js';
+import { examHandlers } from '../exam/background.js';
 import { catchUncaught, recordError } from '../features/feedback/error-log.js';
 import { sendFeedback } from '../features/feedback/send.js';
 import { lookupWord } from '../lib/dictionary.js';
@@ -152,6 +153,7 @@ const handlers = {
   ...pageTranslationHandlers,
   ...i18nHandlers,
   ...aiHandlers,
+  ...examHandlers,
 };
 
 // What nothing else caught goes to the local error log (features/feedback/error-log.js). It

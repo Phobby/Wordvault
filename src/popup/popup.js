@@ -199,6 +199,23 @@ WV.send('wv:ai:status')
 const progressPanel = createProgressPanel({ celebrateIn: document.getElementById('app') });
 // "Quiz": start one by hand, at the difficulty chosen with the button next to it.
 const quizStarter = createQuizStarter();
+// "Create a test with AI": the wizard opens in a tab of its own (exam/exam.html), where a long
+// request survives this popup closing. There without a provider too: the page offers the way
+// without one.
+const examStarter = h(
+  'div',
+  { class: 'exam-starter' },
+  h('button', {
+    class: 'wv-btn exam-start',
+    type: 'button',
+    'data-action': 'exam',
+    text: t('examStart'),
+    onclick: async () => {
+      await chrome.tabs.create({ url: chrome.runtime.getURL('exam/exam.html') }).catch(() => {});
+      window.close();
+    },
+  }),
+);
 
 document.getElementById('app').append(
   h(
@@ -216,6 +233,7 @@ document.getElementById('app').append(
   summaryNotice,
   progressPanel.element,
   quizStarter.element,
+  examStarter,
   listView,
   detailView,
   languagesView,

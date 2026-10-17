@@ -255,6 +255,10 @@ body {
 
 .count { white-space: nowrap; }
 
+/* "Create a test with AI": opens the wizard in a tab (exam/exam.html) */
+.exam-starter { padding: 8px 12px; border-bottom: 1px solid var(--wv-border); }
+.exam-start { width: 100%; justify-content: center; }
+
 /* "Quiz": start button and difficulty selector (popup/quiz-starter.js) */
 .quiz-starter { padding: 8px 12px; border-bottom: 1px solid var(--wv-border); }
 .quiz-starter[hidden] { display: none; }

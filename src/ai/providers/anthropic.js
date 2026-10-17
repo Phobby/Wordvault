@@ -33,13 +33,16 @@ export const anthropic = {
   keyPage: 'https://platform.claude.com/settings/keys',
   origins: () => [`${BASE}/*`],
 
-  async generate({ system, prompt, maxTokens, image = null }, config, { signal = null, timeoutMs } = {}) {
+  // `temperature` is not sent: current Claude models reject sampling values other than the
+  // default (platform.claude.com, checked 2026-10-17). JSON is asked for with
+  // output_config.format (structured outputs); there is no JSON-only mode without a schema.
+  async generate({ system, prompt, maxTokens, image = null, json = null }, config, { signal = null, timeoutMs } = {}) {
     const content = image ? [{ type: 'image', source: { type: 'base64', media_type: image.mime, data: image.data } }, { type: 'text', text: prompt }] : prompt;
     let text = '';
     const fail = (status, error) => refusal({ status, message: error?.message || '', kind: error?.type || '' }, [config.apiKey]);
     const outcome = await postForStream(`${BASE}/v1/messages`, {
       headers: { 'x-api-key': config.apiKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
-      body: { model: config.model, max_tokens: maxTokens, system, messages: [{ role: 'user', content }], stream: true },
+      body: { model: config.model, max_tokens: maxTokens, system, messages: [{ role: 'user', content }], stream: true, ...(json?.mode === 'schema' ? { output_config: { format: { type: 'json_schema', schema: json.schema } } } : {}) },
       signal,
       timeoutMs,
       onData: (data) => {
