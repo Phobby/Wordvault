@@ -1,0 +1,129 @@
+/* The printable test (sheet.js): A4 paper on screen, the paper alone in print. The paper is
+   always dark text on white, in a dark theme too; only the toolbar follows the theme. */
+
+:root { color-scheme: light dark; }
+
+@page {
+  size: A4;
+  margin: 16mm 15mm 18mm;
+  @bottom-center { content: counter(page) " / " counter(pages); font: 9pt system-ui, sans-serif; color: #555; }
+}
+
+body { margin: 0; background: var(--wv-hover, #e9e9ee); color: var(--wv-fg); }
+
+/* Writing of every script, from the fonts the system has (nothing is downloaded). */
+.paper, .paper input {
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans", "Helvetica Neue", Arial,
+    "Noto Sans Arabic", "Geeza Pro", "Segoe UI Historic", "Noto Sans Hebrew",
+    "Noto Sans Devanagari", "Nirmala UI", "Kohinoor Devanagari",
+    "Noto Sans CJK SC", "Noto Sans SC", "PingFang SC", "Microsoft YaHei",
+    "Noto Sans CJK JP", "Hiragino Sans", "Yu Gothic", "Meiryo",
+    "Noto Sans CJK KR", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+}
+
+/* --- Toolbar (screen only) --- */
+.toolbar {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--wv-border);
+  background: var(--wv-bg);
+}
+.toolbar .grow { flex: 1 1 auto; }
+.toolbar label { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; cursor: pointer; }
+.toolbar input[type="checkbox"] { accent-color: var(--wv-accent); }
+.tip { max-width: 210mm; margin: 10px auto 0; padding: 0 16px; color: var(--wv-muted); font-size: 12.5px; }
+.result { max-width: 210mm; margin: 10px auto 0; padding: 8px 12px; border-radius: 8px; background: var(--wv-tint); color: var(--wv-fg); font-weight: 650; }
+.result:empty { display: none; }
+[hidden] { display: none !important; }
+
+/* --- The paper --- */
+.paper {
+  box-sizing: border-box;
+  width: 210mm;
+  max-width: calc(100% - 24px);
+  min-height: 297mm;
+  margin: 16px auto 40px;
+  padding: 16mm 15mm;
+  background: #fff;
+  color: #111;
+  box-shadow: 0 2px 14px rgb(0 0 0 / 0.18);
+  font-size: 11.5pt;
+  line-height: 1.5;
+  color-scheme: light;
+}
+.paper + .paper { margin-top: 0; }
+.paper h1 { margin: 0 0 4px; font-size: 17pt; }
+.paper h2 { margin: 18px 0 8px; font-size: 13pt; break-after: avoid; page-break-after: avoid; }
+.paper .meta { margin: 0; color: #444; font-size: 10pt; }
+.lines { display: grid; grid-template-columns: 1fr auto; gap: 8px 24px; margin: 14px 0 6px; font-size: 10.5pt; }
+.line { display: flex; align-items: flex-end; gap: 8px; }
+.line .fill { flex: 1 1 auto; min-width: 30mm; border-bottom: 1px solid #333; height: 1.3em; }
+.line.score .fill { flex: 0 0 auto; min-width: 22mm; text-align: center; font-weight: 700; }
+.instructions { margin: 2px 0 10px; color: #333; font-size: 10pt; }
+
+.word-box { display: flex; flex-wrap: wrap; gap: 6px 10px; margin: 6px 0 12px; padding: 8px 10px; border: 1px solid #555; border-radius: 6px; break-inside: avoid; page-break-inside: avoid; }
+.word-box span { padding: 0 4px; }
+
+.questions { margin: 0; padding: 0; list-style: none; counter-reset: q; }
+.question { display: grid; grid-template-columns: 2.2em minmax(0, 1fr) auto; align-items: baseline; gap: 4px 6px; padding: 6px 0; border-bottom: 1px dotted #bbb; break-inside: avoid; page-break-inside: avoid; }
+.question .num { font-weight: 700; }
+.question .text { overflow-wrap: anywhere; }
+.blank {
+  box-sizing: border-box;
+  width: 9em;
+  max-width: 100%;
+  margin: 0 3px;
+  padding: 0 2px;
+  border: 0;
+  border-bottom: 1.5px solid #222;
+  border-radius: 0;
+  background: transparent;
+  color: #0b3d91;
+  font: inherit;
+  text-align: center;
+}
+.blank:focus-visible { outline: 2px solid #4f46e5; outline-offset: 2px; }
+.tf { display: inline-flex; gap: 6px; white-space: nowrap; }
+.tf label { display: inline-flex; align-items: center; justify-content: center; min-width: 2em; padding: 1px 6px; border: 1.5px solid #333; border-radius: 4px; cursor: pointer; font-weight: 700; }
+.tf input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.tf label:has(input:checked) { background: #1f2937; color: #fff; }
+.tf label:has(input:focus-visible) { outline: 2px solid #4f46e5; outline-offset: 2px; }
+
+/* Checked / shown answers (screen only) */
+.mark { grid-column: 2 / -1; font-size: 10pt; }
+.mark.right { color: #11683a; }
+.mark.wrong { color: #b42318; }
+.question.right .num::after { content: " ✓"; color: #11683a; }
+.question.wrong .num::after { content: " ✗"; color: #b42318; }
+
+/* Answer key */
+.key { break-before: page; page-break-before: always; }
+.key ol { margin: 0; padding-inline-start: 2em; }
+.key li { margin-bottom: 6px; break-inside: avoid; page-break-inside: avoid; }
+.key .answer { font-weight: 700; }
+.key .explanation { display: block; color: #333; font-size: 10pt; }
+
+@media (max-width: 600px) {
+  .paper { padding: 10mm 8mm; min-height: 0; }
+  .lines { grid-template-columns: 1fr; }
+}
+
+/* --- Print: the paper alone, clean lines instead of fields --- */
+@media print {
+  body { background: #fff; }
+  .toolbar, .tip, .result, .mark { display: none !important; }
+  .paper { width: auto; max-width: none; min-height: 0; margin: 0; padding: 0; box-shadow: none; }
+  .paper + .paper { margin-top: 0; }
+  .blank { color: transparent; border-bottom-color: #000; }
+  .blank::placeholder { color: transparent; }
+  .tf label { background: #fff !important; color: #000 !important; }
+  .question.right .num::after, .question.wrong .num::after { content: none; }
+  .line.score .fill { color: transparent; }
+  .key.excluded { display: none; }
+}

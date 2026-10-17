@@ -5,6 +5,7 @@
 // Everything a model wrote is put on the page with textContent only (WV.h 'text').
 
 import { EXAM, FILL_BLANK, LEVELS, TRUE_FALSE } from './config.js';
+import { questionLimit } from './grade.js';
 import { getAiConfig, settingsFor } from '../ai/config.js';
 import { getAiProvider } from '../ai/providers/index.js';
 
@@ -43,16 +44,21 @@ const LEVEL_TEXT = { A1: 'examLevelA1', A2: 'examLevelA2', B1: 'examLevelB1', B2
 let info = await globalThis.WV.send('wv:exam:languages');
 /** The provider's addresses, known before a click: the browser asks about them only during one. */
 let origins = [];
+/** Whether the browser already lets the extension reach them: then nothing has to be asked during a click. */
+let granted = false;
 async function loadOrigins() {
   const config = await getAiConfig();
   const provider = getAiProvider(config.provider);
   origins = provider ? provider.origins(settingsFor(provider, config.providers[provider.id])) : [];
+  granted = origins.length > 0 && (await chrome.permissions.contains({ origins }).catch(() => false));
 }
 await loadOrigins();
 
 const choice = { language: info.usable[0] || '', level: 'B1', kind: 'both', count: Math.min(info.defaultQuestions, info.maxQuestions) };
 const languageName = (code) => languages.name(code) || code;
 const groupOf = (code) => info.groups.find((group) => group.language === code);
+/** The most questions the choices allow: a word is asked once per kind of question. */
+const limitOf = () => questionLimit(groupOf(choice.language)?.count || 0, KINDS[choice.kind].length, { maxWords: EXAM.MAX_WORDS, maxQuestions: info.maxQuestions });
 
 // --- Building blocks --------------------------------------------------------------------------
 
@@ -88,20 +94,32 @@ function levelStep() {
 }
 
 function kindStep() {
+  const limit = limitOf();
+  choice.count = Math.min(choice.count, limit);
   const count = h('input', {
     id: 'exam-count',
     type: 'number',
     inputmode: 'numeric',
     min: '1',
-    max: String(info.maxQuestions),
+    max: String(limit),
     step: '1',
     value: String(choice.count),
+    'aria-describedby': 'exam-count-help',
     onchange: () => {
       const value = Math.round(Number(count.value));
-      choice.count = Number.isFinite(value) ? Math.min(info.maxQuestions, Math.max(1, value)) : EXAM.DEFAULT_QUESTIONS;
+      choice.count = Number.isFinite(value) ? Math.min(limit, Math.max(1, value)) : Math.min(EXAM.DEFAULT_QUESTIONS, limit);
       count.value = String(choice.count);
     },
   });
+  // Fewer words than the most questions: why the limit is lower, said before anything is made.
+  const words = groupOf(choice.language)?.count || 0;
+  const help = limit < info.maxQuestions ? t('examCountLimited', { max: limit, words }) : t('examCountHelp', { max: limit });
+  /** Another kind changes the limit: the step is drawn again with it. */
+  const pick = (value) => {
+    choice.kind = value;
+    renderWizard();
+    wizard.querySelector(`input[name="kind"][value="${value}"]`)?.focus();
+  };
   return h(
     'div',
     null,
@@ -112,12 +130,12 @@ function kindStep() {
       h(
         'div',
         { class: 'choices' },
-        radio('kind', 'both', choice.kind === 'both', t('examKindBoth'), t('examKindBothHelp'), (value) => (choice.kind = value)),
-        radio('kind', FILL_BLANK, choice.kind === FILL_BLANK, t('examKindFill'), t('examKindFillHelp'), (value) => (choice.kind = value)),
-        radio('kind', TRUE_FALSE, choice.kind === TRUE_FALSE, t('examKindTrueFalse'), t('examKindTrueFalseHelp'), (value) => (choice.kind = value)),
+        radio('kind', 'both', choice.kind === 'both', t('examKindBoth'), t('examKindBothHelp'), pick),
+        radio('kind', FILL_BLANK, choice.kind === FILL_BLANK, t('examKindFill'), t('examKindFillHelp'), pick),
+        radio('kind', TRUE_FALSE, choice.kind === TRUE_FALSE, t('examKindTrueFalse'), t('examKindTrueFalseHelp'), pick),
       ),
     ),
-    h('div', { class: 'count-row' }, h('label', { for: 'exam-count', text: t('examCount') }), count, h('span', { class: 'help', text: t('examCountHelp', { max: info.maxQuestions }) })),
+    h('div', { class: 'count-row' }, h('label', { for: 'exam-count', text: t('examCount') }), count, h('span', { class: 'help', id: 'exam-count-help', text: help })),
   );
 }
 
@@ -189,10 +207,13 @@ async function create(agree = false) {
     return;
   }
   // Straight from the click: the browser shows its question about the provider's address only now.
-  const allowed = origins.length > 0 ? chrome.permissions.request({ origins }).catch(() => false) : Promise.resolve(false);
-  if (!(await allowed)) {
-    say(h('p', { class: 'notice bad', text: t('optAiDenied') }));
-    return;
+  if (!granted) {
+    const allowed = origins.length > 0 ? chrome.permissions.request({ origins }).catch(() => false) : Promise.resolve(false);
+    if (!(await allowed)) {
+      say(h('p', { class: 'notice bad', text: t('optAiDenied') }));
+      return;
+    }
+    granted = true;
   }
   busy = true;
   lock(true);
@@ -208,9 +229,15 @@ async function create(agree = false) {
   tick();
   const timer = setInterval(tick, 1000);
   try {
-    const made = await globalThis.WV.send('wv:exam:generate', { language: choice.language, level: choice.level, types: KINDS[choice.kind], count: choice.count, requestId, agree });
+    const made = await globalThis.WV.send('wv:exam:generate', { language: choice.language, level: choice.level, types: KINDS[choice.kind], count: Math.min(choice.count, limitOf()), requestId, agree });
+    // "Make it again" from the sheet: the new test takes the old one's place in this tab.
+    if (regenerating) {
+      location.replace(sheetUrl(made.exam.id));
+      return;
+    }
     say(h('p', { class: 'notice', text: made.exam.questions.length < made.requested ? t('examMadePartial', { made: made.exam.questions.length, requested: made.requested }) : t('examMade', { count: made.exam.questions.length }) }));
     showExam(made.exam);
+    openSheet(made.exam.id);
     renderHistory();
   } catch (error) {
     if (error?.code === 'ai_exam_consent') askConsent();
@@ -245,26 +272,18 @@ function askConsent() {
   agree.focus();
 }
 
-// --- The result (stage 1: a plain preview; the printable page comes next) ------------------------
+// --- The result: the test opens as a printable sheet in a tab of its own (sheet.html) ----------
+
+const sheetUrl = (id) => chrome.runtime.getURL(`exam/sheet.html?id=${encodeURIComponent(id)}`);
+const openSheet = (id) => chrome.tabs.create({ url: sheetUrl(id) }).catch(() => window.open(sheetUrl(id), '_blank'));
 
 function showExam(exam) {
   result.hidden = false;
   result.replaceChildren(
     h('h2', { id: 'result-title', text: t('examResultTitle', { language: languageName(exam.language), level: exam.level }) }),
-    h(
-      'ol',
-      { class: 'preview', lang: exam.language },
-      exam.questions.map((question) =>
-        h(
-          'li',
-          null,
-          h('span', { class: 'q-text', dir: 'auto' }, h('span', { class: 'badge', lang: '', text: t(question.type === FILL_BLANK ? 'examKindFill' : 'examKindTrueFalse') }), question.text),
-          h('span', { class: 'q-meta', dir: 'auto', lang: exam.explanationLang || null, text: `${question.type === FILL_BLANK ? question.answer : t(question.isTrue ? 'examTrue' : 'examFalse')} · ${question.explanation}` }),
-        ),
-      ),
-    ),
+    h('p', { class: 'help', text: t('examResultHelp') }),
+    h('div', { class: 'buttons' }, button('examOpenSheet', () => openSheet(exam.id), true)),
   );
-  result.scrollIntoView({ block: 'start', behavior: 'smooth' });
 }
 
 // --- Past tests -----------------------------------------------------------------------------------
@@ -287,10 +306,7 @@ async function renderHistory() {
             type: 'button',
             text: t('examOpen'),
             'aria-label': t('examOpenLabel', { language: languageName(item.language), level: item.level, date: date.format(item.createdAt) }),
-            onclick: async () => {
-              const exam = await globalThis.WV.send('wv:exam:get', { id: item.id }).catch(() => null);
-              if (exam) showExam(exam);
-            },
+            onclick: () => openSheet(item.id),
           }),
           h('button', {
             class: 'wv-btn wv-btn-sm',
@@ -309,6 +325,21 @@ async function renderHistory() {
   );
 }
 
+// "Make it again" from a sheet: the same language, level, kinds and number, made again here.
+const regenerateId = new URLSearchParams(location.search).get('regen');
+let regenerating = false;
+if (regenerateId) {
+  const old = await globalThis.WV.send('wv:exam:get', { id: regenerateId }).catch(() => null);
+  if (old && info.usable.includes(old.language)) {
+    choice.language = old.language;
+    choice.level = old.level;
+    choice.kind = old.types.length === 1 ? old.types[0] : 'both';
+    choice.count = old.requested;
+    stepIndex = steps().length - 1;
+    regenerating = true;
+  }
+}
+
 document.getElementById('app').append(
   h('header', { class: 'page-head' }, h('img', { src: '../icons/icon-48.png', alt: '', width: '32', height: '32' }), h('h1', { text: t('examTitle') })),
   wizard,
@@ -317,10 +348,16 @@ document.getElementById('app').append(
 );
 renderWizard();
 renderHistory();
+// Without anything to ask (provider, consent, permission all there) it starts by itself;
+// otherwise the last step waits for a click, which can ask.
+if (regenerating && info.provider && info.consent && granted) create();
 
 // The provider or the words changed elsewhere (the settings, the popup): look again.
 chrome.storage.onChanged.addListener(async (changes, area) => {
-  if (area !== 'local' || busy) return;
+  if (area !== 'local') return;
+  // A test made or deleted in another tab ("Make it again" on a sheet).
+  if (changes.examHistory) renderHistory();
+  if (busy) return;
   if (changes.aiConfig || Object.keys(changes).some((key) => key.startsWith('vault:'))) {
     info = await globalThis.WV.send('wv:exam:languages').catch(() => info);
     if (!info.usable.includes(choice.language)) choice.language = info.usable[0] || '';

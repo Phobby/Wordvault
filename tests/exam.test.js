@@ -340,3 +340,34 @@ test('each provider asks for JSON in its own documented way; Claude gets no temp
   await getAiProvider('openai').generate({ system: 's', prompt: 'p', maxTokens: 100 }, { apiKey: 'k', model: 'gpt-x', baseUrl: 'https://api.openai.com/v1' });
   assert.equal('response_format' in bodies[0].body || 'temperature' in bodies[0].body, false);
 });
+
+// --- the sheet: checking answers ----------------------------------------------------------------
+
+test('checking a blank: the inflected answer or an accepted spelling is right; a wrong letter is wrong; accents only with tolerance', async () => {
+  const { gradeQuestion, normalizeAnswer, questionLimit, score, wordBox } = await import('../src/exam/grade.js');
+  const went = { id: 'q1', type: FILL_BLANK, answer: 'went', lemma: 'go', acceptable: [], word: 'go' };
+  const colour = { id: 'q2', type: FILL_BLANK, answer: 'colour', lemma: 'colour', acceptable: ['color'], word: 'colour' };
+  const cafe = { id: 'q3', type: FILL_BLANK, answer: 'café', lemma: 'café', acceptable: [], word: 'café' };
+  assert.deepEqual(gradeQuestion(went, '  Went '), { answered: true, correct: true });
+  assert.deepEqual(gradeQuestion(went, 'go'), { answered: true, correct: false }, 'the lemma is not the form the sentence needs');
+  assert.deepEqual(gradeQuestion(went, 'wnet'), { answered: true, correct: false }, 'a typo is wrong');
+  assert.deepEqual(gradeQuestion(went, ''), { answered: false, correct: false });
+  assert.equal(gradeQuestion(colour, 'color').correct, true, 'an accepted spelling');
+  assert.equal(gradeQuestion(cafe, 'cafe').correct, false);
+  assert.equal(gradeQuestion(cafe, 'cafe', { accentTolerant: true }).correct, true);
+  assert.equal(gradeQuestion({ type: FILL_BLANK, answer: "don't", acceptable: [] }, 'don’t').correct, true, 'typographic apostrophe');
+  assert.equal(normalizeAnswer('İSTANBUL', { lang: 'tr' }), 'istanbul');
+  const tf = { id: 'q4', type: TRUE_FALSE, isTrue: false };
+  assert.deepEqual(gradeQuestion(tf, false), { answered: true, correct: true });
+  assert.deepEqual(gradeQuestion(tf, null), { answered: false, correct: false });
+  const result = score([went, colour, tf], { q1: 'went', q2: 'colr', q4: false });
+  assert.deepEqual([result.right, result.total], [2, 3]);
+  // the word box: the dictionary forms, mixed, the same way every time for one test
+  const box = wordBox([went, colour, cafe, tf], 'exam-1');
+  assert.deepEqual([...box].sort(), ['café', 'colour', 'go']);
+  assert.deepEqual(wordBox([went, colour, cafe], 'exam-1'), box);
+  // the limit the wizard shows
+  assert.equal(questionLimit(13, 1, { maxWords: 20, maxQuestions: 20 }), 13);
+  assert.equal(questionLimit(13, 2, { maxWords: 20, maxQuestions: 20 }), 20);
+  assert.equal(questionLimit(40, 1, { maxWords: 20, maxQuestions: 20 }), 20);
+});
