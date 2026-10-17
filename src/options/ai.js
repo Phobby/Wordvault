@@ -54,8 +54,19 @@ export function createAiSection({ flashSaved, switchRow, fieldRow }) {
   const choices = Object.fromEntries(
     [OFF, ...listAiProviders().map((provider) => provider.id)].map((id) => [id, h('input', { type: 'radio', name: 'ai-provider', value: id, 'data-ai-provider': id || 'off', onchange: () => choose(id) })]),
   );
-  const option = (id, titleText, helpKey) =>
-    h('label', { class: 'sync-mode' }, choices[id], h('span', { class: 'switch-text' }, h('strong', { text: titleText }), h('span', { class: 'help', text: t(helpKey) })));
+  const option = (id, titleText, helpKey, badgeKey) =>
+    h(
+      'label',
+      { class: 'sync-mode' },
+      choices[id],
+      h(
+        'span',
+        { class: 'switch-text' },
+        // The badge next to the name, going under it where the window is narrow.
+        h('span', { class: 'mode-title' }, h('strong', { text: titleText }), badgeKey && h('span', { class: 'sync-badge on', text: t(badgeKey) })),
+        h('span', { class: 'help', text: t(helpKey) }),
+      ),
+    );
 
   const key = h('input', { type: 'password', id: 'ai-key', autocomplete: 'off', spellcheck: 'false', 'data-ai': 'key', onchange: () => saveFields() });
   const reveal = h('button', {
@@ -99,6 +110,7 @@ export function createAiSection({ flashSaved, switchRow, fieldRow }) {
   // What is sent, what never is, and how the lists work: there for whoever wants to read it, folded away.
   const privacyDetails = disclosure(
     [
+      h('p', { class: 'help', text: t('optAiDirect') }),
       h('p', { class: 'help', text: t('optAiPrivacy') }),
       h('p', { class: 'help', 'data-ai': 'summary-note', text: t('aiSummaryNote') }),
       h('p', { class: 'help', 'data-ai': 'page-note', text: t('aiPageNote') }),
@@ -109,6 +121,10 @@ export function createAiSection({ flashSaved, switchRow, fieldRow }) {
     { describedBy: 'ai-privacy-title' },
   );
 
+  // Agreeing to text being sent and keeping answers only mean something with a provider. The site
+  // lists stay in view: they also decide where "Copy the prompt and open" is offered.
+  const withProvider = h('div', { class: 'ai-with-provider' }, h('div', { class: 'buttons' }, consent, withdraw), switchRow(cache, 'optAiCache', 'optAiCacheHint'));
+
   const element = h(
     'div',
     { class: 'group', id: 'ai' },
@@ -118,7 +134,7 @@ export function createAiSection({ flashSaved, switchRow, fieldRow }) {
       'div',
       { class: 'sync-modes' },
       option(OFF, t('optAiOff'), 'optAiOffHelp'),
-      option('gemini', getAiProvider('gemini').name, 'optAiGeminiHelp'),
+      option('gemini', getAiProvider('gemini').name, 'optAiGeminiHelp', 'optAiRecommended'),
       option('anthropic', getAiProvider('anthropic').name, 'optAiClaudeHelp'),
       option('nvidia', getAiProvider('nvidia').name, 'optAiNvidiaHelp'),
       option('openai', t('optAiOpenai'), 'optAiOpenaiHelp'),
@@ -127,8 +143,7 @@ export function createAiSection({ flashSaved, switchRow, fieldRow }) {
     panel,
     h('div', { class: 'group-head' }, h('h4', { id: 'ai-privacy-title', text: t('optAiPrivacyTitle') }), privacyDetails.button),
     privacyDetails.panel,
-    h('div', { class: 'buttons' }, consent, withdraw),
-    switchRow(cache, 'optAiCache', 'optAiCacheHint'),
+    withProvider,
     blocked.element,
     allowed.element,
     fieldRow('optAiPromptSite', 'optAiPromptSiteHelp', promptSite),
@@ -222,6 +237,7 @@ export function createAiSection({ flashSaved, switchRow, fieldRow }) {
     const provider = getAiProvider(config.provider);
     for (const [id, input] of Object.entries(choices)) input.checked = id === (provider ? provider.id : OFF);
     panel.hidden = !provider;
+    withProvider.hidden = !provider;
     if (provider) {
       const stored = config.providers[provider.id] || {};
       if (document.activeElement !== key) key.value = stored.apiKey || '';

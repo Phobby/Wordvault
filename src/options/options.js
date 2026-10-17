@@ -15,6 +15,7 @@ import { DIFFICULTIES } from '../quiz/difficulty.js';
 import { INTERVAL_MINUTES, LEARNED_STREAK, QUESTIONS_PER_QUIZ, TIMEOUT_SECONDS, getDiagnostics } from '../quiz/scheduler.js';
 import { DAILY_GOAL } from '../quiz/streak.js';
 import { createProgressPanel } from '../quiz/progress-panel.js';
+import { createShortcutsSection } from './shortcuts.js';
 import { createSyncControls } from './sync.js';
 
 const { h, t, languages, speech } = globalThis.WV;
@@ -67,23 +68,22 @@ const targetSelect = h('select', {
   id: 'target-language',
   'aria-label': t('optTargetLang'),
   onchange: async () => {
+    if (!targetSelect.value) return; // "Browser language" is what is in force until one is chosen
     await setTargetLanguage(targetSelect.value);
     flashSaved();
   },
 });
-const targetNote = h('p', { class: 'help', hidden: true });
 
 async function renderTarget() {
   const prefs = await getPreferences();
   if (document.activeElement !== targetSelect) {
     const locale = languages.uiLanguage();
     const named = prefs.languages.map((code) => ({ code, label: languages.name(code) })).sort((a, b) => a.label.localeCompare(b.label, locale));
-    targetSelect.replaceChildren(...named.map(({ code, label }) => h('option', { value: code, text: label })));
-    targetSelect.value = prefs.targetLang;
+    // Not chosen yet: the browser's language is used until it is, and the list says so first.
+    const auto = prefs.targetChosen ? [] : [h('option', { value: '', text: t('optTargetLangAuto', { language: languages.name(prefs.targetLang) }) })];
+    targetSelect.replaceChildren(...auto, ...named.map(({ code, label }) => h('option', { value: code, text: label })));
+    targetSelect.value = prefs.targetChosen ? prefs.targetLang : '';
   }
-  // Not chosen yet: the browser's language is used until it is.
-  targetNote.hidden = prefs.targetChosen;
-  targetNote.textContent = prefs.targetChosen ? '' : t('optTargetLangUnset', { language: languages.name(prefs.targetLang) });
 }
 
 // --- Double-click trigger ------------------------------------------------------------------------
@@ -115,7 +115,7 @@ function switchRow(input, titleKey, helpKey) {
     'label',
     { class: 'switch' },
     input,
-    h('span', { class: 'switch-text' }, h('strong', { text: t(titleKey) }), h('span', { class: 'help', text: t(helpKey) })),
+    h('span', { class: 'switch-text' }, h('strong', { text: t(titleKey) }), helpKey && h('span', { class: 'help', text: t(helpKey) })),
   );
 }
 
@@ -370,6 +370,7 @@ async function renderQuizSettings(rejected) {
   quizLearnedNeedsOtherMode.checked = settings.quizLearnedNeedsOtherMode !== false;
   quizFreezeEnabled.checked = settings.quizFreezeEnabled !== false;
   quizReminderEnabled.checked = settings.quizReminderEnabled !== false;
+  quizReminderTime.disabled = !quizReminderEnabled.checked;
   if (free(quizLearnedStreak)) quizLearnedStreak.value = String(Math.min(LEARNED_STREAK.MAX, Math.max(LEARNED_STREAK.MIN, Math.round(Number(settings.quizLearnedStreak)) || LEARNED_STREAK.DEFAULT)));
   if (free(quizDailyGoal)) quizDailyGoal.value = String(Math.min(DAILY_GOAL.MAX, Math.max(DAILY_GOAL.MIN, Math.round(Number(settings.quizDailyGoal)) || DAILY_GOAL.DEFAULT)));
   if (free(quizReminderTime)) quizReminderTime.value = /^\d{1,2}:\d{2}$/.test(settings.quizReminderTime || '') ? settings.quizReminderTime.padStart(5, '0') : '20:00';
@@ -564,6 +565,7 @@ async function testQuiz() {
 const quizProgress = createProgressPanel({ celebrateIn: null });
 // Everything the switch in the heading turns off. A disabled fieldset greys out and locks all
 // the controls inside it; "Why is there no quiz?" stays outside, since it says why.
+// In view: how often, the daily goal and the evening reminder; the rest is under "Advanced".
 const quizBody = h(
   'fieldset',
   { class: 'quiz-body' },
@@ -571,46 +573,46 @@ const quizBody = h(
     'div',
     { class: 'fields' },
     fieldRow('optQuizInterval', null, quizInterval, quizIntervalCustomRow),
-    fieldRow('optQuizQuestions', 'optQuizQuestionsHelp', quizQuestions),
-    quizLevel,
-    fieldRow('optQuizDisplay', 'optQuizDisplayHelp', quizDisplay),
-    fieldRow('optQuizTimeout', null, h('span', { class: 'inline' }, quizTimeout, h('span', { class: 'unit', text: t('optSeconds') }))),
-    switchRow(quizAllowNotDue, 'optQuizAllowNotDue', 'optQuizAllowNotDueHelp'),
-  ),
-  h('h3', { text: t('optQuizGoalTitle') }),
-  h(
-    'div',
-    { class: 'fields', id: 'quiz-goal-settings' },
     fieldRow('optQuizDailyGoal', 'optQuizDailyGoalHelp', h('span', { class: 'inline' }, quizDailyGoal, h('span', { class: 'unit', text: t('optQuizQuestionsUnit') }))),
-    fieldRow('optQuizQuiet', 'optQuizQuietHelp', h('span', { class: 'inline' }, quizQuietStart, h('span', { class: 'unit', text: '–' }), quizQuietEnd)),
-    switchRow(quizFreezeEnabled, 'optQuizFreeze', 'optQuizFreezeHelp'),
-    switchRow(quizReminderEnabled, 'optQuizReminder', 'optQuizReminderHelp'),
-    fieldRow('optQuizReminderTime', null, quizReminderNote, quizReminderTime),
-    fieldRow('optQuizNotify', 'optQuizNotifyHelp', quizNotifyStatus, quizNotifyTry, quizNotifyButton),
+    // The reminder and its time in one row: the time only counts while the reminder is on.
+    h('div', { class: 'field' }, switchRow(quizReminderEnabled, 'optQuizReminder', 'optQuizReminderHelp'), h('div', { class: 'field-control' }, quizReminderNote, quizReminderTime)),
   ),
   h(
     'details',
     { class: 'more' },
     h('summary', { text: t('optAdvanced') }),
+    h('h4', { text: t('optQuizQuestionsTitle') }),
     h(
       'div',
       { class: 'fields', id: 'quiz-advanced' },
+      fieldRow('optQuizQuestions', 'optQuizQuestionsHelp', quizQuestions),
+      quizLevel,
+      fieldRow('optQuizDisplay', 'optQuizDisplayHelp', quizDisplay),
+      fieldRow('optQuizTimeout', null, h('span', { class: 'inline' }, quizTimeout, h('span', { class: 'unit', text: t('optSeconds') }))),
+      switchRow(quizAllowNotDue, 'optQuizAllowNotDue', 'optQuizAllowNotDueHelp'),
       switchRow(quizAccentTolerant, 'optQuizAccentTolerant', 'optQuizAccentTolerantHelp'),
       switchRow(quizListenAutoplay, 'optQuizListenAutoplay', 'optQuizListenAutoplayHelp'),
       fieldRow('optQuizListenChoices', null, quizListenChoices),
       fieldRow('optQuizLearnedStreak', 'optQuizLearnedStreakHelp', quizLearnedStreak),
       switchRow(quizLearnedNeedsOtherMode, 'optQuizLearnedOther', 'optQuizLearnedOtherHelp'),
     ),
+    h('h4', { text: t('optQuizStreakTitle') }),
+    h(
+      'div',
+      { class: 'fields', id: 'quiz-goal-settings' },
+      fieldRow('optQuizQuiet', 'optQuizQuietHelp', h('span', { class: 'inline' }, quizQuietStart, h('span', { class: 'unit', text: '–' }), quizQuietEnd)),
+      switchRow(quizFreezeEnabled, 'optQuizFreeze', 'optQuizFreezeHelp'),
+      fieldRow('optQuizNotify', 'optQuizNotifyHelp', quizNotifyStatus, quizNotifyTry, quizNotifyButton),
+    ),
   ),
   h('div', { class: 'buttons' }, quizReset, quizResetStatus),
 );
 quizEnabled.setAttribute('role', 'switch');
 quizEnabled.setAttribute('aria-labelledby', 'quiz-title');
-// A group of the translation section, between screen translation and the translation service.
 const quizSection = h(
-  'div',
-  { class: 'group', id: 'quiz' },
-  h('div', { class: 'card-head' }, h('h3', { id: 'quiz-title', text: t('optQuizTitle') }), h('label', { class: 'head-switch' }, quizEnabled)),
+  'section',
+  { class: 'card', id: 'quiz' },
+  h('div', { class: 'card-head' }, h('h2', { id: 'quiz-title', text: t('optQuizTitle') }), h('label', { class: 'head-switch' }, quizEnabled)),
   quizProgress.element,
   quizBody,
   h(
@@ -627,75 +629,86 @@ const quizSection = h(
 
 // --- Page ----------------------------------------------------------------------------------------
 
-const ocrSection = createOcrSection({ flashSaved, switchRow, fieldRow });
+const ocrSection = createOcrSection({ flashSaved, switchRow });
 // The rows about where and when translations are made open the "Translation settings" group.
 const passageSection = createPassageSection({
   flashSaved,
   switchRow,
-  fieldRow,
   leadRows: [
-    fieldRow('optTargetLang', 'optTargetLangHelp', targetSelect),
-    targetNote,
-    switchRow(doubleClick, 'optDoubleClick', 'optDoubleClickHelp'),
+    fieldRow('optTargetLang', null, targetSelect),
+    switchRow(doubleClick, 'optDoubleClick'),
     // Only meaningful in the browsers where recordings replace the browser's voice. (append()
     // would write a `false` out as text, hence the empty string.)
     speech.usesRecordings ? switchRow(ttsFallback, 'optTtsFallback', 'optTtsFallbackHelp') : '',
   ],
 });
+const shortcutsSection = createShortcutsSection();
 const aiSection = createAiSection({ flashSaved, switchRow, fieldRow });
 const providerSection = createProviderSection({ flashSaved });
 const cacheSection = createCacheSection();
 const feedbackPanel = createFeedbackPanel();
+// The cache is kept data, like the vault's backup: it goes with it.
+backupSection.append(cacheSection.element);
 
-// Two tabs: the settings, and "Contact and feedback". The address says which one is open
-// (#feedback), so that it can be linked to and survives a reload.
-const TABS = ['settings', 'feedback'];
+// One tab per subject. The address says which one is open (#quiz, #ai, ...), so that it can be
+// linked to and survives a reload; the first tab has no address of its own.
+const TABS = [
+  { name: 'translation', labelKey: 'tabTranslation' },
+  { name: 'quiz', labelKey: 'tabQuiz' },
+  { name: 'ai', labelKey: 'tabAi' },
+  { name: 'data', labelKey: 'tabData' },
+  { name: 'feedback', labelKey: 'tabContact' },
+];
 const tabButtons = Object.fromEntries(
-  TABS.map((name) => [name, h('button', { class: 'tab', type: 'button', role: 'tab', id: `tab-${name}`, 'aria-controls': `panel-${name}`, text: t(name === 'settings' ? 'tabSettings' : 'fbTitle'), onclick: () => selectTab(name, true) })]),
+  TABS.map(({ name, labelKey }) => [name, h('button', { class: 'tab', type: 'button', role: 'tab', id: `tab-${name}`, 'aria-controls': `panel-${name}`, text: t(labelKey), onclick: () => selectTab(name, true) })]),
 );
+const panel = (name, ...content) => h('div', { id: `panel-${name}`, role: 'tabpanel', 'aria-labelledby': `tab-${name}` }, ...content);
 const panels = {
-  settings: h(
-    'div',
-    { id: 'panel-settings', role: 'tabpanel', 'aria-labelledby': 'tab-settings' },
-    // 1. Translation: the interface language on its own, then how and into what a translation
-    // is made, screen translation, flash cards, who translates, the AI.
+  // The interface language on its own, then how and into what a translation is made, screen
+  // translation, the shortcuts, and who translates.
+  translation: panel(
+    'translation',
     h(
       'section',
       { class: 'card', id: 'translation' },
       h('h2', { text: t('optTranslationTitle') }),
-      h('div', { class: 'fields' }, fieldRow('optUiLang', 'optUiLangHelp', uiLanguage)),
+      h('div', { class: 'fields' }, fieldRow('optUiLang', null, uiLanguage)),
       passageSection.element,
       ocrSection.element,
-      quizSection,
+      shortcutsSection.element,
       providerSection.element,
-      aiSection.element,
-      cacheSection.element,
     ),
-    // 2. Backup and synchronisation
-    backupSection,
-    // 3. Support. Only there when a support page is configured (config.js); append() would write a null out as text.
-    supportCard() || '',
   ),
-  feedback: h('div', { id: 'panel-feedback', role: 'tabpanel', 'aria-labelledby': 'tab-feedback' }, feedbackPanel.element),
+  quiz: panel('quiz', quizSection),
+  ai: panel('ai', h('section', { class: 'card card-group' }, aiSection.element)),
+  data: panel('data', backupSection),
+  // Support is only there when a support page is configured (config.js); append() would write a null out as text.
+  feedback: panel('feedback', feedbackPanel.element, supportCard() || ''),
 };
 
 function selectTab(name, fromUser = false) {
-  for (const tab of TABS) {
+  for (const { name: tab } of TABS) {
     tabButtons[tab].setAttribute('aria-selected', String(tab === name));
     tabButtons[tab].tabIndex = tab === name ? 0 : -1;
     panels[tab].hidden = tab !== name;
   }
-  if (fromUser) history.replaceState(null, '', name === 'settings' ? location.pathname : `#${name}`);
+  if (fromUser) history.replaceState(null, '', name === TABS[0].name ? location.pathname : `#${name}`);
 }
 
 const tabList = h('div', {
   class: 'tabs',
   role: 'tablist',
   onkeydown: (event) => {
-    if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
-    const next = TABS[(TABS.findIndex((tab) => tabButtons[tab].getAttribute('aria-selected') === 'true') + 1) % TABS.length];
-    selectTab(next, true);
-    tabButtons[next].focus();
+    const now = TABS.findIndex(({ name }) => tabButtons[name].getAttribute('aria-selected') === 'true');
+    // The arrows follow the direction the page is written in.
+    const forward = document.documentElement.dir === 'rtl' ? 'ArrowLeft' : 'ArrowRight';
+    const back = forward === 'ArrowRight' ? 'ArrowLeft' : 'ArrowRight';
+    const moves = { [forward]: now + 1, [back]: now - 1 + TABS.length, Home: 0, End: TABS.length - 1 };
+    if (!(event.key in moves)) return;
+    event.preventDefault();
+    const { name } = TABS[moves[event.key] % TABS.length];
+    selectTab(name, true);
+    tabButtons[name].focus();
   },
 }, Object.values(tabButtons));
 
@@ -708,15 +721,12 @@ document.getElementById('app').append(
     saved,
   ),
   tabList,
-  panels.settings,
-  panels.feedback,
+  ...Object.values(panels),
 );
-selectTab(location.hash === '#feedback' ? 'feedback' : 'settings');
-
-// The toolbar popup links here for importing.
-// "Open settings" from the AI part of the translation popup.
-if (location.hash === '#ai') requestAnimationFrame(() => aiSection.element.scrollIntoView({ block: 'start' }));
-if (location.hash === '#backup') {
+// Addresses other parts link to: "#ai" (the AI part of the translation popup), "#backup" (the toolbar popup, for importing).
+const opened = location.hash.slice(1);
+selectTab(opened === 'backup' ? 'data' : TABS.some(({ name }) => name === opened) ? opened : TABS[0].name);
+if (opened === 'backup') {
   backupSection.classList.add('highlight');
   backupSection.scrollIntoView({ block: 'center' });
 }
@@ -728,6 +738,7 @@ function render() {
   renderQuizSettings();
   ocrSection.render();
   passageSection.render();
+  shortcutsSection.render();
   aiSection.render();
   providerSection.render();
 }

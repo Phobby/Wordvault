@@ -186,7 +186,8 @@ body {
   .sync-mode:hover { transform: none; }
 }
 .sync-mode input { flex: none; width: 16px; height: 16px; margin: 3px 0 0; accent-color: var(--wv-accent); }
-.sync-mode .switch-text { flex: 1 1 auto; }
+.sync-mode .switch-text { flex: 1 1 auto; min-width: 0; }
+.mode-title { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; }
 .sync-badge {
   flex: none;
   align-self: center;
@@ -238,7 +239,8 @@ body {
 .ocr-warning { margin: 0 0 10px; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--wv-danger); color: var(--wv-danger); font-size: 13px; }
 
 /* Tabs: the settings, and "Contact and feedback" */
-.tabs { display: flex; gap: 4px; margin: 0 0 16px; border-bottom: 1px solid var(--wv-border); }
+.tabs { display: flex; gap: 4px; margin: 0 0 16px; border-bottom: 1px solid var(--wv-border); overflow-x: auto; scrollbar-width: none; }
+.tabs::-webkit-scrollbar { display: none; }
 .tab {
   margin: 0 0 -1px;
   padding: 8px 12px;
@@ -249,6 +251,7 @@ body {
   font: inherit;
   font-size: 14px;
   font-weight: 600;
+  white-space: nowrap;
   cursor: pointer;
 }
 .tab:hover { color: var(--wv-fg); }
@@ -459,9 +462,7 @@ body {
 
 /* A section heading with its main switch next to it (Flashcard). */
 .card-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-.card-head h2,
-.group > .card-head h3 { margin: 0; }
-.group > .card-head h3 { font-size: 14px; font-weight: 650; }
+.card-head h2 { margin: 0; }
 .head-switch { display: inline-flex; cursor: pointer; }
 .head-switch input {
   appearance: none;
@@ -502,6 +503,23 @@ details.more { margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--
 details.more > summary { cursor: pointer; font-size: 14px; font-weight: 650; }
 details.more[open] > summary { margin-bottom: 12px; }
 details.more > .fields { margin-top: 0; }
+/* Sub-headings inside a folded part (flash cards, "Advanced") */
+details.more > h4 { margin: 0; font-size: 13px; font-weight: 650; color: var(--wv-muted); }
+details.more > h4 + .fields { margin-top: 10px; }
+details.more > .fields + h4 { margin-top: 20px; }
+/* A switch that shares its row with a control of its own (the reminder and its time). */
+.field > .switch { flex: 1 1 200px; }
+.field input:disabled { opacity: 0.5; }
+
+/* A card that holds one group (the AI tab): the group's heading is the card's. */
+.card-group > .group:first-child { margin-top: 0; padding-top: 0; border-top: 0; }
+.card-group > .group:first-child > h3 { margin: 0 0 4px; font-size: 16px; }
+
+/* Keyboard shortcuts (options/shortcuts.js) */
+.shortcut-list { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px 16px; margin: 0; font-size: 13.5px; }
+.shortcut-list dt { font-weight: 650; }
+.shortcut-list dd { margin: 0; text-align: end; }
+#shortcuts .buttons { margin: 0; }
 
 /* Narrow windows: label above control. */
 @media (max-width: 420px) {

@@ -320,7 +320,7 @@ permission.
 
 ### Contact and feedback
 
-The second tab of the settings page (`options/options.html#feedback`). A form: type (Bug / Idea /
+The last tab of the settings page (`options/options.html#feedback`), with the support card under it. A form: type (Bug / Idea /
 Other), the feature concerned, a text of 10-1500 characters, an optional e-mail address, "Add
 technical information" (on by default) and "Add recent error records" (off by default). No e-mail
 program is opened (no `mailto`).
@@ -458,9 +458,14 @@ the text is handed to that window through `storage.session`, never through the a
 The shortcut cannot read the selection on those pages; a sign on the toolbar button says so.
 
 **Settings** (the "Translation settings" group, `options/passage.js`): the target language and
-"Translate on double click" first, then "Right-click menu", "Translate button on selection" and the
-shortcut; how to change the shortcut, the length limit and where a selection goes are under
-"Details" (`options/disclosure.js`).
+"Translate on double click" first, then "Right-click menu" and "Translate button on selection"; the
+length limit and where a selection goes are under "Details" (`options/disclosure.js`). The shortcuts
+of all commands are listed together in "Keyboard shortcuts" (`options/shortcuts.js`).
+
+The settings page has one tab per subject, each with an address of its own: Translation (no
+address), `#quiz`, `#ai`, `#data` (backup, synchronisation and the cache; `#backup` opens it too and
+highlights the backup card) and `#feedback`. Each shows the few settings most people change; the
+rest is under "Advanced" or, for explanations, "Details".
 
 ### AI features (with the user's own provider)
 

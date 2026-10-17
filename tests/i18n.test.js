@@ -117,11 +117,11 @@ test('on first use the browser\'s language is used, and only it (with English fo
 
 test('a key a language lacks is shown in English; one no file has is shown as itself and reported', async () => {
   const partial = { ...TR };
-  delete partial.optUiLangHelp;
+  delete partial.optTargetLang;
   const page = context({ browserLanguage: 'tr', files: { en: EN, tr: partial } });
   await page.i18n.load();
   assert.equal(page.i18n.t('optUiLang'), 'Arayüz dili');
-  assert.equal(page.i18n.t('optUiLangHelp'), EN.optUiLangHelp);
+  assert.equal(page.i18n.t('optTargetLang'), EN.optTargetLang);
   assert.equal(page.i18n.t('noSuchKey'), 'noSuchKey');
   page.i18n.t('noSuchKey');
   assert.equal(warnings.filter((line) => line.includes('noSuchKey')).length, 1, 'reported once, in a development build');
