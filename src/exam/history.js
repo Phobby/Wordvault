@@ -1,9 +1,13 @@
-// "Past tests": the last few tests, kept on this device only (chrome.storage.local, under a key of
-// their own). They are not vault entries: neither the backup nor synchronisation reads them.
+// "Past tests": the last few tests (chrome.storage.local, under a key of their own). They travel
+// in the backup file and with synchronisation (exam/merge.js), except browser sync, whose room
+// is kept for the words. A deleted test leaves a deletion time behind, so that it does not come
+// back from another device.
 
 import { EXAM, LEVELS, QUESTION_TYPES } from './config.js';
+import { mergeExams, normalizeExams, purgeExams } from './merge.js';
 
 export const HISTORY_KEY = 'examHistory';
+export const DELETED_KEY = 'examDeleted';
 
 /**
  * @typedef {Object} StoredExam
@@ -59,8 +63,31 @@ export async function getExam(id) {
   return (await readAll()).find((item) => item.id === id) || null;
 }
 
-export async function removeExam(id) {
+export async function removeExam(id, now = Date.now()) {
   const all = await readAll();
-  await chrome.storage.local.set({ [HISTORY_KEY]: all.filter((item) => item.id !== id) });
+  const { [DELETED_KEY]: deleted } = await chrome.storage.local.get(DELETED_KEY);
+  await chrome.storage.local.set({ [HISTORY_KEY]: all.filter((item) => item.id !== id), [DELETED_KEY]: { ...(deleted && typeof deleted === 'object' ? deleted : {}), [id]: now } });
   return all.length - 1;
+}
+
+/** The tests of this device and its deletions, as the section that travels (exam/merge.js). */
+export async function readExamSection() {
+  const { [DELETED_KEY]: deleted } = await chrome.storage.local.get(DELETED_KEY);
+  return normalizeExams({ t: await readAll(), d: deleted });
+}
+
+/**
+ * Brings this device's tests in line with a section that came from elsewhere (merged with what is
+ * here first, so that nothing of this device's is lost).
+ * @returns {Promise<boolean>} Whether anything changed.
+ */
+export async function applyExamSection(section, now = Date.now()) {
+  const local = await readExamSection();
+  const merged = purgeExams(mergeExams(local, normalizeExams(section)), now);
+  const tests = merged.t.map(readExam).filter(Boolean);
+  const sorted = (deleted) => JSON.stringify(Object.entries(deleted).sort(([a], [b]) => (a < b ? -1 : 1)));
+  const same = JSON.stringify(tests.map((test) => test.id)) === JSON.stringify(local.t.map((test) => test.id)) && sorted(merged.d) === sorted(local.d);
+  if (same) return false;
+  await chrome.storage.local.set({ [HISTORY_KEY]: tests, [DELETED_KEY]: merged.d });
+  return true;
 }

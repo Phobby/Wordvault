@@ -265,6 +265,8 @@ chrome.storage.onChanged.addListener((changes, area) => {
   if (changes.syncConfig) scheduleSync();
   // the vault, or the days a quiz was done (they travel with it)
   if (Object.keys(changes).some((key) => key.startsWith(ENTRY_PREFIX) || key.startsWith(TOMBSTONE_PREFIX) || key === DAYS_KEY)) vaultChanged().catch(() => {});
+  // the past tests travel too (made, or deleted)
+  if (changes.examHistory || changes.examDeleted) vaultChanged().catch(() => {});
   // the settings: an edit by the user (not one applied from another device, which writes the
   // edit time along with it) is noted and travels like a change of the vault (sync/prefs.js)
   if (PREFS_STORAGE_KEYS.some((key) => key in changes) && !(PREFS_STAMP_KEY in changes)) {

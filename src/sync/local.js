@@ -7,6 +7,8 @@ import { compareVersions } from './merge.js';
 import { emptyDocument, fromRecord, isTombstone, streakSection, toRecord, toTombstone } from './model.js';
 import { addRemoteDays, getDays } from '../quiz/streak.js';
 import { applyPrefs, mergePrefs, prefsFingerprint, readPrefs, withoutKeys } from './prefs.js';
+import { hasExams } from '../exam/merge.js';
+import { applyExamSection, readExamSection } from '../exam/history.js';
 
 async function readState() {
   const all = await chrome.storage.local.get(null);
@@ -32,15 +34,18 @@ function documentFrom({ entries, tombstones }) {
 }
 
 /**
- * The vault of this device, removals included, and its settings, as a synchronised document.
- * @param {{ withKeys?: boolean }} [options]  withKeys: carry the API keys (an encrypted document only).
+ * The vault of this device, removals included, its settings and its past tests, as a synchronised document.
+ * @param {{ withKeys?: boolean, withExams?: boolean }} [options]  withKeys: carry the API keys (an
+ *        encrypted document only); withExams: carry the past tests (not with browser sync).
  */
-export async function readLocalDocument({ withKeys = false } = {}) {
+export async function readLocalDocument({ withKeys = false, withExams = true } = {}) {
   const document = documentFrom(await readState());
   const streak = streakSection(await getDays());
   if (streak) document.s = streak;
   const prefs = await readPrefs();
   if (prefs.u > 0) document.p = withKeys ? prefs : withoutKeys(prefs);
+  const exams = withExams ? await readExamSection() : null;
+  if (hasExams(exams)) document.x = exams;
   return document;
 }
 
@@ -96,5 +101,7 @@ export async function applyDocument(document) {
       changes.settings = true;
     }
   }
+  // Past tests: joined with this device's (a test deleted anywhere stays deleted).
+  if (document.x && (await applyExamSection(document.x))) changes.tests = true;
   return changes;
 }

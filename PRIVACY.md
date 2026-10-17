@@ -155,7 +155,7 @@ gideceğini anlatan onayı verdiğinde kasan **senin seçtiğin yere** gönderil
 ilerlemesi (kutu, sonraki tekrar zamanı, cevap özeti, öğrenildi durumu), quiz çözdüğün günlerin tarih
 listesi (seri için), silinen kelimelerin silme kayıtları ve **ayarların** (hedef dil, quiz ayarları,
 arayüz dili, site bazlı kaynak diller, çeviri ve yapay zekâ sağlayıcısı seçimi, model ve adres, site
-listeleri). **API anahtarları** (yapay zekâ, DeepL) yalnızca şifreleme açıkken, şifreli dosyanın
+listeleri) ve **son 10 sınavın** (sorular, cevaplar, açıklamalar; tarayıcı senkronu hariç). **API anahtarları** (yapay zekâ, DeepL) yalnızca şifreleme açıkken, şifreli dosyanın
 içinde gönderilir; şifresiz dosyada hiçbir zaman bulunmaz.
 
 **Asla gönderilmeyen:** sayfa adresleri ve başlıkları, şifresiz dosyada API anahtarları, yapay zekâya

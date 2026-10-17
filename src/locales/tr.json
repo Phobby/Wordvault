@@ -812,7 +812,7 @@
   "examTrue": "Doğru",
   "examFalse": "Yanlış",
   "examHistoryTitle": "Geçmiş sınavlar",
-  "examHistoryHelp": "Son {max} sınav, yalnızca bu cihazda tutulur. Yedeğe ve senkronizasyona dahil değildir.",
+  "examHistoryHelp": "Son {max} sınav. Yedek dosyasına ve senkronizasyona dahildir (kelimelere yer kalsın diye tarayıcı senkronu hariç).",
   "examHistoryEmpty": "Henüz sınav yok.",
   "examQuestionCount": "{count} soru",
   "examOpen": "Aç",
@@ -822,7 +822,7 @@
   "bkIncludeKeys": "API anahtarlarını dahil et",
   "bkIncludeKeysHelp": "Yalnızca bu dışa aktarma için. Dosyaya sahip olan herkes anahtarlarını kullanabilir: dosyayı güvenli bir yerde tut.",
   "bkSettingsRestored": "Dosyadaki ayarlar geri yüklendi.",
-  "syncSettingsNote": "Ayarların da taşınır. API anahtarları yalnızca şifreleme açıkken, şifreli dosyanın içinde gider; yapay zekâya metin gönderme onayı her cihazda ayrıca sorulur.",
+  "syncSettingsNote": "Ayarların ve geçmiş sınavların da taşınır (sınavlar tarayıcı senkronu hariç). API anahtarları yalnızca şifreleme açıkken, şifreli dosyanın içinde gider; yapay zekâya metin gönderme onayı her cihazda ayrıca sorulur.",
   "optAiNeedsPermission": "Bu tarayıcıya henüz sağlayıcıya erişme izni verilmedi (ayarlar başka bir cihazdan geldi).",
   "optAiAllow": "İzin ver",
   "examCountLimited": "Bu seçimlerle en çok {max}: bu dilde {words} kelime var ve bir kelime her soru türünde yalnızca bir kez sorulur.",
@@ -855,5 +855,6 @@
   "sheetReset": "Temizle",
   "sheetIncludeKey": "Cevap anahtarını yazdırmaya dahil et",
   "sheetRegenerate": "Yeniden oluştur",
-  "sheetPrintTip": "PDF için: “Yazdır / PDF olarak kaydet”e bas, hedef (yazıcı) olarak “PDF olarak kaydet”i seç. Sayfa numarası için oradaki “Üstbilgiler ve altbilgiler” seçeneğini aç. Burada yazdığın cevaplar yazdırılmaz: sayfa kâğıtta doldurmak için boş çıkar."
+  "sheetPrintTip": "PDF için: “Yazdır / PDF olarak kaydet”e bas, hedef (yazıcı) olarak “PDF olarak kaydet”i seç. Sayfa numarası için oradaki “Üstbilgiler ve altbilgiler” seçeneğini aç. Burada yazdığın cevaplar yazdırılmaz: sayfa kâğıtta doldurmak için boş çıkar.",
+  "bkTestsRestored": "Dosyadaki geçmiş sınavlar eklendi."
 }

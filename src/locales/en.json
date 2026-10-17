@@ -812,7 +812,7 @@
   "examTrue": "True",
   "examFalse": "False",
   "examHistoryTitle": "Past tests",
-  "examHistoryHelp": "The last {max} tests, kept on this device only. They are not part of backup or sync.",
+  "examHistoryHelp": "The last {max} tests. They are part of the backup file and of synchronisation (except browser sync, which keeps its room for the words).",
   "examHistoryEmpty": "No tests yet.",
   "examQuestionCount": "{count, plural, one {# question} other {# questions}}",
   "examOpen": "Open",
@@ -822,7 +822,7 @@
   "bkIncludeKeys": "Include API keys",
   "bkIncludeKeysHelp": "Only for this export. Anyone who has the file can then use your keys: keep it somewhere safe.",
   "bkSettingsRestored": "The settings of the file were restored.",
-  "syncSettingsNote": "Your settings travel too. API keys only while encryption is on, inside the encrypted file; agreeing to send text to an AI provider is asked on each device.",
+  "syncSettingsNote": "Your settings and past tests travel too (past tests not with browser sync). API keys only while encryption is on, inside the encrypted file; agreeing to send text to an AI provider is asked on each device.",
   "optAiNeedsPermission": "This browser has not been allowed to reach the provider yet (the settings came from another device).",
   "optAiAllow": "Allow",
   "examCountLimited": "At most {max} with these choices: {words, plural, one {# word} other {# words}} in this language, and a word is asked once per kind of question.",
@@ -855,5 +855,6 @@
   "sheetReset": "Clear",
   "sheetIncludeKey": "Print the answer key",
   "sheetRegenerate": "Make it again",
-  "sheetPrintTip": "For a PDF: “Print / save as PDF”, then choose “Save as PDF” as the destination (printer). For page numbers, turn on “Headers and footers” there. Answers typed here are not printed: the sheet comes out blank, to fill in on paper."
+  "sheetPrintTip": "For a PDF: “Print / save as PDF”, then choose “Save as PDF” as the destination (printer). For page numbers, turn on “Headers and footers” there. Answers typed here are not printed: the sheet comes out blank, to fill in on paper.",
+  "bkTestsRestored": "The past tests of the file were added."
 }

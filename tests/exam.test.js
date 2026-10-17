@@ -212,7 +212,7 @@ test('left-out questions are asked for once more, alone; what is still missing i
 
 // --- past tests ---------------------------------------------------------------------------------
 
-test('past tests: newest first, at most HISTORY_ITEMS, removable, and in neither the backup nor the vault', async () => {
+test('past tests: newest first, at most HISTORY_ITEMS, removable, in the backup but not in the vault', async () => {
   for (let i = 0; i < EXAM.HISTORY_ITEMS + 3; i += 1) await saveExam({ language: 'en', level: 'B1', types: [FILL_BLANK], requested: 1, questions: [fill()] }, NOW + i);
   const list = await listExams();
   assert.equal(list.length, EXAM.HISTORY_ITEMS);
@@ -227,7 +227,7 @@ test('past tests: newest first, at most HISTORY_ITEMS, removable, and in neither
   await chrome.storage.local.set({ [HISTORY_KEY]: 'garbage' });
   assert.deepEqual(await listExams(), []);
   await saveExam({ language: 'en', level: 'B1', types: [FILL_BLANK], requested: 1, questions: [fill()] });
-  assert.ok(!JSON.stringify(await createBackup()).includes('Yesterday she'), 'not in the backup');
+  assert.ok(JSON.stringify(await createBackup()).includes('Yesterday she'), 'in the backup');
   assert.equal((await listEntries()).length, 0, 'not in the vault');
 });
 

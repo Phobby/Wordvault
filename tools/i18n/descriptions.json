@@ -695,5 +695,6 @@
   "sheetReset": "Test sheet: toolbar button that clears the answers.",
   "sheetIncludeKey": "Test sheet: checkbox.",
   "sheetRegenerate": "Test sheet: toolbar button; new questions with the same choices.",
-  "sheetPrintTip": "Test sheet: how to get a PDF."
+  "sheetPrintTip": "Test sheet: how to get a PDF.",
+  "bkTestsRestored": "Options, backup: after importing a file with past tests."
 }

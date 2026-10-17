@@ -19,10 +19,12 @@
 //
 //   p  the settings (since version 3; sync/prefs.js): the newest edit of any device as a
 //      whole. API keys only in an encrypted document.
+//   x  the past tests (since version 4; exam/merge.js): the newest few and the deletions. Left
+//      out with browser sync, whose room is kept for the words.
 //
 // Version 2 also added fields to q (learned state, a count per way of asking). Older documents
-// are read as they are; what this version writes is version 3, which an older installation
-// refuses to rewrite until it is updated (it would drop the settings).
+// are read as they are; what this version writes is version 4, which an older installation
+// refuses to rewrite until it is updated (it would drop the settings or the tests).
 //
 // The keys are short because the document has to fit into small quotas (browser sync holds
 // about 100 KB). Empty values are left out. The id is the key and is derived from the word and
@@ -37,8 +39,9 @@ import { PHRASE, entryId } from '../lib/vault.js';
 import { normalizeStats } from '../quiz/learning.js';
 import { cleanDays } from '../quiz/progress.js';
 import { normalizePrefs } from './prefs.js';
+import { hasExams, normalizeExams } from '../exam/merge.js';
 
-export const SCHEMA_VERSION = 3;
+export const SCHEMA_VERSION = 4;
 /** Tombstones older than this are dropped at the next synchronisation. */
 export const TOMBSTONE_TTL_MS = 90 * 24 * 60 * 60 * 1000;
 /** "A short context sentence": the full one stays on the device it was saved on. */
@@ -166,6 +169,8 @@ export function normalizeDocument(raw) {
   if (streak) document.s = streak;
   const prefs = normalizePrefs(raw.p);
   if (prefs) document.p = prefs;
+  const exams = normalizeExams(raw.x);
+  if (hasExams(exams)) document.x = exams;
   return document;
 }
 

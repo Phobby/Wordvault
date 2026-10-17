@@ -23,6 +23,7 @@
 import { canonical } from './canonical.js';
 import { SCHEMA_VERSION, TOMBSTONE_TTL_MS, isTombstone, streakSection, timeOf } from './model.js';
 import { mergePrefs } from './prefs.js';
+import { hasExams, mergeExams, purgeExams } from '../exam/merge.js';
 
 export { canonical };
 
@@ -41,10 +42,11 @@ export function compareVersions(a, b) {
 }
 
 /** A document with its entries in sorted order, so that equal documents serialise equally. */
-function documentOf(entries, streak = null, prefs = null) {
+function documentOf(entries, streak = null, prefs = null, exams = null) {
   const document = { v: SCHEMA_VERSION, e: Object.fromEntries(Object.entries(entries).sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))) };
   if (streak) document.s = streak;
   if (prefs) document.p = prefs;
+  if (hasExams(exams)) document.x = exams;
   return document;
 }
 
@@ -63,7 +65,7 @@ export function mergeDocuments(a, b) {
     if (!(id in entries) || compareVersions(value, entries[id]) > 0) entries[id] = value;
   }
   // The settings: the later edit as a whole (sync/prefs.js).
-  return documentOf(entries, mergeStreaks(a.s, b.s), mergePrefs(a.p || null, b.p || null));
+  return documentOf(entries, mergeStreaks(a.s, b.s), mergePrefs(a.p || null, b.p || null), mergeExams(a.x || null, b.x || null));
 }
 
 /**
@@ -73,12 +75,12 @@ export function mergeDocuments(a, b) {
  * word back: that is the price of not keeping tombstones forever.
  */
 export function purgeTombstones(document, now = Date.now()) {
-  return documentOf(Object.fromEntries(Object.entries(document.e).filter(([, value]) => !(isTombstone(value) && value.d <= now - TOMBSTONE_TTL_MS))), mergeStreaks(document.s, null), document.p || null);
+  return documentOf(Object.fromEntries(Object.entries(document.e).filter(([, value]) => !(isTombstone(value) && value.d <= now - TOMBSTONE_TTL_MS))), mergeStreaks(document.s, null), document.p || null, purgeExams(document.x || null, now));
 }
 
 /** The text that is stored and compared: equal documents give equal text. */
 export function serializeDocument(document) {
-  return canonical(documentOf(document.e, mergeStreaks(document.s, null), document.p || null));
+  return canonical(documentOf(document.e, mergeStreaks(document.s, null), document.p || null, document.x || null));
 }
 
 export function documentsEqual(a, b) {

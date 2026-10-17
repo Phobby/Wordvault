@@ -206,7 +206,7 @@ test('learned is in the JSON export and comes back with the import', async (t) =
   await addEntry(WORD);
   await answerOn(t, LEARNING_RUN);
   const file = JSON.stringify(await createBackup());
-  assert.equal(JSON.parse(file).version, 3);
+  assert.equal(JSON.parse(file).version, 4);
   use(createDevice('other'));
   assert.deepEqual(await restoreBackup(file), { added: 1, skipped: 0, invalid: 0, settings: true });
   const [entry] = await listEntries();

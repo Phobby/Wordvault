@@ -135,8 +135,8 @@ const filePicker = h('input', {
     if (!file) return;
     try {
       if (file.size > MAX_BACKUP_BYTES) throw new Error('too large');
-      const { added, skipped, invalid, settings } = await restoreBackup(await file.text());
-      backupStatus.textContent = [t('bkImported', { added: added, duplicates: skipped, failed: invalid }), settings ? t('bkSettingsRestored') : ''].filter(Boolean).join(' ');
+      const { added, skipped, invalid, settings, tests } = await restoreBackup(await file.text());
+      backupStatus.textContent = [t('bkImported', { added: added, duplicates: skipped, failed: invalid }), settings ? t('bkSettingsRestored') : '', tests ? t('bkTestsRestored') : ''].filter(Boolean).join(' ');
     } catch {
       backupStatus.textContent = t('bkBadFile');
     }

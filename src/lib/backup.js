@@ -4,14 +4,16 @@ import { WordvaultError } from './errors.js';
 import { addRemoteDays, getDays } from '../quiz/streak.js';
 import { importEntries, listEntries } from './vault.js';
 import { applyPrefs, normalizePrefs, readPrefs, withoutKeys } from '../sync/prefs.js';
+import { applyExamSection, readExamSection } from '../exam/history.js';
 
 const FORMAT = 'wordvault-backup';
 /**
  * 2: entries carry the learned state (in `quiz`), and the file the days a quiz was done.
  * 3: the settings (sync/prefs.js), with the API keys only if the user asked for them.
+ * 4: the past tests ("Create a test with AI").
  * Older files are read as they are.
  */
-const VERSION = 3;
+const VERSION = 4;
 
 /**
  * @param {{ includeKeys?: boolean }} [options]  includeKeys: the API keys go into the file too
@@ -20,7 +22,7 @@ const VERSION = 3;
  */
 export async function createBackup({ includeKeys = false } = {}) {
   const prefs = await readPrefs();
-  return { format: FORMAT, version: VERSION, exportedAt: new Date().toISOString(), entries: await listEntries(), streak: await getDays(), settings: includeKeys ? prefs : withoutKeys(prefs) };
+  return { format: FORMAT, version: VERSION, exportedAt: new Date().toISOString(), entries: await listEntries(), streak: await getDays(), settings: includeKeys ? prefs : withoutKeys(prefs), exams: (await readExamSection()).t };
 }
 
 /** "wordvault-2026-10-11.json" */
@@ -51,7 +53,9 @@ export async function restoreBackup(json) {
   if (!Array.isArray(data) && data.streak && typeof data.streak === 'object') await addRemoteDays(data.streak);
   const prefs = Array.isArray(data) ? null : normalizePrefs(data.settings);
   if (prefs) await applyPrefs(prefs, { stamp: Date.now() });
-  return prefs ? { ...counts, settings: true } : counts;
+  // Past tests are joined with this device's; the newest few are kept.
+  const tests = !Array.isArray(data) && Array.isArray(data.exams) && (await applyExamSection({ t: data.exams, d: {} }));
+  return { ...counts, ...(prefs ? { settings: true } : {}), ...(tests ? { tests: true } : {}) };
 }
 
 /**

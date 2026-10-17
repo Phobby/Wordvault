@@ -49,7 +49,10 @@ const offline = () => typeof navigator !== 'undefined' && navigator.onLine === f
  * This device's document as the engine sends it: the API keys only when the stored copy is
  * encrypted (sync/prefs.js). Used both for the exchange and for "has anything changed?".
  */
-const localDocument = (config) => readLocalDocument({ withKeys: Boolean(config.encryption?.enabled) });
+const localDocument = (config) => readLocalDocument({ withKeys: Boolean(config.encryption?.enabled), withExams: carriesExams(config) });
+
+/** Browser sync has about 100 KB in all: that room is kept for the words, so the past tests stay out of it. */
+const carriesExams = (config) => getSyncProvider(config.providerId)?.kind !== 'browser';
 
 function sessionFor(config) {
   return { connection: config.connection || {}, update: (patch) => updateConnection(config.providerId, patch) };
@@ -82,6 +85,11 @@ async function exchange(provider, session, config) {
   }
   // Never a key in a copy that is stored unencrypted, whatever an earlier, encrypted one carried.
   if (!encrypting && merged.p?.keys) merged = { ...merged, p: withoutKeys(merged.p) };
+  // ... and no past tests in browser sync.
+  if (!carriesExams(config) && merged.x) {
+    const { x, ...rest } = merged;
+    merged = rest;
+  }
   // Removals that have been known everywhere for long enough are dropped for good.
   merged = purgeTombstones(merged);
 
