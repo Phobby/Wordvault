@@ -796,7 +796,7 @@
   "examDelete": "Sil",
   "examDeleteLabel": "{date} tarihli {language} {level} sınavını sil",
   "bkIncludeKeys": "API anahtarlarını dahil et",
-  "bkIncludeKeysHelp": "Yalnızca bu dışa aktarma için. Dosyaya sahip olan herkes anahtarlarını kullanabilir: dosyayı güvenli bir yerde tut.",
+  "bkIncludeKeysHelp": "Yalnızca bu dışa aktarma için. Dosyayı alan anahtarlarını kullanabilir: güvenli yerde tut.",
   "bkSettingsRestored": "Dosyadaki ayarlar geri yüklendi.",
   "syncSettingsNote": "Ayarlar ve geçmiş sınavlar da taşınır; API anahtarları yalnızca şifreleme açıkken.",
   "optAiNeedsPermission": "Bu tarayıcıya henüz sağlayıcıya erişme izni verilmedi (ayarlar başka bir cihazdan geldi).",
