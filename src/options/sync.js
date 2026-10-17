@@ -124,6 +124,8 @@ export function createSyncControls({ onSaved }) {
     { class: 'sync', id: 'sync' },
     h('h3', { text: t('syncTitle') }),
     h('p', { class: 'help', text: t('syncIntro') }),
+    // What travels besides the words (sync/prefs.js).
+    h('p', { class: 'help', text: t('syncSettingsNote') }),
     modes,
     panel,
   );

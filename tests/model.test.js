@@ -116,7 +116,7 @@ test('documents from outside: nothing stored yet, well-formed, malformed', () =>
   };
   const before = JSON.stringify(raw);
   const document = normalizeDocument(raw);
-  assert.deepEqual(document, { v: 2, e: { 'en|tr|book': good, 'en|tr|gone': { d: T0, r: 3 } } });
+  assert.deepEqual(document, { v: SCHEMA_VERSION, e: { 'en|tr|book': good, 'en|tr|gone': { d: T0, r: 3 } } });
   assert.equal(JSON.stringify(raw), before, 'the argument is not changed');
 });
 

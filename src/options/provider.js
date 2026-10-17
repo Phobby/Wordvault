@@ -2,8 +2,9 @@
 // which needs nothing, or DeepL with the user's own key), the key, a test of the key and a
 // short guide to getting one.
 //
-// The key is stored with the other settings in chrome.storage.local and nowhere else: it is
-// not part of the backup, of synchronisation or of feedback.
+// The key is stored with the other settings in chrome.storage.local. It is never part of
+// feedback; it goes into synchronisation only when it is encrypted, and into a backup file only
+// when the user asks for it (sync/prefs.js).
 
 import { disclosure } from './disclosure.js';
 import { matchSupported } from '../lib/languages.js';

@@ -29,6 +29,7 @@ import { ackRank, freezeYesterday, getProgress } from '../quiz/progress-state.js
 import { REMINDER_ALARM, REMINDER_NOTIFICATION, ensureReminder, runReminder } from '../quiz/reminder.js';
 import { DAYS_KEY } from '../quiz/streak.js';
 import { ensureSyncScheduled, onSyncAlarm, remoteChanged, syncInBackground, turnOffEncryption, unlockEncryption, vaultChanged } from '../sync/engine.js';
+import { PREFS_STAMP_KEY, PREFS_STORAGE_KEYS, notePrefsChange } from '../sync/prefs.js';
 import { ALARM_NAME, answerQuestion, claimSession, ensureScheduled, muteToday, openFromNotification, quizPageGone, runScheduledQuiz, startManualQuiz, testQuiz, unmute } from '../quiz/scheduler.js';
 
 /** Host name of the web page a message came from ('' for extension pages). */
@@ -264,6 +265,16 @@ chrome.storage.onChanged.addListener((changes, area) => {
   if (changes.syncConfig) scheduleSync();
   // the vault, or the days a quiz was done (they travel with it)
   if (Object.keys(changes).some((key) => key.startsWith(ENTRY_PREFIX) || key.startsWith(TOMBSTONE_PREFIX) || key === DAYS_KEY)) vaultChanged().catch(() => {});
+  // the settings: an edit by the user (not one applied from another device, which writes the
+  // edit time along with it) is noted and travels like a change of the vault (sync/prefs.js)
+  if (PREFS_STORAGE_KEYS.some((key) => key in changes) && !(PREFS_STAMP_KEY in changes)) {
+    notePrefsChange()
+      .then((edited) => edited && vaultChanged())
+      .catch(() => {});
+  }
+  // settings written with their edit time (a restored backup; or synchronisation applying what
+  // it fetched, which vaultChanged finds to be in step already and leaves alone)
+  if (PREFS_STAMP_KEY in changes) vaultChanged().catch(() => {});
 });
 // Back online while this script happens to be awake: send what was waiting. (When it is
 // asleep, the retry alarm does the same a little later.)

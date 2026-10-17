@@ -658,5 +658,11 @@
   "examOpen": "Test wizard: button of a past test.",
   "examOpenLabel": "Test wizard: accessible label.",
   "examDelete": "Test wizard: button of a past test.",
-  "examDeleteLabel": "Test wizard: accessible label."
+  "examDeleteLabel": "Test wizard: accessible label.",
+  "bkIncludeKeys": "Options, backup: checkbox; the AI and DeepL keys go into the exported file.",
+  "bkIncludeKeysHelp": "Options, backup: explanation of the checkbox.",
+  "bkSettingsRestored": "Options, backup: after importing a file with settings.",
+  "syncSettingsNote": "Options, synchronisation: what travels besides the words.",
+  "optAiNeedsPermission": "Options, AI: the provider is set up but the host permission is missing on this device.",
+  "optAiAllow": "Options, AI: button that asks the browser for the host permission."
 }

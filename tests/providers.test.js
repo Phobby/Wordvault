@@ -221,7 +221,7 @@ test('a failure is never remembered as an answer', async () => {
 
 // --- where the key never goes ---
 
-test('the key is in the settings in local storage, and in nothing that leaves the device', async () => {
+test('the key is in the settings in local storage, and leaves the device only in an encrypted document or a backup made with it', async () => {
   await useDeepl(FREE_KEY);
   await addEntry({ text: 'book', translation: 'kitap', sourceLang: 'en', targetLang: 'tr', sentence: 'A good book.', url: 'https://example.com/', title: 'Example' });
   await translate({ text: 'serendipity', source: 'en' }, 'example.com');
@@ -232,12 +232,15 @@ test('the key is in the settings in local storage, and in nothing that leaves th
 
   const backup = JSON.stringify(await createBackup());
   assert.ok(backup.includes('kitap') && !backup.includes(secret), 'not in the backup / JSON export');
-  assert.ok(!/providerConfig|apiKey|translationCache/.test(backup));
+  assert.ok(!/apiKey|translationCache/.test(backup));
+  assert.ok(JSON.stringify(await createBackup({ includeKeys: true })).includes(secret), 'only in a backup made with "include API keys"');
 
   const document = await readLocalDocument();
   const plain = JSON.stringify(document);
   assert.ok(plain.includes('kitap') && !plain.includes(secret), 'not in the synchronised document');
-  assert.ok(!/providerConfig|apiKey|serendipity\/deepl/.test(plain), 'nor the settings or the translation cache');
+  assert.ok(!/apiKey|serendipity\/deepl/.test(plain), 'nor the translation cache');
+  assert.ok(plain.includes('providerConfig'), 'the settings travel, without the key');
+  assert.ok(JSON.stringify(await readLocalDocument({ withKeys: true })).includes(secret), 'the key only in the document that is encrypted');
   assert.ok((await encodeDocument(document)).byteLength > 0);
 
   const settings = (await chrome.storage.local.get('settings')).settings;

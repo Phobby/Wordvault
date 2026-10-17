@@ -1,10 +1,12 @@
 // What the user set up for the AI features: which provider, its key, model and address, the
 // site lists, and whether they have agreed to text being sent.
 //
-// It lives under its own key in chrome.storage.local and nowhere else. It is part of neither
-// the backup, nor synchronisation, nor a piece of feedback, nor any cache (tests/ai-secrets.test.js
-// holds that). The key never leaves the background script and the settings page: content
-// scripts are told only whether a provider is set up, never with what.
+// It lives under its own key in chrome.storage.local. It travels with the other settings
+// (sync/prefs.js), without the consents; the keys only inside an encrypted synchronised document
+// or a backup file the user asked to include them in. Never in feedback or any cache
+// (tests/ai-safety.test.js, tests/sync-prefs.test.js). The key never leaves the background
+// script and the settings page otherwise: content scripts are told only whether a provider is
+// set up, never with what.
 
 import { getAiProvider } from './providers/index.js';
 import { parseBase } from './providers/shared.js';

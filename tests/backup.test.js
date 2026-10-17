@@ -14,21 +14,23 @@ beforeEach(() => {
 
 const WORD = { text: 'Serendipity', sourceLang: 'en', targetLang: 'tr', translation: 'tesadüf', alternatives: ['şans'], sentence: 'It was pure serendipity.', url: 'https://example.com/a', title: 'A page' };
 
-test('a backup restores on an empty device, dictionary data included', async () => {
+test('a backup restores on an empty device, dictionary data and settings included', async () => {
+  await chrome.storage.local.set({ settings: { targetLang: 'fr', quizDailyGoal: 9 } });
   const saved = await addEntry(WORD);
   await updateEntry(saved.id, { dictionary: { fetchedAt: 1, groups: [{ partOfSpeech: 'Noun', definitions: [{ text: 'luck', examples: [] }] }] } });
   await addEntry({ ...WORD, text: 'book', translation: 'kitap' });
   const file = JSON.stringify(await createBackup());
-  assert.deepEqual([JSON.parse(file).format, JSON.parse(file).version, JSON.parse(file).entries.length], ['wordvault-backup', 2, 2]);
+  assert.deepEqual([JSON.parse(file).format, JSON.parse(file).version, JSON.parse(file).entries.length], ['wordvault-backup', 3, 2]);
 
   device = use(createDevice('second'));
   await chrome.storage.local.set({ settings: { targetLang: 'de' } });
-  assert.deepEqual(await restoreBackup(file), { added: 2, skipped: 0, invalid: 0 });
+  assert.deepEqual(await restoreBackup(file), { added: 2, skipped: 0, invalid: 0, settings: true });
   const stored = device.dump();
   assert.equal(stored['vault:en|tr|serendipity'].dictionary.groups[0].partOfSpeech, 'Noun');
   assert.equal(stored['vault:en|tr|serendipity'].url, 'https://example.com/a');
-  assert.deepEqual(stored.settings, { targetLang: 'de' }, 'settings are not part of a backup');
-  assert.deepEqual(await restoreBackup(file), { added: 0, skipped: 2, invalid: 0 }, 'restoring twice adds nothing');
+  assert.equal(stored.settings.targetLang, 'fr', 'the settings of the file are restored');
+  assert.equal(stored.settings.quizDailyGoal, 9);
+  assert.deepEqual(await restoreBackup(file), { added: 0, skipped: 2, invalid: 0, settings: true }, 'restoring twice adds no words');
 });
 
 test('importing never overwrites a word that is already there', async () => {

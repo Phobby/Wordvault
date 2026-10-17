@@ -6,6 +6,7 @@ import { ENTRY_PREFIX, TOMBSTONE_PREFIX, entryKey, tombstoneKey } from '../lib/v
 import { compareVersions } from './merge.js';
 import { emptyDocument, fromRecord, isTombstone, streakSection, toRecord, toTombstone } from './model.js';
 import { addRemoteDays, getDays } from '../quiz/streak.js';
+import { applyPrefs, mergePrefs, prefsFingerprint, readPrefs, withoutKeys } from './prefs.js';
 
 async function readState() {
   const all = await chrome.storage.local.get(null);
@@ -30,11 +31,16 @@ function documentFrom({ entries, tombstones }) {
   return document;
 }
 
-/** The vault of this device, removals included, as a synchronised document. */
-export async function readLocalDocument() {
+/**
+ * The vault of this device, removals included, and its settings, as a synchronised document.
+ * @param {{ withKeys?: boolean }} [options]  withKeys: carry the API keys (an encrypted document only).
+ */
+export async function readLocalDocument({ withKeys = false } = {}) {
   const document = documentFrom(await readState());
   const streak = streakSection(await getDays());
   if (streak) document.s = streak;
+  const prefs = await readPrefs();
+  if (prefs.u > 0) document.p = withKeys ? prefs : withoutKeys(prefs);
   return document;
 }
 
@@ -47,7 +53,7 @@ export async function readLocalDocument() {
  * And what this device holds in a newer version than the document stays as it is: the vault may
  * have been edited while the document was on its way to the cloud and back.
  *
- * @returns {Promise<{ added: number, updated: number, removed: number }>} What changed locally.
+ * @returns {Promise<{ added: number, updated: number, removed: number, settings?: boolean }>} What changed locally.
  */
 export async function applyDocument(document) {
   const { entries, tombstones } = await readState();
@@ -81,5 +87,14 @@ export async function applyDocument(document) {
   if (removals.length > 0) await chrome.storage.local.remove(removals);
   // Quiz days another device knows of are added to this device's; none is ever taken away.
   if (document.s) await addRemoteDays({ days: document.s.d, frozen: document.s.f });
+  // The settings: what wins against this device's own (newer, or carrying keys it lacks) is applied.
+  if (document.p) {
+    const local = await readPrefs();
+    const winner = mergePrefs(local.u > 0 ? local : null, document.p);
+    if (prefsFingerprint(winner) !== prefsFingerprint(local) || winner.u !== local.u) {
+      await applyPrefs(winner);
+      changes.settings = true;
+    }
+  }
   return changes;
 }

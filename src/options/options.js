@@ -135,13 +135,15 @@ const filePicker = h('input', {
     if (!file) return;
     try {
       if (file.size > MAX_BACKUP_BYTES) throw new Error('too large');
-      const { added, skipped, invalid } = await restoreBackup(await file.text());
-      backupStatus.textContent = t('bkImported', { added: added, duplicates: skipped, failed: invalid });
+      const { added, skipped, invalid, settings } = await restoreBackup(await file.text());
+      backupStatus.textContent = [t('bkImported', { added: added, duplicates: skipped, failed: invalid }), settings ? t('bkSettingsRestored') : ''].filter(Boolean).join(' ');
     } catch {
       backupStatus.textContent = t('bkBadFile');
     }
   },
 });
+// The API keys go into the file only when asked for, each time: the file is then as secret as they are.
+const includeKeys = h('input', { type: 'checkbox', 'data-setting': 'backup-keys' });
 const backupSection = h(
   'section',
   { class: 'card', id: 'backup' },
@@ -155,12 +157,14 @@ const backupSection = h(
       type: 'button',
       text: t('tbExport'),
       onclick: async () => {
-        backupStatus.textContent = t('bkExported', { count: await downloadBackup() });
+        backupStatus.textContent = t('bkExported', { count: await downloadBackup({ includeKeys: includeKeys.checked }) });
+        includeKeys.checked = false;
       },
     }),
     h('button', { class: 'wv-btn', type: 'button', text: t('tbImport'), onclick: () => filePicker.click() }),
     filePicker,
   ),
+  switchRow(includeKeys, 'bkIncludeKeys', 'bkIncludeKeysHelp'),
   backupStatus,
 );
 // Below exporting and importing by hand: keeping the vault in step by itself (options/sync.js).

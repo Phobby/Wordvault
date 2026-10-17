@@ -1,6 +1,6 @@
 // The synchronised document: what travels between a user's devices.
 //
-//   { v: 2, e: { "<id>": <record> | <tombstone>, ... }, s: { d: [...], f: [...] } }
+//   { v: 3, e: { "<id>": <record> | <tombstone>, ... }, s: { d: [...], f: [...] }, p: { ... } }
 //
 //   record     a word in the vault        { w, t, sl, tl, c, b, n, q, u, r, k }
 //   tombstone  a word that was removed    { d, r }
@@ -17,23 +17,28 @@
 //      Lists, not counters: two devices' lists merge by taking every day that is in either,
 //      so there is nothing to conflict (quiz/progress.js).
 //
-// Version 2 also added fields to q (learned state, a count per way of asking). A document of
-// version 1 is read as it is; what this version writes is version 2, which a version-1
-// installation refuses to rewrite until it is updated.
+//   p  the settings (since version 3; sync/prefs.js): the newest edit of any device as a
+//      whole. API keys only in an encrypted document.
+//
+// Version 2 also added fields to q (learned state, a count per way of asking). Older documents
+// are read as they are; what this version writes is version 3, which an older installation
+// refuses to rewrite until it is updated (it would drop the settings).
 //
 // The keys are short because the document has to fit into small quotas (browser sync holds
 // about 100 KB). Empty values are left out. The id is the key and is derived from the word and
 // its language pair (lib/vault.js: entryId), so it is not repeated inside the value.
 //
 // Deliberately NOT part of the document: page addresses and titles, the alternatives and the
-// dictionary data of a word, the translation cache, settings, API keys and sign-in tokens.
+// dictionary data of a word, the translation cache, sign-in tokens, and API keys unless the
+// document is encrypted.
 
 import { WordvaultError } from '../lib/errors.js';
 import { PHRASE, entryId } from '../lib/vault.js';
 import { normalizeStats } from '../quiz/learning.js';
 import { cleanDays } from '../quiz/progress.js';
+import { normalizePrefs } from './prefs.js';
 
-export const SCHEMA_VERSION = 2;
+export const SCHEMA_VERSION = 3;
 /** Tombstones older than this are dropped at the next synchronisation. */
 export const TOMBSTONE_TTL_MS = 90 * 24 * 60 * 60 * 1000;
 /** "A short context sentence": the full one stays on the device it was saved on. */
@@ -159,6 +164,8 @@ export function normalizeDocument(raw) {
   }
   const streak = streakSection(isObject(raw.s) ? { days: raw.s.d, frozen: raw.s.f } : null);
   if (streak) document.s = streak;
+  const prefs = normalizePrefs(raw.p);
+  if (prefs) document.p = prefs;
   return document;
 }
 

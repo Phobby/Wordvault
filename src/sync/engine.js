@@ -13,6 +13,7 @@ import { WordvaultError, serializeError } from '../lib/errors.js';
 import { decodeDocument, encodeDocument, fingerprint } from './codec.js';
 import { clearSecret, deriveSecret, getSecret, headerOf, isEncrypted, setSecret } from './crypto.js';
 import { applyDocument, readLocalDocument } from './local.js';
+import { withoutKeys } from './prefs.js';
 import { mergeDocuments, purgeTombstones, serializeDocument } from './merge.js';
 import { getSyncProvider } from './providers/index.js';
 import { getSyncConfig, getSyncStatus, saveSyncStatus, setSyncConfig, updateConnection } from './state.js';
@@ -44,6 +45,12 @@ const STANDING = new Set(['sync_auth', 'sync_quota', 'sync_config', 'sync_bad_do
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 const offline = () => typeof navigator !== 'undefined' && navigator.onLine === false;
 
+/**
+ * This device's document as the engine sends it: the API keys only when the stored copy is
+ * encrypted (sync/prefs.js). Used both for the exchange and for "has anything changed?".
+ */
+const localDocument = (config) => readLocalDocument({ withKeys: Boolean(config.encryption?.enabled) });
+
 function sessionFor(config) {
   return { connection: config.connection || {}, update: (patch) => updateConnection(config.providerId, patch) };
 }
@@ -68,11 +75,13 @@ async function exchange(provider, session, config) {
   const others = [];
   for (const other of remote?.others || []) others.push(await decodeDocument(other.data, secret));
 
-  const local = await readLocalDocument();
+  const local = await localDocument(config);
   let merged = local;
   for (const document of [main, ...others]) {
     if (document) merged = mergeDocuments(merged, document);
   }
+  // Never a key in a copy that is stored unencrypted, whatever an earlier, encrypted one carried.
+  if (!encrypting && merged.p?.keys) merged = { ...merged, p: withoutKeys(merged.p) };
   // Removals that have been known everywhere for long enough are dropped for good.
   merged = purgeTombstones(merged);
 
@@ -98,7 +107,7 @@ async function run({ reason, sleep }) {
   const now = Date.now();
   // A run started by a change to the vault has nothing to do if the vault is as it was last
   // synchronised (the change was this engine applying what it had just fetched).
-  if (reason === 'change' && before.syncedHash && before.syncedHash === (await fingerprint(serializeDocument(await readLocalDocument())))) {
+  if (reason === 'change' && before.syncedHash && before.syncedHash === (await fingerprint(serializeDocument(await localDocument(config))))) {
     return before.pending && before.state === 'idle' ? saveSyncStatus({ pending: false }) : before;
   }
   // What only the user can fix is not tried over and over behind their back.
@@ -259,7 +268,7 @@ export async function vaultChanged() {
   }
   // The vault is as it was last synchronised: the engine's own writes, arriving late.
   const { syncedHash } = await getSyncStatus();
-  if (syncedHash && syncedHash === (await fingerprint(serializeDocument(await readLocalDocument())))) return;
+  if (syncedHash && syncedHash === (await fingerprint(serializeDocument(await localDocument(await getSyncConfig()))))) return;
   await saveSyncStatus({ pending: true });
   await chrome.alarms.create(SYNC_SOON_ALARM, { when: Date.now() + SYNC.DEBOUNCE_MS });
   clearTimeout(debounce);

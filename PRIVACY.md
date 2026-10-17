@@ -91,9 +91,10 @@ kendiliğinden ya da arka planda gönderilmez. İlk kullanımda pencere neyin ne
 ve onayını ister; sağlayıcıyı değiştirirsen yeniden sorar. Banka, e-posta ve sağlık sitesine benzeyen
 sitelerde bu özellikler kapalıdır; listeyi ayarlardan sen yönetirsin.
 
-API anahtarın yalnızca bu tarayıcıda (`chrome.storage.local`) saklanır ve yalnızca o sağlayıcıya,
-isteğin başlığında gönderilir. Yedeğe, senkronizasyona, geri bildirime, hata günlüğüne ve
-önbelleklere girmez. Yapay zekâ cevapları diske yazılmaz: en fazla tarayıcı kapanana kadar bellekte
+API anahtarın bu tarayıcıda (`chrome.storage.local`) saklanır ve istek sırasında yalnızca o
+sağlayıcıya, isteğin başlığında gönderilir. Geri bildirime, hata günlüğüne ve önbelleklere hiçbir
+zaman girmez. Senkronizasyona yalnızca **şifreleme açıksa** (şifreli dosyanın içinde), JSON yedeğine
+yalnızca **"API anahtarlarını dahil et"i işaretlersen** girer. Yapay zekâ cevapları diske yazılmaz: en fazla tarayıcı kapanana kadar bellekte
 tutulur (ayarlardan kapatılabilir); sayfanın metni yalnızca özet kartı açıkken bellekte durur. Bir açıklamayı kasadaki kelimenin notuna yalnızca sen eklersen
 saklanır. Gönderilen metinle sağlayıcının ne yaptığı kendi koşullarına bağlıdır (örneğin Google,
 Gemini'nin ücretsiz katmanında içeriğin ürünlerini geliştirmek için kullanıldığını yazar).
@@ -152,10 +153,14 @@ gideceğini anlatan onayı verdiğinde kasan **senin seçtiğin yere** gönderil
 
 **Gönderilen:** her kelime, çevirisi, dil çifti, kısa bağlam cümlesi (en çok 160 karakter), tekrar
 ilerlemesi (kutu, sonraki tekrar zamanı, cevap özeti, öğrenildi durumu), quiz çözdüğün günlerin tarih
-listesi (seri için) ve silinen kelimelerin silme kayıtları.
+listesi (seri için), silinen kelimelerin silme kayıtları ve **ayarların** (hedef dil, quiz ayarları,
+arayüz dili, site bazlı kaynak diller, çeviri ve yapay zekâ sağlayıcısı seçimi, model ve adres, site
+listeleri). **API anahtarları** (yapay zekâ, DeepL) yalnızca şifreleme açıkken, şifreli dosyanın
+içinde gönderilir; şifresiz dosyada hiçbir zaman bulunmaz.
 
-**Asla gönderilmeyen:** sayfa adresleri ve başlıkları, ayarlar, API anahtarları, erişim token'ları,
-sunucu parolaları, çeviri önbelleği, quiz zamanlayıcısının durumu.
+**Asla gönderilmeyen:** sayfa adresleri ve başlıkları, şifresiz dosyada API anahtarları, yapay zekâya
+metin gönderme onayların (her cihazda ayrıca sorulur), erişim token'ları, sunucu parolaları, çeviri
+önbelleği, quiz zamanlayıcısının durumu.
 
 İstekler tarayıcından doğrudan o hizmete yapılır; arada geliştiriciye ait bir sunucu yoktur. Bulut
 sağlayıcılarından yalnızca en dar izin istenir (uygulamaya özel klasör); diğer dosyaların görülemez.

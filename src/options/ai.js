@@ -91,7 +91,20 @@ export function createAiSection({ flashSaved, switchRow, fieldRow }) {
   const test = h('button', { class: 'wv-btn', type: 'button', 'data-action': 'ai-test', text: t('optAiTest'), onclick: () => runTest() });
   const guide = h('details', { class: 'provider-guide' });
   const ollamaNote = h('div', { class: 'ai-ollama', hidden: true }, h('p', { class: 'help', text: t('optAiOllamaOrigins') }), h('code', { class: 'ai-code', text: `OLLAMA_ORIGINS=${OLLAMA_ORIGINS} ollama serve` }), h('p', { class: 'help', text: t('optAiOllamaMac', { command: `launchctl setenv OLLAMA_ORIGINS "${OLLAMA_ORIGINS}"` }) }));
-  const panel = h('div', { class: 'provider-panel', 'data-ai': 'panel', hidden: true }, keyRow, baseRow, modelRow, h('div', { class: 'buttons' }, test), status, ollamaNote, guide);
+  // Set up on another device and brought here by synchronisation or a backup: the settings and
+  // the key are here, but the browser's permission to reach the provider is this device's own.
+  const allow = h('button', {
+    class: 'wv-btn wv-btn-sm',
+    type: 'button',
+    text: t('optAiAllow'),
+    onclick: async () => {
+      const provider = getAiProvider(config.provider);
+      if (provider && !(await askPermission(provider, config.providers[provider.id]))) say(t('optAiDenied'), true);
+      await render();
+    },
+  });
+  const permissionNote = h('p', { class: 'ocr-warning', role: 'status', 'data-ai': 'permission', hidden: true }, h('span', { text: t('optAiNeedsPermission') }), ' ', allow);
+  const panel = h('div', { class: 'provider-panel', 'data-ai': 'panel', hidden: true }, permissionNote, keyRow, baseRow, modelRow, h('div', { class: 'buttons' }, test), status, ollamaNote, guide);
 
   // What applies whichever provider is chosen.
   const consent = h('p', { class: 'help', 'data-ai': 'consent' });
@@ -252,6 +265,8 @@ export function createAiSection({ flashSaved, switchRow, fieldRow }) {
       modelRow.querySelector('[data-ai="model-help"]').textContent = provider.defaultModel ? t('optAiModelHelpDefault', { model: provider.defaultModel }) : t('optAiModelHelp');
       ollamaNote.hidden = provider.id !== 'ollama';
       renderGuide(provider);
+      const origins = provider.origins(settingsFor(provider, stored));
+      permissionNote.hidden = origins.length === 0 || missing(provider, settingsFor(provider, stored)) !== '' || (await chrome.permissions.contains({ origins }).catch(() => false));
     }
     const agreed = getAiProvider(config.consent);
     consent.textContent = agreed ? t('optAiConsentGiven', { provider: agreed.name }) : t('optAiConsentNone');

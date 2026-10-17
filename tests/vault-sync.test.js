@@ -7,7 +7,7 @@ import { beforeEach, test } from 'node:test';
 import { addEntry, getEntry, importEntries, listEntries, listTombstones, removeEntry, updateEntry } from '../src/lib/vault.js';
 import { applyDocument, readLocalDocument } from '../src/sync/local.js';
 import { mergeDocuments, purgeTombstones, serializeDocument } from '../src/sync/merge.js';
-import { TOMBSTONE_TTL_MS, isTombstone } from '../src/sync/model.js';
+import { SCHEMA_VERSION, TOMBSTONE_TTL_MS, isTombstone } from '../src/sync/model.js';
 import { createDevice, use } from './helpers/chrome.js';
 
 const T0 = 1_790_000_000_000;
@@ -85,15 +85,19 @@ test('words saved before synchronisation existed are read with sensible defaults
   assert.deepEqual((await readLocalDocument()).e[ID], { w: 'book', t: 'kitap', sl: 'en', tl: 'tr', u: T0 - DAY, r: 1 });
 });
 
-test('the local document holds words and removals, and only those', async () => {
+test('the local document holds words, removals and the settings, without keys or anything of the pages', async () => {
   await addEntry(BOOK);
   await addEntry({ ...BOOK, text: 'door', translation: 'kapı' });
   await removeEntry('en|tr|door');
   await chrome.storage.local.set({ settings: { targetLang: 'tr', providerConfig: { deepl: { apiKey: 'SECRET-KEY' } } }, siteSourceLangs: { 'example.com': 'de' } });
   const document = await readLocalDocument();
-  assert.deepEqual(document, { v: 2, e: { 'en|tr|door': { d: T0, r: 2 }, [ID]: { w: 'book', t: 'kitap', sl: 'en', tl: 'tr', c: 'A good book.', u: T0, r: 1 } } });
+  const { p, ...rest } = document;
+  assert.deepEqual(rest, { v: SCHEMA_VERSION, e: { 'en|tr|door': { d: T0, r: 2 }, [ID]: { w: 'book', t: 'kitap', sl: 'en', tl: 'tr', c: 'A good book.', u: T0, r: 1 } } });
+  assert.equal(p.settings.targetLang, 'tr');
+  assert.deepEqual(p.sites, { 'example.com': 'de' }, 'the per-site source languages are settings too');
+  assert.equal(p.keys, undefined);
   const text = serializeDocument(document);
-  for (const secret of ['SECRET-KEY', 'example.com', 'Page A', 'settings']) assert.ok(!text.includes(secret), `"${secret}" must not leave the device`);
+  for (const secret of ['SECRET-KEY', 'Page A', 'A good book page']) assert.ok(!text.includes(secret), `"${secret}" must not leave the device`);
 });
 
 test('applying a merged document: new, changed and removed words; local knowledge is kept', async (t) => {

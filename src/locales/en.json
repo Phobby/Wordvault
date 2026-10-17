@@ -818,5 +818,11 @@
   "examOpen": "Open",
   "examOpenLabel": "Open the {language} test, {level}, from {date}",
   "examDelete": "Delete",
-  "examDeleteLabel": "Delete the {language} test, {level}, from {date}"
+  "examDeleteLabel": "Delete the {language} test, {level}, from {date}",
+  "bkIncludeKeys": "Include API keys",
+  "bkIncludeKeysHelp": "Only for this export. Anyone who has the file can then use your keys: keep it somewhere safe.",
+  "bkSettingsRestored": "The settings of the file were restored.",
+  "syncSettingsNote": "Your settings travel too. API keys only while encryption is on, inside the encrypted file; agreeing to send text to an AI provider is asked on each device.",
+  "optAiNeedsPermission": "This browser has not been allowed to reach the provider yet (the settings came from another device).",
+  "optAiAllow": "Allow"
 }

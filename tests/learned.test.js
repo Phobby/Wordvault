@@ -206,9 +206,9 @@ test('learned is in the JSON export and comes back with the import', async (t) =
   await addEntry(WORD);
   await answerOn(t, LEARNING_RUN);
   const file = JSON.stringify(await createBackup());
-  assert.equal(JSON.parse(file).version, 2);
+  assert.equal(JSON.parse(file).version, 3);
   use(createDevice('other'));
-  assert.deepEqual(await restoreBackup(file), { added: 1, skipped: 0, invalid: 0 });
+  assert.deepEqual(await restoreBackup(file), { added: 1, skipped: 0, invalid: 0, settings: true });
   const [entry] = await listEntries();
   assert.equal(statusOf(entry.quiz), 'learned');
   assert.deepEqual([entry.quiz.n, entry.quiz.o, entry.quiz.w1, entry.quiz.l1], [5, 2, 1, 1]);
@@ -244,15 +244,15 @@ test('migration: an old word is a word without a run: not learned, whatever its 
   assert.equal(statusOf((await getEntry(ID)).quiz), 'learned');
 });
 
-test('migration: a synchronised document of version 1 is read; what is written back is version 2', async () => {
+test('migration: a synchronised document of version 1 is read; what is written back is the current version', async () => {
   const v1 = { v: 1, e: { [ID]: { w: 'blue', t: 'mavi', sl: 'en', tl: 'tr', u: T0, r: 3, b: 2, n: T0 + DAY_MS, q: { a: 4, k: 4, s: 4, e: 2.5, i: 4320, l: 0, m: 3000, d: 0.1, x: T0 } } } };
   const document = normalizeDocument(v1);
-  assert.equal(document.v, 2);
+  assert.equal(document.v, SCHEMA_VERSION);
   assert.deepEqual(document.e, v1.e, 'the records are untouched');
   await applyDocument(document);
   const back = await readLocalDocument();
   assert.deepEqual(back.e[ID], v1.e[ID], 'and go back out as they came in: the new fields are only there when they say something');
-  assert.equal(back.v, 2);
+  assert.equal(back.v, SCHEMA_VERSION);
   assert.ok(!('s' in back), 'no streak yet: no streak section');
 });
 

@@ -818,5 +818,11 @@
   "examOpen": "Aç",
   "examOpenLabel": "{date} tarihli {language} {level} sınavını aç",
   "examDelete": "Sil",
-  "examDeleteLabel": "{date} tarihli {language} {level} sınavını sil"
+  "examDeleteLabel": "{date} tarihli {language} {level} sınavını sil",
+  "bkIncludeKeys": "API anahtarlarını dahil et",
+  "bkIncludeKeysHelp": "Yalnızca bu dışa aktarma için. Dosyaya sahip olan herkes anahtarlarını kullanabilir: dosyayı güvenli bir yerde tut.",
+  "bkSettingsRestored": "Dosyadaki ayarlar geri yüklendi.",
+  "syncSettingsNote": "Ayarların da taşınır. API anahtarları yalnızca şifreleme açıkken, şifreli dosyanın içinde gider; yapay zekâya metin gönderme onayı her cihazda ayrıca sorulur.",
+  "optAiNeedsPermission": "Bu tarayıcıya henüz sağlayıcıya erişme izni verilmedi (ayarlar başka bir cihazdan geldi).",
+  "optAiAllow": "İzin ver"
 }
