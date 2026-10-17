@@ -12,6 +12,7 @@
     "i18n:check": "node tools/check-locales.js",
     "package": "node tools/package.js",
     "lint": "node build.js && npx --yes web-ext lint --source-dir dist/firefox",
-    "start:firefox": "node build.js && npx --yes web-ext run --source-dir dist/firefox"
+    "start:firefox": "node build.js && npx --yes web-ext run --source-dir dist/firefox",
+    "privacy": "node tools/privacy-page.js"
   }
 }

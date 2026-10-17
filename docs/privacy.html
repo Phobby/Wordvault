@@ -4,154 +4,111 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="referrer" content="no-referrer">
-<title>Wordvault: Privacy Policy / Gizlilik Politikası</title>
+<title>Wordvault Privacy Policy</title>
+<!-- Generated from PRIVACY.md by tools/privacy-page.js: edit PRIVACY.md, then run npm run privacy. -->
 <style>
-  :root { color-scheme: light dark; --fg: #1c1c22; --muted: #5d5d6b; --bg: #ffffff; --line: #e3e3ea; --accent: #4f46e5; --tint: #f3f2ff; }
-  @media (prefers-color-scheme: dark) { :root { --fg: #ececf1; --muted: #a2a2b0; --bg: #17171c; --line: #2e2e38; --accent: #a5a0ff; --tint: #22213a; } }
+  :root { color-scheme: light dark; --fg: #1c1c22; --muted: #5d5d6b; --bg: #ffffff; --line: #e3e3ea; --accent: #4f46e5; }
+  @media (prefers-color-scheme: dark) { :root { --fg: #ececf1; --muted: #a2a2b0; --bg: #17171c; --line: #2e2e38; --accent: #a5a0ff; } }
   body { margin: 0; background: var(--bg); color: var(--fg); font: 16px/1.6 system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif; }
-  main { max-width: 720px; margin: 0 auto; padding: 40px 20px 80px; }
-  h1 { margin: 0 0 4px; font-size: 28px; }
-  h2 { margin: 36px 0 8px; font-size: 20px; }
-  h3 { margin: 24px 0 6px; font-size: 16px; }
+  main { max-width: 760px; margin: 0 auto; padding: 40px 20px 80px; }
+  h1 { margin: 0 0 8px; font-size: 28px; }
+  h2 { margin: 36px 0 8px; font-size: 21px; }
+  h3 { margin: 24px 0 6px; font-size: 17px; }
   p, ul { margin: 0 0 12px; }
   li { margin-bottom: 4px; }
-  .muted { color: var(--muted); font-size: 14px; }
-  .note { padding: 12px 16px; border-radius: 10px; background: var(--tint); }
-  nav { margin: 16px 0 28px; padding-bottom: 16px; border-bottom: 1px solid var(--line); }
   a { color: var(--accent); }
   table { width: 100%; border-collapse: collapse; margin: 0 0 12px; font-size: 15px; }
   th, td { padding: 6px 8px; border: 1px solid var(--line); text-align: left; vertical-align: top; }
   code { font: 14px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; overflow-wrap: anywhere; }
-  section + section { margin-top: 56px; padding-top: 24px; border-top: 2px solid var(--line); }
 </style>
 </head>
 <body>
 <main>
-<h1>Wordvault</h1>
-<p class="muted">Privacy Policy · Gizlilik Politikası · Last updated / Son güncelleme: 2026-10-13</p>
-<nav><a href="#en">English</a> · <a href="#tr">Türkçe</a></nav>
-
-<section id="en" lang="en">
-<h2>Privacy Policy</h2>
-<p>Wordvault is a browser extension for learning vocabulary while you browse: translate a word, save it to your vault, review it with short quizzes.</p>
-<p class="note"><strong>In short:</strong> there is no server for your vault or your settings. The developer does not collect, see or store your words, the pages you visit or your settings. There are no analytics, no tracking and no ads. The only time anything reaches the developer is when you fill in the feedback form, look at exactly what will be sent, and press "Send".</p>
-
-<h3>What stays in your browser</h3>
+<h1>Wordvault Privacy Policy</h1>
+<p><strong>Effective date:</strong> [EFFECTIVE_DATE] · <strong>Applies to:</strong> Wordvault browser extension, version 0.1.0 and later <strong>Contact:</strong> [CONTACT_EMAIL]</p>
+<p>Wordvault is a browser extension for learning vocabulary while you browse. It has <strong>no server of its own</strong> for your vocabulary or settings: the developer does not collect, see or store your words, the pages you visit or your settings. There is no analytics, no tracking, no advertising and no usage measurement.</p>
+<p>The <strong>only</strong> case in which data reaches the developer is when you fill in the &quot;Contact and feedback&quot; form in the settings, look at exactly what will be sent and press <strong>Send</strong> (see &quot;Feedback&quot; below).</p>
+<p>This policy lists every case in which data leaves your browser: what, when, why and where to.</p>
+<h2>1. What stays in your browser</h2>
+<p>The following is stored only in the browser you use (<code>storage.local</code>), and is removed by the browser when you uninstall the extension:</p>
 <ul>
-  <li><strong>Your vault:</strong> the words you saved, their translations, the sentence they came from, the address and title of the page, dictionary information, your review progress.</li>
-  <li><strong>Your settings</strong> and, if you use synchronisation, the access tokens or server credentials for the place you chose.</li>
-  <li><strong>A feedback draft</strong> you have not sent yet, and a <strong>local error log</strong>: the last 20 errors of the extension itself (message, part of the extension, time, top of the stack). It contains no page addresses or page content and goes nowhere unless you add it to a feedback message. You can delete it from the feedback form.</li>
+  <li><strong>Your vault:</strong> saved words and phrases, their translations and language pairs, the sentence a word was found in, the address and title of the page it was saved from, dictionary data, your notes and your review progress (including which words are learned), and the days you did a quiz (your streak).</li>
+  <li><strong>Settings:</strong> target and interface language, quiz and voice settings, per-site source languages, the translation service and AI provider you chose, and your site lists.</li>
+  <li><strong>Credentials you enter:</strong> API keys (DeepL, AI providers), sign-in tokens of a sync account, the address, user name and password of your own sync server, and — only if you ask for it to be remembered — the key derived from your sync encryption password.</li>
+  <li><strong>Past practice tests</strong> (&quot;Create a test with AI&quot;): the last 10.</li>
+  <li><strong>Caches:</strong> translations you looked up (kept for 7 days without use), AI answers (in memory only, until the browser closes; can be switched off).</li>
+  <li><strong>A local error log:</strong> the last 20 errors of the extension itself (message, which part, time). It holds no page address or content and goes nowhere unless you add it to feedback.</li>
+  <li><strong>A feedback draft:</strong> what you typed in the form but did not send (removed when sent).</li>
 </ul>
-<p>Removing the extension deletes all of it.</p>
-
-<h3>What leaves your browser, and when</h3>
+<h2>2. What leaves your browser, and when</h2>
+<p>Nothing below happens by itself: each item is started by something you do. All requests use HTTPS (except to a server on your own computer, <code>localhost</code>), and go straight from your browser to the service named; there is no Wordvault server in between.</p>
+<h3>2.1 Translation (when you ask for a translation)</h3>
+<p>When you double-click a word, select text and use &quot;Translate with Wordvault&quot; (right-click menu, the &quot;Translate&quot; button next to a selection, or the keyboard shortcut), hover a word in YouTube captions, or click a word read by a screen scan: <strong>only that word or selected text</strong> and the language pair go to the translation service you chose. Not the rest of the page, not its address, not your identity.</p>
+<ul>
+  <li><strong>MyMemory</strong> (default; <code>api.mymemory.translated.net</code>, by Translated srl). Its terms say that it collects the text segments submitted to it and stores them long-term, and uses them to create statistics and improve its services. Do not translate text you would not share with it.</li>
+  <li><strong>DeepL</strong> (only if you choose it and enter your own API key; <code>api-free.deepl.com</code> or <code>api.deepl.com</code>). Your key is sent to DeepL in the request header and nowhere else.</li>
+</ul>
+<p>The language of the text is detected inside your browser. A translation is saved only if you add it to your vault.</p>
+<h3>2.2 Dictionary data and pronunciation</h3>
+<ul>
+  <li>When you <strong>add a word to your vault</strong>, the word is looked up on <strong>Wiktionary</strong> (<code>en.wiktionary.org</code>) for its word types, definitions and example sentences. Wiktionary content is licensed under CC BY-SA 4.0; Wordvault links to the source.</li>
+  <li><strong>Pronunciation</strong> normally uses the voices of your own device; nothing is sent. Exceptions, each only when you press a pronunciation button:<br>— In Firefox-based browsers on macOS, and anywhere if you switch on <strong>&quot;Use a human recording where there is one&quot;</strong>: the word is looked up on Wiktionary and its recording is downloaded from <strong>Wikimedia Commons</strong> (<code>upload.wikimedia.org</code>).<br>— If you switch on <strong>&quot;Allow online voices&quot;</strong> (off by default): the browser's online voices (for example Chrome's Google voices, Edge's natural voices) are used, which send the word to that browser vendor's speech service.</li>
+</ul>
+<h3>2.3 AI features (off by default; only with an AI provider you connect yourself)</h3>
+<p>If you connect your own AI provider in the settings — Google Gemini (<code>generativelanguage.googleapis.com</code>), the Claude API (<code>api.anthropic.com</code>), NVIDIA (<code>integrate.api.nvidia.com</code>), an OpenAI-compatible service at an address you enter, or Ollama on your own computer — the following is sent <strong>only to that provider</strong>, <strong>only when you press the button</strong>:</p>
 <table>
-  <tr><th>When</th><th>What</th><th>Where</th></tr>
-  <tr><td>You ask for a translation (double-click, a word in a YouTube caption you point at, a word of a screen scan you click, or a sentence or paragraph you select and translate with the right-click menu, the “Translate” button or the keyboard shortcut)</td><td>That word or selection and the language pair. Not the page, not its address. A long selection is sent in parts that end where sentences end (at most 5,000 characters at a time). It goes to the chosen translation service only, and nowhere else; it is kept only if you add it to the vault yourself.</td><td>The translation service: MyMemory (<code>api.mymemory.translated.net</code>) by default; DeepL (<code>api-free.deepl.com</code> / <code>api.deepl.com</code>) if you chose it and entered your own API key. The key is sent to DeepL in the request header and nowhere else; it is stored only in this browser. The service is never switched without you asking.</td></tr>
-  <tr><td>You press “Explain with AI”, or ask for “Summarise this page” or “Translate this page with AI” (experimental) and confirm it on the card (only after you connected an AI provider of your own in the settings; off by default; never by itself)</td><td>Explain: the word, the sentence it is in and the page's title; or the text you selected and the page's title. Summarise: the main text of the page (menus, advertisements and side columns are taken out; at most 120,000 characters, in several parts if it is long) and its title, after the card has shown you how much it is and you pressed “Summarise”. Translate this page: the visible text of the page and its title, in several requests one after the other (at most 100,000 characters), after the card has shown you how much it is and you pressed “Translate”; text that appears on the page later is only sent if you ask for it; the translation replaces the text on the page only, is stored nowhere, and “Show original” or closing the card puts the page back. Never: the page's address, anything from password fields, form fields, hidden parts, or boxes and editable areas you type in. Your API key travels in the request header to that provider only; it is stored in this browser, is never part of feedback or a log, goes into synchronisation only when encryption is on (inside the encrypted file), and into a backup file only if you tick “Include API keys”. Answers are kept in memory until the browser closes at most, never on disk.</td><td>Only the provider you chose: Google Gemini (<code>generativelanguage.googleapis.com</code>), the Claude API (<code>api.anthropic.com</code>), an OpenAI-compatible service at the address you entered, or Ollama on your own computer. Nowhere else; there is no Wordvault server in between. The provider's own terms apply to what it does with the text.</td></tr>
-  <tr><td>You add a word to the vault (not a phrase kept from a translated selection)</td><td>That word</td><td>Wiktionary (<code>en.wiktionary.org</code>), for its type, definitions and examples</td></tr>
-  <tr><td>You press the pronunciation button (Firefox-based browsers on macOS only)</td><td>That word</td><td>Wiktionary and Wikimedia Commons (<code>upload.wikimedia.org</code>), for a recording</td></tr>
-  <tr><td>You turn synchronisation on (off by default)</td><td>Your vault: words, translations, language pairs, a short context sentence, review progress (including which words are learned), the dates of the days you did a quiz (for the streak), your settings (target and interface language, quiz settings, per-site source languages, the chosen translation and AI provider, model and address, site lists), and your last 10 practice tests (questions, answers, explanations; not with browser sync). API keys only when encryption is on, inside the encrypted file. Never page addresses, sign-in tokens, or your consents to sending text to an AI provider (asked on each device).</td><td>The place <em>you</em> chose: your browser's own sync, your Google Drive, OneDrive or Dropbox, or your own server. Optionally encrypted with your password before it leaves.</td></tr>
-  <tr><td>You send feedback</td><td>See below</td><td>The developer's feedback receiver, then the developer's Telegram</td></tr>
+  <tr><th>Feature</th><th>What is sent</th></tr>
+  <tr><td>&quot;Explain with AI&quot;</td><td>The word, the sentence it is in, and the page's title; or the text you selected and the page's title. For a screen scan: the text read from the area (or the part you selected), never the screenshot.</td></tr>
+  <tr><td>&quot;Ask about the image&quot;</td><td>The area of the screen you selected (as an image, at most 1536 px on its longest side), your question and the page's title, after a preview and after you press &quot;Ask&quot;. Asked for separately from text. A one-time 64×64 plain red test image is sent to check whether the model reads images.</td></tr>
+  <tr><td>&quot;Translate this page with AI&quot; (experimental)</td><td>The visible text of the page and its title, in several requests, after the card has shown you how much text it is (at most 100,000 characters) and you press &quot;Translate&quot;. Text that appears later is sent only if you ask.</td></tr>
+  <tr><td>&quot;Create a test with AI&quot;</td><td>Up to 20 words from your vault, your saved translations of them, the language and the level. Not the sentences, notes or page addresses of those words, and nothing else of your vault.</td></tr>
 </table>
-<p><strong>Ask about the image</strong> (only when you start it and press “Ask”): the one feature that sends a picture. The part of the screen you select is cut out of a screenshot of the tab, shown to you as a preview, and only when you press “Ask” sent with your question and the page's title to the AI provider you set up, and nowhere else. Pictures are asked about apart from text: agreeing to text does not cover them. Over a password field or a field you type in, and on sensitive sites, nothing is sent. The picture is not stored anywhere. To find out whether the model reads pictures, a 64×64 plain red test picture (nothing from your screen) is sent once, when you press “Test” in the settings or before the first use.</p>
-<p><strong>Screen text scanning</strong> (only when you start it): a picture of the tab is taken and the area you select is read <em>inside your browser</em>. The picture and the text read from it are not stored and never leave your device. There is no cloud text recognition. Only what you click or select is sent to the translation service; only when you press “Explain” (and have set up an AI provider of your own) is the text that was read, or the part you selected, sent to that provider, with the page's title. The picture itself is never sent anywhere. Over a password field or a field you type in, nothing is sent to an AI.</p>
-<p><strong>Support link:</strong> "Support the project" is a plain link to a Buy Me a Coffee page. Nothing is loaded from that service unless you click it.</p>
-
-<h3>Feedback (only if you send it)</h3>
-<p>The form under Settings → "Contact and feedback" sends nothing until you press "Send". Before that, "Show the data to be sent" shows you everything that would go; what is sent is exactly what you saw.</p>
-<p><strong>Sent (only this):</strong></p>
-<ul>
-  <li>the type (bug / suggestion / other) and the feature it is about;</li>
-  <li>the text you wrote;</li>
-  <li>your e-mail address, <em>only if you entered one</em> (leave it empty and the message is anonymous);</li>
-  <li><em>if "Include technical information" is ticked:</em> browser name and version (and the engine it is built on), the name of the operating system, the extension's version, the interface language, which features are switched on (yes/no only) and the kind of synchronisation (off / browser / cloud / own server; not which service or account);</li>
-  <li><em>if "Include recent error records" is ticked</em> (off by default): the local error log described above.</li>
-</ul>
-<p><strong>Never sent:</strong> page addresses, page content, the words in your vault, context sentences, API keys, access tokens, a user ID. The extension creates no installation ID or other permanent identifier.</p>
-<p><strong>Where it goes:</strong> over HTTPS to the developer's feedback receiver (<code>wordvault-feedback.phoby.workers.dev</code>, a small program on Cloudflare Workers), which checks the message and passes it on to the developer's Telegram account through a bot.</p>
-<p><strong>What is kept:</strong></p>
-<ul>
-  <li>The receiver <strong>does not store</strong> the message and writes nothing to a log. The only thing it keeps is one number per day (how many messages were passed on, as a ceiling against abuse); it says nothing about any message or sender and is deleted after two days.</li>
-  <li><strong>Your IP address</strong> is seen by the infrastructure provider (Cloudflare), as with any request on the internet. The receiver hands it to Cloudflare's rate limiter for a per-minute limit and does nothing else with it: it is not recorded, not passed on, and the developer does not see it.</li>
-  <li>Firefox-based browsers add an <code>Origin</code> header to the request that contains the extension's internal address, which is specific to an installation. The browser does this; the receiver does not read, record or pass on that header.</li>
-  <li>The message that was passed on stays in the developer's <strong>Telegram chat</strong> (on Telegram's servers) until the developer deletes it. Telegram's own privacy policy applies.</li>
-</ul>
-<p><strong>Deletion:</strong> to have a message you sent deleted, write through the same form (with enough to find it: the approximate date and time, and the e-mail address if you gave one) or use the developer contact address on the extension's store page. The message is deleted from the Telegram chat; there is no other copy.</p>
-
-<h3>Use of data</h3>
-<p>Data is used only to provide the feature you asked for. It is not sold, not transferred to anyone except as described above, not used for advertising or profiling, and not used to determine creditworthiness. Data obtained from Google, Microsoft and Dropbox APIs is used only to synchronise your vault, in line with the Google API Services User Data Policy (including the Limited Use requirements), the Microsoft API Terms of Use and the Dropbox Developer Terms; it is not read by humans.</p>
-
-<h3>Permissions</h3>
-<p>The extension asks for no access to your browser account's e-mail address. Access to a cloud service, your own server or the feedback receiver is not granted at installation: the browser asks at the moment you connect or send, and only for that address.</p>
-
-<h3>Children</h3>
-<p>Wordvault collects no personal data on its own. The feedback form is not directed at children; the e-mail field is optional.</p>
-
-<h3>Changes</h3>
-<p>This policy is versioned with the extension. A change to what leaves the browser is stated here and in the release notes.</p>
-</section>
-
-<section id="tr" lang="tr">
-<h2>Gizlilik Politikası</h2>
-<p>Wordvault, gezinirken kelime öğrenmek için bir tarayıcı eklentisidir: bir kelimeyi çevir, kasana kaydet, kısa quizlerle tekrar et.</p>
-<p class="note"><strong>Kısaca:</strong> kasan ve ayarların için bir sunucu yoktur. Geliştirici kelimelerini, gezdiğin sayfaları ya da ayarlarını toplamaz, görmez ve saklamaz. Analitik, izleme ve reklam yoktur. Geliştiriciye bir şeyin ulaştığı tek durum, senin geri bildirim formunu doldurup gidecek veriyi gördükten sonra "Gönder"e basmandır.</p>
-
-<h3>Tarayıcında kalanlar</h3>
-<ul>
-  <li><strong>Kasan:</strong> kaydettiğin kelimeler, çevirileri, alındıkları cümle, sayfanın adresi ve başlığı, sözlük bilgisi, tekrar ilerlemen.</li>
-  <li><strong>Ayarların</strong> ve, eşitleme kullanıyorsan, seçtiğin yerin erişim token'ları ya da sunucu bilgileri.</li>
-  <li>Henüz göndermediğin <strong>geri bildirim taslağı</strong> ve <strong>yerel hata günlüğü</strong>: eklentinin kendi hatalarından son 20 kayıt (mesaj, eklentinin hangi bölümü, zaman, yığının başı). Sayfa adresi ya da içeriği içermez ve sen bir geri bildirime eklemedikçe hiçbir yere gitmez. Formdan silebilirsin.</li>
-</ul>
-<p>Eklentiyi kaldırdığında bunların hepsi silinir.</p>
-
-<h3>Tarayıcından çıkanlar ve ne zaman çıktıkları</h3>
+<p><strong>Never sent to an AI provider:</strong> the page's address, password fields, form fields, hidden parts of the page, text in boxes you type in, and your vault (except the words a test is made of). On sites that look like banking, e-mail or health sites the AI features are off; you manage the lists.</p>
+<p>Before the first request to a provider, a notice tells you what will be sent and asks for your consent; it is asked again for another provider, and separately for images and for tests. Your API key is stored in this browser and is sent only to that provider, in the request header. What the provider does with what it receives is governed by its own terms (for example, Google says that content sent to Gemini's free tier may be used to improve its products).</p>
+<p>Without a provider, &quot;Copy the prompt and open&quot; copies a ready prompt to your clipboard and opens the chat site you chose in a new tab; the extension sends nothing — you paste it yourself.</p>
+<h3>2.4 Screen text scanning (when you start it)</h3>
+<p>A screenshot of the current tab is taken and the area you choose is read <strong>inside your browser</strong> (Tesseract.js, packaged with the extension; nothing is downloaded). The screenshot and the text read from it do not leave your device and are not stored. Only what you then choose to translate or explain goes out, as described above. The extension can only capture the tab you are in, at the moment you start a scan (<code>activeTab</code>).</p>
+<h3>2.5 Synchronisation (off by default; only if you turn it on)</h3>
+<p>&quot;This device only&quot; is the default. If you choose a way to sync and confirm it, the following goes to <strong>the place you chose</strong>:</p>
 <table>
-  <tr><th>Ne zaman</th><th>Ne</th><th>Nereye</th></tr>
-  <tr><td>Çeviri istediğinde (çift tıklama, YouTube altyazısında üzerinde durduğun kelime, ekran taramasında tıkladığın kelime ya da seçip sağ tık menüsü, “Çevir” düğmesi veya klavye kısayoluyla çevirdiğin cümle ya da paragraf)</td><td>O kelime ya da seçim ve dil çifti. Sayfa ya da adresi değil. Uzun seçim, cümle sonlarında bölünmüş parçalar halinde gönderilir (bir kerede en çok 5.000 karakter). Yalnızca seçili çeviri servisine gider, başka hiçbir yere gitmez; sen kasaya eklemedikçe saklanmaz.</td><td>Çeviri servisi: varsayılan MyMemory (<code>api.mymemory.translated.net</code>); seçip kendi API anahtarını girdiysen DeepL (<code>api-free.deepl.com</code> / <code>api.deepl.com</code>). Anahtar isteğin başlığında DeepL'e gider, başka hiçbir yere gitmez; yalnızca bu tarayıcıda saklanır. Servis sen istemeden değiştirilmez.</td></tr>
-  <tr><td>“Yapay zekâ ile açıkla”ya bastığında ya da “Sayfayı özetle”yi veya “Sayfayı yapay zekâ ile çevir”i (deneysel) isteyip kartta onayladığında (yalnızca ayarlardan kendi yapay zekâ sağlayıcını bağladıysan; varsayılan olarak kapalı; hiçbir zaman kendiliğinden)</td><td>Açıkla: kelime, geçtiği cümle ve sayfanın başlığı; ya da seçtiğin metin ve sayfanın başlığı. Özetle: sayfanın ana metni (menüler, reklamlar ve yan içerikler ayıklanır; en çok 120.000 karakter, uzunsa birkaç parçada) ve başlığı; kart ne kadar olduğunu gösterip sen “Özetle”ye bastıktan sonra. Sayfayı çevir: sayfanın görünür metni ve başlığı, art arda birkaç istekte (en çok 100.000 karakter); kart ne kadar olduğunu gösterip sen “Çevir”e bastıktan sonra; sayfaya sonradan gelen metin yalnızca sen istersen gönderilir; çeviri yalnızca sayfadaki metnin yerine yazılır, hiçbir yere kaydedilmez ve “Orijinale dön” ya da kartı kapatmak sayfayı eski hâline getirir. Hiçbir zaman: sayfanın adresi, parola alanları, form girdileri, gizli bölümler, yazı yazdığın kutular ve düzenlenebilir alanlardaki metin. API anahtarın isteğin başlığında yalnızca o sağlayıcıya gider; yalnızca bu tarayıcıda saklanır, yedeğe, senkronizasyona, geri bildirime ve günlüğe girmez. Cevaplar en fazla tarayıcı kapanana kadar bellekte tutulur, diske yazılmaz.</td><td>Yalnızca seçtiğin sağlayıcı: Google Gemini (<code>generativelanguage.googleapis.com</code>), Claude API (<code>api.anthropic.com</code>), girdiğin adresteki OpenAI uyumlu servis ya da kendi bilgisayarındaki Ollama. Başka hiçbir yer; arada Wordvault'un sunucusu yok. Metinle ne yaptığı sağlayıcının kendi koşullarına bağlıdır.</td></tr>
-  <tr><td>Kasaya kelime eklediğinde</td><td>O kelime</td><td>Wiktionary (<code>en.wiktionary.org</code>): türü, tanımları ve örnekleri için</td></tr>
-  <tr><td>Telaffuz düğmesine bastığında (yalnızca macOS'te Firefox tabanlı tarayıcılarda)</td><td>O kelime</td><td>Wiktionary ve Wikimedia Commons (<code>upload.wikimedia.org</code>): ses kaydı için</td></tr>
-  <tr><td>Eşitlemeyi açtığında (varsayılan kapalı)</td><td>Kasan: kelimeler, çeviriler, dil çiftleri, kısa bağlam cümlesi, tekrar ilerlemesi (hangi kelimelerin öğrenildiği dahil) ve quiz çözdüğün günlerin tarihleri (seri için). Sayfa adresleri, ayarlar, anahtarlar ve token'lar asla.</td><td><em>Senin</em> seçtiğin yer: tarayıcının kendi senkronu, Google Drive, OneDrive ya da Dropbox hesabın, ya da kendi sunucun. İstersen çıkmadan önce parolanla şifrelenir.</td></tr>
-  <tr><td>Geri bildirim gönderdiğinde</td><td>Aşağıda</td><td>Geliştiricinin geri bildirim alıcısı, oradan geliştiricinin Telegram'ı</td></tr>
+  <tr><th>Way</th><th>Where the data goes</th></tr>
+  <tr><td>Browser sync</td><td>Your browser's own sync storage (Chrome sync / Firefox Sync), with your browser account</td></tr>
+  <tr><td>Google Drive</td><td>Your own Google Drive, in the app's hidden data folder (<code>drive.appdata</code> scope only)</td></tr>
+  <tr><td>Your own server</td><td>The WebDAV or HTTP address you entered</td></tr>
 </table>
-<p><strong>Görsel hakkında sor</strong> (yalnızca sen başlattığında ve “Sor”a bastığında): görüntü gönderen tek özellik. Ekranda seçtiğin alan sekme görüntüsünden kırpılır, önizlemesi gösterilir ve yalnızca “Sor”a bastığında sorunla ve sayfanın başlığıyla birlikte ayarladığın yapay zekâ sağlayıcısına gider, başka hiçbir yere gitmez. Görüntü için onay metinden ayrı sorulur. Parola alanının ya da yazı yazdığın bir kutunun üstünde ve hassas sitelerde hiçbir şey gönderilmez. Görüntü hiçbir yerde saklanmaz. Modelin görselleri okuyup okuyamadığını anlamak için, ayarlarda “Test et”e bastığında ya da ilk kullanımda bir kez 64×64 piksellik düz kırmızı bir test görseli (ekranından hiçbir şey içermez) gönderilir.</p>
-<p><strong>Ekrandan metin tarama</strong> (yalnızca sen başlattığında): sekmenin görüntüsü alınır ve seçtiğin alan <em>tarayıcının içinde</em> okunur. Görüntü ve okunan metin saklanmaz, cihazından çıkmaz. Bulut metin tanıma yoktur. Çeviri servisine yalnızca tıkladığın ya da seçtiğin kısım gider; yalnızca "Açıkla"ya bastığında (ve kendi yapay zekâ sağlayıcını ayarladıysan) okunan metin ya da seçtiğin kısmı, sayfanın başlığıyla birlikte o sağlayıcıya gider. Görüntünün kendisi hiçbir yere gönderilmez. Parola alanının ya da yazı yazdığın bir kutunun üstünde yapay zekâya hiçbir şey gönderilmez.</p>
-<p><strong>Destek bağlantısı:</strong> "Projeyi destekle" bir Buy Me a Coffee sayfasına giden sade bir bağlantıdır. Tıklamadıkça o hizmetten hiçbir şey yüklenmez.</p>
-
-<h3>Geri bildirim (yalnızca sen gönderirsen)</h3>
-<p>Ayarlar → "İletişim ve geri bildirim" formu, sen "Gönder"e basmadıkça hiçbir şey göndermez. Ondan önce "Gönderilecek veriyi göster" gidecek olanın tamamını gösterir; gönderilen, gördüğünün aynısıdır.</p>
-<p><strong>Gönderilen (yalnızca bunlar):</strong></p>
+<p><strong>What is synced:</strong> your words, translations, language pairs, a short context sentence (at most 160 characters), review progress, the days you did a quiz, removal records of deleted words, your settings, and your last 10 practice tests (not with browser sync). <strong>API keys</strong> are included <strong>only if you turn on encryption</strong>, inside the encrypted file. <strong>Never synced:</strong> page addresses and titles, sign-in tokens, server passwords, your consents to sending text to an AI provider (asked on each device), caches.</p>
+<p><strong>Encryption (optional):</strong> the file is encrypted before it leaves your browser with a key derived from your password (PBKDF2 + AES-256-GCM). The password is not stored anywhere. If you lose it, the remote copy cannot be recovered; your local vault is not affected.</p>
+<h3>2.6 Backup file (when you export it)</h3>
+<p>&quot;Export&quot; saves a JSON file to your computer with your vault, streak, settings and past tests. API keys are included only if you tick &quot;Include API keys&quot; for that export; such a file is as secret as the keys.</p>
+<h3>2.7 Feedback (only if you send it)</h3>
+<p>The &quot;Contact and feedback&quot; form sends nothing until you press <strong>Send</strong>. &quot;Show the data to be sent&quot; shows you everything that will go; what is sent is exactly what you saw.</p>
+<p><strong>Sent:</strong> the kind of message and the feature it is about; your text; your e-mail address only if you enter one (otherwise the message is anonymous); <strong>if &quot;Add technical information&quot; is ticked:</strong> browser name and version, operating system name, extension version, interface language, which features are on (yes/no only) and the kind of sync (off / browser / cloud / own server — not which service or account); <strong>if &quot;Add recent error records&quot; is ticked</strong> (off by default): the local error log described above. <strong>Never sent:</strong> page addresses or content, the words in your vault, API keys, sign-in tokens, any user or installation ID (the extension creates none).</p>
+<p><strong>Where it goes:</strong> over HTTPS to the developer's feedback receiver (<code>wordvault-feedback.phoby.workers.dev</code>, a small program on Cloudflare Workers), which checks the message and forwards it to the developer's Telegram chat through a bot. <strong>What is kept:</strong> the receiver stores and logs nothing, except one number per day (how many messages were forwarded, as an abuse limit), deleted after two days. Your IP address is seen by Cloudflare, as with any request; the receiver uses it only for a per-minute rate limit and does not store it. The forwarded message stays in the developer's Telegram chat until the developer deletes it; Telegram's privacy policy applies to it there.</p>
+<p>In Firefox, these data types are declared as optional (<code>personalCommunications</code>, <code>technicalAndInteraction</code>, <code>personallyIdentifyingInfo</code>); Firefox asks for them the first time you send.</p>
+<h3>2.8 Other</h3>
 <ul>
-  <li>tür (hata / öneri / diğer) ve ilgili özellik;</li>
-  <li>yazdığın metin;</li>
-  <li><em>yazdıysan</em> e-posta adresin (boş bırakırsan mesaj anonimdir);</li>
-  <li><em>"Teknik bilgileri ekle" işaretliyse:</em> tarayıcının adı ve sürümü (ve motoru), işletim sisteminin adı, eklentinin sürümü, arayüz dili, hangi özelliklerin açık olduğu (yalnızca evet/hayır) ve eşitlemenin türü (kapalı / tarayıcı / bulut / kendi sunucu; hangi hizmet ya da hesap olduğu değil);</li>
-  <li><em>"Son hata kayıtlarını ekle" işaretliyse</em> (varsayılan kapalı): yukarıdaki yerel hata günlüğü.</li>
+  <li><strong>Support link:</strong> &quot;Support the project&quot; is a plain link to a Buy Me a Coffee page; nothing is sent to that service unless you click it, and nothing is loaded from it.</li>
+  <li><strong>System notifications</strong> (only if you allow them): a quiz reminder; it contains no words or personal data.</li>
 </ul>
-<p><strong>Asla gönderilmeyen:</strong> sayfa adresleri, sayfa içeriği, kasandaki kelimeler, bağlam cümleleri, API anahtarları, erişim token'ları, kullanıcı kimliği. Eklenti kurulum kimliği ya da başka bir kalıcı tanımlayıcı üretmez.</p>
-<p><strong>Nereye gider:</strong> HTTPS ile geliştiricinin geri bildirim alıcısına (<code>wordvault-feedback.phoby.workers.dev</code>, Cloudflare Workers üzerinde küçük bir program); alıcı mesajı denetler ve bir bot aracılığıyla geliştiricinin Telegram hesabına iletir.</p>
-<p><strong>Ne saklanır:</strong></p>
+<h2>3. How data is used</h2>
+<p>Data is used <strong>only to provide the feature you asked for</strong>. It is not sold, not transferred to anyone except as described above, not used for advertising, profiling or creditworthiness, and not read by humans — except the feedback you choose to send to the developer.</p>
+<p><strong>Limited Use.</strong> The use of information received from Google APIs will adhere to the <a href="https://developer.chrome.com/docs/webstore/program-policies/policies">Chrome Web Store User Data Policy</a>, including the Limited Use requirements, and to the <a href="https://developers.google.com/terms/api-services-user-data-policy">Google API Services User Data Policy</a>, including the Limited Use requirements. Data from your Google Drive is used only to synchronise your vault.</p>
+<h2>4. Your choices: access, export, deletion</h2>
 <ul>
-  <li>Alıcı mesajı <strong>saklamaz</strong> ve hiçbir şeyi günlüğe yazmaz. Tuttuğu tek şey gün başına bir sayıdır (kaç mesaj iletildiği; kötüye kullanıma karşı tavan). Mesajla ya da gönderenle ilgili hiçbir şey içermez, iki gün sonra silinir.</li>
-  <li><strong>IP adresin</strong>, her internet isteğinde olduğu gibi altyapı sağlayıcısı (Cloudflare) tarafından görülür. Alıcı onu dakikalık sınır için Cloudflare'in hız sınırlayıcısına verir, başka hiçbir şey yapmaz: kaydedilmez, iletilmez, geliştirici görmez.</li>
-  <li>Firefox tabanlı tarayıcılar isteğe, eklentinin kuruluma özgü iç adresini içeren bir <code>Origin</code> başlığı ekler. Bunu tarayıcı yapar; alıcı bu başlığı okumaz, kaydetmez, iletmez.</li>
-  <li>İletilen mesaj, geliştirici silene kadar geliştiricinin <strong>Telegram sohbetinde</strong> (Telegram'ın sunucularında) durur. Telegram'ın kendi gizlilik politikası geçerlidir.</li>
+  <li><strong>See and export:</strong> your vault is shown in the extension; &quot;Export&quot; saves all of it as a file.</li>
+  <li><strong>Delete:</strong> delete words in the vault; clear the translation cache in the settings; delete past tests; remove the extension to delete everything it stored in your browser.</li>
+  <li><strong>Sync:</strong> &quot;Disconnect&quot; stops it; &quot;also delete the file in the cloud&quot; removes the remote copy. In Google Drive you can also remove it under Settings → Manage apps → Wordvault.</li>
+  <li><strong>Feedback you sent:</strong> to have a message deleted, write to [CONTACT_EMAIL] with enough to identify it (approximate date and time, and the e-mail address if you gave one). It is deleted from the Telegram chat; there is no other copy.</li>
+  <li><strong>AI consent:</strong> &quot;Withdraw consent&quot; in the AI settings.</li>
 </ul>
-<p><strong>Sildirmek:</strong> gönderdiğin bir mesajın silinmesi için aynı formdan yaz (bulmaya yetecek kadar: yaklaşık tarih ve saat, verdiysen e-posta adresi) ya da eklentinin mağaza sayfasındaki geliştirici iletişim adresini kullan. Mesaj Telegram sohbetinden silinir; başka kopyası yoktur.</p>
-
-<h3>Verinin kullanımı</h3>
-<p>Veri yalnızca istediğin özelliği sağlamak için kullanılır. Satılmaz, yukarıda anlatılanlar dışında kimseye aktarılmaz, reklam ya da profil çıkarma için kullanılmaz, kredi değerliliği belirlemek için kullanılmaz. Google, Microsoft ve Dropbox API'lerinden alınan veri yalnızca kasanı eşitlemek için kullanılır (Google API Services User Data Policy ve "Limited Use" gerekleri, Microsoft API Terms of Use, Dropbox Developer Terms); insanlar tarafından okunmaz.</p>
-
-<h3>İzinler</h3>
-<p>Eklenti tarayıcı hesabının e-posta adresine erişim istemez. Bir bulut hizmetine, kendi sunucuna ya da geri bildirim alıcısına erişim kurulumda verilmez: tarayıcı, bağlandığın ya da gönderdiğin anda ve yalnızca o adres için sorar.</p>
-
-<h3>Çocuklar</h3>
-<p>Wordvault kendiliğinden kişisel veri toplamaz. Geri bildirim formu çocuklara yönelik değildir; e-posta alanı isteğe bağlıdır.</p>
-
-<h3>Değişiklikler</h3>
-<p>Bu politika eklentiyle birlikte sürümlenir. Tarayıcıdan çıkan veride bir değişiklik olursa burada ve sürüm notlarında belirtilir.</p>
-</section>
+<h2>5. Security</h2>
+<p>Credentials stay in your browser and are sent only to the service they belong to. All network requests use HTTPS (except to a server on your own computer). The extension's pages contain no remote code, and nothing from a web page or an AI answer is ever inserted into a page as HTML.</p>
+<h2>6. Children</h2>
+<p>Wordvault does not collect personal data from anyone by itself. The feedback form is not directed at children, and its e-mail field is optional.</p>
+<h2>7. Changes</h2>
+<p>This policy is versioned with the extension. If what leaves your browser changes, this page and the release notes will say so before the change takes effect.</p>
+<h2>8. Contact</h2>
+<p>[CONTACT_EMAIL]</p>
 </main>
 </body>
 </html>
