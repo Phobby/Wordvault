@@ -332,3 +332,6 @@ body {
   .diff-play .d-stem, .diff-play .d-leaf, .diff-play .d-star, .diff-play .d-ember, .diff-play .d-bolt, .diff-play .d-gem, .diff-play .d-glint { animation: none; }
 }
 .note-text { white-space: pre-wrap; font-size: 13px; line-height: 1.5; color: var(--wv-fg); overflow-wrap: anywhere; }
+
+/* Source and licence of the dictionary text (Wiktionary, CC BY-SA 4.0) */
+.detail .credit { margin: 6px 0 0; font-size: 11.5px; }

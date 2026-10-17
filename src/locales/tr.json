@@ -798,7 +798,7 @@
   "bkIncludeKeys": "API anahtarlarını dahil et",
   "bkIncludeKeysHelp": "Yalnızca bu dışa aktarma için. Dosyaya sahip olan herkes anahtarlarını kullanabilir: dosyayı güvenli bir yerde tut.",
   "bkSettingsRestored": "Dosyadaki ayarlar geri yüklendi.",
-  "syncSettingsNote": "Ayarların ve geçmiş sınavların da taşınır (sınavlar tarayıcı senkronu hariç). API anahtarları yalnızca şifreleme açıkken, şifreli dosyanın içinde gider; yapay zekâya metin gönderme onayı her cihazda ayrıca sorulur.",
+  "syncSettingsNote": "Ayarlar ve geçmiş sınavlar da taşınır; API anahtarları yalnızca şifreleme açıkken.",
   "optAiNeedsPermission": "Bu tarayıcıya henüz sağlayıcıya erişme izni verilmedi (ayarlar başka bir cihazdan geldi).",
   "optAiAllow": "İzin ver",
   "examCountLimited": "Bu seçimlerle en çok {max}: bu dilde {words} kelime var ve bir kelime her soru türünde yalnızca bir kez sorulur.",
@@ -869,5 +869,6 @@
   "quizDiagVoiceNone": "{language}: bu cihazda ses yok; dinleme soruları sorulmaz",
   "quizDiagVoiceValue": "{language}: {voice} ({kind}, {local}), {of} sesten {rank}. sırada",
   "operaSidebarNote": "Opera'da Wordvault kenar çubuğu panellerinde (X, mesajlaşma uygulamaları) çalışmayabilir. Sayfayı normal bir sekmede aç.",
-  "operaSidebarNoteOk": "Anladım"
+  "operaSidebarNoteOk": "Anladım",
+  "dtCredit": "Tanımlar:"
 }

@@ -798,7 +798,7 @@
   "bkIncludeKeys": "Include API keys",
   "bkIncludeKeysHelp": "Only for this export. Anyone who has the file can then use your keys: keep it somewhere safe.",
   "bkSettingsRestored": "The settings of the file were restored.",
-  "syncSettingsNote": "Your settings and past tests travel too (past tests not with browser sync). API keys only while encryption is on, inside the encrypted file; agreeing to send text to an AI provider is asked on each device.",
+  "syncSettingsNote": "Settings and past tests travel too; API keys only while encryption is on.",
   "optAiNeedsPermission": "This browser has not been allowed to reach the provider yet (the settings came from another device).",
   "optAiAllow": "Allow",
   "examCountLimited": "At most {max} with these choices: {words, plural, one {# word} other {# words}} in this language, and a word is asked once per kind of question.",
@@ -869,5 +869,6 @@
   "quizDiagVoiceNone": "{language}: no voice on this device; listening questions are left out",
   "quizDiagVoiceValue": "{language}: {voice} ({kind}, {local}), {rank} of {of}",
   "operaSidebarNote": "In Opera, Wordvault may not work in sidebar panels (X, messengers). Open the page in a normal tab instead.",
-  "operaSidebarNoteOk": "Got it"
+  "operaSidebarNoteOk": "Got it",
+  "dtCredit": "Definitions:"
 }

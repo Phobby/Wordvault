@@ -398,6 +398,16 @@ function dictionarySection(entry) {
       group.partOfSpeech && h('span', { class: 'pos', text: partOfSpeechLabel(group.partOfSpeech) }),
       h('ol', { class: 'definitions' }, ...group.definitions.map((definition) => h('li', { text: definition.text }))),
     ]),
+    // Wiktionary's text is licensed CC BY-SA 4.0: its source and licence are named and linked.
+    h(
+      'p',
+      { class: 'credit muted' },
+      t('dtCredit'),
+      ' ',
+      h('a', { href: `https://en.wiktionary.org/wiki/${encodeURIComponent(entry.text.replace(/ /g, '_'))}`, target: '_blank', rel: 'noopener noreferrer', text: 'Wiktionary' }),
+      ' · ',
+      h('a', { href: 'https://creativecommons.org/licenses/by-sa/4.0/', target: '_blank', rel: 'noopener noreferrer', text: 'CC BY-SA 4.0' }),
+    ),
   ];
 }
 

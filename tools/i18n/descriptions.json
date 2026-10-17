@@ -721,5 +721,6 @@
   "quizDiagVoiceNone": "Diagnostics value.",
   "quizDiagVoiceValue": "Diagnostics value. {rank}/{of}: place in the ranking.",
   "operaSidebarNote": "Toolbar popup, Opera only.",
-  "operaSidebarNoteOk": "Toolbar popup, Opera only: dismisses the note."
+  "operaSidebarNoteOk": "Toolbar popup, Opera only: dismisses the note.",
+  "dtCredit": "Vault popup: before the links to the Wiktionary entry and its licence (CC BY-SA 4.0)."
 }

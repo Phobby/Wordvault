@@ -17,7 +17,7 @@ browser; Wordvault has no server of its own.
 > endpoint) and optional end-to-end encryption. The default is "This device only": nothing is sent
 > anywhere until the user picks a way and confirms it. Google Drive needs a one-time developer setup
 > (`SETUP-OAUTH.md`); until then its card says "Not configured".
-> Privacy: `PRIVACY.md`.
+> Privacy: `PRIVACY.md`. Third-party software, content and trademarks: `src/THIRD-PARTY-NOTICES.md`.
 >
 > The flash card system (`SPEC-QUIZ.md`, `SPEC-QUIZ-POPUP.md`) is being added in stages. Ready now:
 > the scheduler, the "Why is there no quiz?" diagnostics panel, "Test now", the learning algorithm,
