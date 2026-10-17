@@ -11,7 +11,8 @@ import { supportCard } from '../support/support.js';
 import { downloadBackup, restoreBackup } from '../lib/backup.js';
 import { DEFAULT_SETTINGS, getSettings, updateSettings } from '../lib/settings.js';
 import { getPreferences, setTargetLanguage } from '../lib/translator.js';
-import { INTERVAL_MINUTES, LEARNED_STREAK, TIMEOUT_SECONDS, getDiagnostics, isMixed, toggleMode } from '../quiz/scheduler.js';
+import { DIFFICULTIES } from '../quiz/difficulty.js';
+import { INTERVAL_MINUTES, LEARNED_STREAK, QUESTIONS_PER_QUIZ, TIMEOUT_SECONDS, getDiagnostics } from '../quiz/scheduler.js';
 import { DAILY_GOAL } from '../quiz/streak.js';
 import { createProgressPanel } from '../quiz/progress-panel.js';
 import { createSyncControls } from './sync.js';
@@ -41,6 +42,7 @@ function flashSaved() {
 
 const uiLanguage = h('select', {
   id: 'ui-language',
+  'aria-label': t('optUiLang'),
   onchange: async () => {
     await globalThis.WV.i18n.setLanguage(uiLanguage.value);
     flashSaved();
@@ -59,20 +61,29 @@ async function renderUiLanguage() {
 }
 
 // --- Target language -----------------------------------------------------------------------------
+// A drop-down of the languages the active translation service offers, by name.
 
-const currentTarget = h('p', { class: 'current' });
-const targetList = languages.createList({
-  onSelect: async (code) => {
-    await setTargetLanguage(code);
+const targetSelect = h('select', {
+  id: 'target-language',
+  'aria-label': t('optTargetLang'),
+  onchange: async () => {
+    await setTargetLanguage(targetSelect.value);
     flashSaved();
   },
 });
+const targetNote = h('p', { class: 'help', hidden: true });
 
 async function renderTarget() {
   const prefs = await getPreferences();
-  const name = languages.name(prefs.targetLang);
-  currentTarget.textContent = t(prefs.targetChosen ? 'optTargetLangCurrent' : 'optTargetLangUnset', { language: name });
-  targetList.setOptions({ codes: prefs.languages, value: prefs.targetLang });
+  if (document.activeElement !== targetSelect) {
+    const locale = languages.uiLanguage();
+    const named = prefs.languages.map((code) => ({ code, label: languages.name(code) })).sort((a, b) => a.label.localeCompare(b.label, locale));
+    targetSelect.replaceChildren(...named.map(({ code, label }) => h('option', { value: code, text: label })));
+    targetSelect.value = prefs.targetLang;
+  }
+  // Not chosen yet: the browser's language is used until it is.
+  targetNote.hidden = prefs.targetChosen;
+  targetNote.textContent = prefs.targetChosen ? '' : t('optTargetLangUnset', { language: languages.name(prefs.targetLang) });
 }
 
 // --- Double-click trigger ------------------------------------------------------------------------
@@ -164,7 +175,6 @@ backupSection.append(syncControls.element);
 const INTERVAL_PRESETS = [5, 10, 15, 20, 30, 60, 120, 240];
 /** Offered only while the extension is loaded for development: short enough to watch the timer work. */
 const INTERVAL_TESTING = 1;
-const MIN_CARDS_MAX = 1000;
 let developmentInstall = false;
 
 function intervalLabel(minutes) {
@@ -191,35 +201,7 @@ function numberIn(input, min, max) {
 const quizEnabled = h('input', { type: 'checkbox', onchange: () => saveQuiz({ quizEnabled: quizEnabled.checked }) });
 const quizAllowNotDue = h('input', { type: 'checkbox', onchange: () => saveQuiz({ quizAllowNotDue: quizAllowNotDue.checked }) });
 
-// The ways a word is asked: each on its own switch, and whether they are mixed.
 const quizSwitch = (key) => h('input', { type: 'checkbox', 'data-setting': key, onchange: (event) => saveQuiz({ [key]: event.target.checked }) });
-// The ways the quiz that comes by itself asks a word: four switches, any number of them on,
-// never none. All four on is "Mixed", which is shown as a label, not as a switch of its own.
-const quizModeNote = h('p', { class: 'ocr-warning', role: 'alert', hidden: true });
-const quizMixedBadge = h('span', { class: 'sync-badge on', hidden: true, text: t('optQuizModeMixed') });
-const quizModeSwitch = (mode, key) => {
-  const input = h('input', {
-    type: 'checkbox',
-    'data-setting': key,
-    onchange: async () => {
-      const after = toggleMode(await getSettings(), mode, input.checked);
-      if (!after) {
-        // the last one that is on stays on
-        input.checked = true;
-        quizModeNote.textContent = t('optQuizModeNone');
-        quizModeNote.hidden = false;
-        return;
-      }
-      quizModeNote.hidden = true;
-      await saveQuiz(after);
-    },
-  });
-  return input;
-};
-const quizModeClassic = quizModeSwitch('classic', 'quizModeClassic');
-const quizModeWriting = quizModeSwitch('writing', 'quizModeWriting');
-const quizModeListening = quizModeSwitch('listening', 'quizModeListening');
-const quizModeExpert = quizModeSwitch('expert', 'quizModeExpert');
 const quizAccentTolerant = quizSwitch('quizAccentTolerant');
 const quizListenAutoplay = quizSwitch('quizListenAutoplay');
 const quizListenChoices = h(
@@ -257,19 +239,6 @@ const quizInterval = h('select', {
   },
 });
 
-const quizMinCards = h('input', {
-  type: 'number',
-  inputmode: 'numeric',
-  min: '1',
-  max: String(MIN_CARDS_MAX),
-  step: '1',
-  'aria-label': t('optQuizMinCards'),
-  onchange: () => {
-    const count = numberIn(quizMinCards, 1, MIN_CARDS_MAX);
-    if (count !== null) saveQuiz({ quizMinCards: count });
-    else renderQuizSettings(quizMinCards);
-  },
-});
 const quizTimeout = h('input', {
   type: 'number',
   inputmode: 'numeric',
@@ -284,13 +253,22 @@ const quizTimeout = h('input', {
   },
 });
 
-/** @param {HTMLInputElement} [rejected]  A field whose content was not accepted and is put back. */
-/** How many questions a quiz can be set to ask. */
-const QUESTION_COUNTS = [1, 3, 5, 10];
-const quizQuestions = h('select', {
+const quizQuestions = h('input', {
+  type: 'number',
+  inputmode: 'numeric',
+  min: String(QUESTIONS_PER_QUIZ.MIN),
+  max: String(QUESTIONS_PER_QUIZ.MAX),
+  step: '1',
+  'data-setting': 'quizQuestionsPerQuiz',
   'aria-label': t('optQuizQuestions'),
-  onchange: () => saveQuiz({ quizQuestionsPerQuiz: Number(quizQuestions.value) }),
+  onchange: () => {
+    const count = numberIn(quizQuestions, QUESTIONS_PER_QUIZ.MIN, QUESTIONS_PER_QUIZ.MAX);
+    if (count !== null) saveQuiz({ quizQuestionsPerQuiz: count });
+    else renderQuizSettings(quizQuestions);
+  },
 });
+/** The way the quiz asks comes from the level chosen in the toolbar popup; said here, not chosen. */
+const quizLevel = h('p', { class: 'help quiz-level' });
 
 /** The ways a quiz can be shown (quiz/display.js) and their names. */
 const DISPLAY_NAMES = { auto: 'quizDisplayAuto', popup: 'quizDisplayPopup', window: 'quizDisplayWindow', card: 'quizDisplayCard', notification: 'quizDisplayNotification' };
@@ -377,19 +355,16 @@ const quizNotifyTry = h('button', {
   },
 });
 
+/** @param {HTMLInputElement} [rejected]  A field whose content was not accepted and is put back. */
 async function renderQuizSettings(rejected) {
   const [settings, d] = await Promise.all([getSettings(), getDiagnostics()]);
   // A field that is being typed in is left alone.
   const free = (field) => field === rejected || document.activeElement !== field;
   quizEnabled.checked = settings.quizEnabled;
+  // Switched off, everything below the switch is greyed out and cannot be changed.
+  quizBody.disabled = !settings.quizEnabled;
   quizAllowNotDue.checked = settings.quizAllowNotDue;
-  quizModeWriting.checked = settings.quizModeWriting === true;
-  quizModeListening.checked = settings.quizModeListening === true;
-  quizModeExpert.checked = settings.quizModeExpert === true;
-  // none stored as on (it cannot be chosen, but data can come from anywhere): classic is what is used
-  quizModeClassic.checked = settings.quizModeClassic === true || !(quizModeWriting.checked || quizModeListening.checked || quizModeExpert.checked);
-  quizMixedBadge.hidden = !isMixed(settings);
-  quizAccentTolerant.checked = settings.quizAccentTolerant === true;
+  quizAccentTolerant.checked = settings.quizAccentTolerant !== false;
   quizListenAutoplay.checked = settings.quizListenAutoplay !== false;
   quizListenChoices.value = settings.quizListenChoices === 'spelling' ? 'spelling' : 'meaning';
   quizLearnedNeedsOtherMode.checked = settings.quizLearnedNeedsOtherMode !== false;
@@ -412,9 +387,8 @@ async function renderQuizSettings(rejected) {
   );
   quizInterval.value = custom ? 'custom' : String(minutes);
   quizIntervalCustomRow.hidden = !custom;
-  const counts = QUESTION_COUNTS.includes(d.questionsPerQuiz) ? QUESTION_COUNTS : [...QUESTION_COUNTS, d.questionsPerQuiz].sort((a, b) => a - b);
-  quizQuestions.replaceChildren(...counts.map((count) => h('option', { value: String(count), text: t('quizQuestions', { count }) })));
-  quizQuestions.value = String(d.questionsPerQuiz);
+  if (free(quizQuestions)) quizQuestions.value = String(d.questionsPerQuiz);
+  quizLevel.textContent = t('optQuizLevel', { level: levelText(d.mode) });
   quizDisplay.value = d.display;
   quizNotifyButton.dataset.allowed = d.notifications ? 'yes' : 'no';
   quizNotifyButton.textContent = t(d.notifications ? 'optQuizNotifyRemove' : 'optQuizNotifyAllow');
@@ -422,8 +396,13 @@ async function renderQuizSettings(rejected) {
   if (!d.notifications && quizNotifyStatus.textContent !== t('optQuizNotifyDenied')) quizNotifyStatus.textContent = '';
   else if (d.notifications && quizNotifyStatus.textContent === '') quizNotifyStatus.textContent = t('optQuizNotifyAllowed');
   if (free(quizIntervalCustom)) quizIntervalCustom.value = String(minutes);
-  if (free(quizMinCards)) quizMinCards.value = String(d.minCards);
   if (free(quizTimeout)) quizTimeout.value = String(d.timeoutSeconds);
+}
+
+/** "Hard (listening)": the level of the toolbar popup that asks in this way. */
+function levelText(mode) {
+  const level = DIFFICULTIES.find((candidate) => candidate.mode === mode) || DIFFICULTIES[0];
+  return `${t(level.nameKey)} (${t(level.modeKey)})`;
 }
 
 /** A labelled setting: name and explanation on the left, the control on the right. */
@@ -442,9 +421,10 @@ function fieldRow(titleKey, helpKey, ...controls) {
 const QUIZ_REASONS = {
   shown: 'quizWhyShown',
   disabled: 'quizWhyDisabled',
-  below_min_cards: 'quizWhyBelowMinCards',
+  // stored by versions that waited for a number of words before the first quiz
+  below_min_cards: 'quizWhyNoCards',
   not_enough_choices: 'quizWhyNotEnoughChoices',
-  no_cards: 'quizWhyNotEnoughChoices',
+  no_cards: 'quizWhyNoCards',
   nothing_due: 'quizWhyNothingDue',
   no_active_tab: 'quizWhyNoActiveTab',
   window_not_focused: 'quizWhyWindowNotFocused',
@@ -473,7 +453,7 @@ const QUIZ_REASONS = {
 function reasonText(reason, diagnostics) {
   const key = QUIZ_REASONS[reason];
   if (!key) return reason; // an unexpected error: show it as it is
-  return t(key, { total: diagnostics.total, min: diagnostics.minCards, language: languages.name(diagnostics.targetLang), meanings: diagnostics.meanings, needed: diagnostics.neededMeanings });
+  return t(key, { language: languages.name(diagnostics.targetLang), meanings: diagnostics.meanings, needed: diagnostics.neededMeanings });
 }
 
 /** "toolbar popup: the browser refused to open it (…); separate window: …" */
@@ -547,7 +527,8 @@ async function renderQuiz() {
   const alarm = d.alarmAt ? t('quizDiagAlarmSet', { time: timeText(d.alarmAt) }) : t(d.enabled ? 'quizDiagAlarmMissing' : 'quizDiagAlarmOff');
   const facts = [
     ['quizDiagEnabled', t(d.enabled ? 'quizOn' : 'quizOff')],
-    ['quizDiagCards', t('quizDiagCardsValue', { count: d.total, needed: d.minCards })],
+    ['quizDiagCards', String(d.total)],
+    ['quizDiagMode', levelText(d.mode)],
     ['quizDiagAskable', t('quizDiagAskableValue', { words: d.askable, language: languages.name(d.targetLang), meanings: d.meanings, needed: d.neededMeanings })],
     ['quizDiagDue', String(d.due)],
     ['quizDiagInterval', intervalLabel(d.intervalMinutes)],
@@ -581,64 +562,86 @@ async function testQuiz() {
 }
 
 const quizProgress = createProgressPanel({ celebrateIn: null });
-const quizSection = h(
-  'section',
-  { class: 'card', id: 'quiz' },
-  h('h2', { text: t('optQuizTitle') }),
-  h('p', { class: 'help', text: t('optQuizHelp') }),
-  quizProgress.element,
+// Everything the switch in the heading turns off. A disabled fieldset greys out and locks all
+// the controls inside it; "Why is there no quiz?" stays outside, since it says why.
+const quizBody = h(
+  'fieldset',
+  { class: 'quiz-body' },
   h(
     'div',
     { class: 'fields' },
-    switchRow(quizEnabled, 'optQuizEnabled', 'optQuizEnabledHelp'),
-    fieldRow('optQuizInterval', 'optQuizIntervalHelp', quizInterval, quizIntervalCustomRow),
+    fieldRow('optQuizInterval', null, quizInterval, quizIntervalCustomRow),
     fieldRow('optQuizQuestions', 'optQuizQuestionsHelp', quizQuestions),
+    quizLevel,
     fieldRow('optQuizDisplay', 'optQuizDisplayHelp', quizDisplay),
-    fieldRow('optQuizNotify', 'optQuizNotifyHelp', quizNotifyStatus, quizNotifyTry, quizNotifyButton),
+    fieldRow('optQuizTimeout', null, h('span', { class: 'inline' }, quizTimeout, h('span', { class: 'unit', text: t('optSeconds') }))),
     switchRow(quizAllowNotDue, 'optQuizAllowNotDue', 'optQuizAllowNotDueHelp'),
-    fieldRow('optQuizMinCards', 'optQuizMinCardsHelp', quizMinCards),
-    fieldRow('optQuizTimeout', 'optQuizTimeoutHelp', h('span', { class: 'inline' }, quizTimeout, h('span', { class: 'unit', text: t('optSeconds') }))),
   ),
-  h('h3', { class: 'with-badge' }, t('optQuizModes'), ' ', quizMixedBadge),
-  h('p', { class: 'help', text: t('optQuizModesHelp') }),
-  h('p', { class: 'help', text: t('optQuizModesManual') }),
-  quizModeNote,
+  h('h3', { text: t('optQuizGoalTitle') }),
   h(
     'div',
-    { class: 'fields', id: 'quiz-modes' },
-    switchRow(quizModeClassic, 'optQuizModeClassic', 'optQuizModeClassicHelp'),
-    switchRow(quizModeWriting, 'optQuizModeWriting', 'optQuizModeWritingHelp'),
-    switchRow(quizModeListening, 'optQuizModeListening', 'optQuizModeListeningHelp'),
-    switchRow(quizModeExpert, 'optQuizModeExpert', 'optQuizModeExpertHelp'),
-    switchRow(quizAccentTolerant, 'optQuizAccentTolerant', 'optQuizAccentTolerantHelp'),
-    switchRow(quizListenAutoplay, 'optQuizListenAutoplay', 'optQuizListenAutoplayHelp'),
-    fieldRow('optQuizListenChoices', 'optQuizListenChoicesHelp', quizListenChoices),
-  ),
-  h('h3', { text: t('optQuizProgressTitle') }),
-  h(
-    'div',
-    { class: 'fields', id: 'quiz-progress-settings' },
-    fieldRow('optQuizLearnedStreak', 'optQuizLearnedStreakHelp', quizLearnedStreak),
-    switchRow(quizLearnedNeedsOtherMode, 'optQuizLearnedOther', 'optQuizLearnedOtherHelp'),
+    { class: 'fields', id: 'quiz-goal-settings' },
     fieldRow('optQuizDailyGoal', 'optQuizDailyGoalHelp', h('span', { class: 'inline' }, quizDailyGoal, h('span', { class: 'unit', text: t('optQuizQuestionsUnit') }))),
+    fieldRow('optQuizQuiet', 'optQuizQuietHelp', h('span', { class: 'inline' }, quizQuietStart, h('span', { class: 'unit', text: '–' }), quizQuietEnd)),
     switchRow(quizFreezeEnabled, 'optQuizFreeze', 'optQuizFreezeHelp'),
     switchRow(quizReminderEnabled, 'optQuizReminder', 'optQuizReminderHelp'),
     fieldRow('optQuizReminderTime', null, quizReminderNote, quizReminderTime),
-    fieldRow('optQuizQuiet', 'optQuizQuietHelp', h('span', { class: 'inline' }, quizQuietStart, h('span', { class: 'unit', text: '–' }), quizQuietEnd)),
+    fieldRow('optQuizNotify', 'optQuizNotifyHelp', quizNotifyStatus, quizNotifyTry, quizNotifyButton),
+  ),
+  h(
+    'details',
+    { class: 'more' },
+    h('summary', { text: t('optAdvanced') }),
+    h(
+      'div',
+      { class: 'fields', id: 'quiz-advanced' },
+      switchRow(quizAccentTolerant, 'optQuizAccentTolerant', 'optQuizAccentTolerantHelp'),
+      switchRow(quizListenAutoplay, 'optQuizListenAutoplay', 'optQuizListenAutoplayHelp'),
+      fieldRow('optQuizListenChoices', null, quizListenChoices),
+      fieldRow('optQuizLearnedStreak', 'optQuizLearnedStreakHelp', quizLearnedStreak),
+      switchRow(quizLearnedNeedsOtherMode, 'optQuizLearnedOther', 'optQuizLearnedOtherHelp'),
+    ),
   ),
   h('div', { class: 'buttons' }, quizReset, quizResetStatus),
-  h('h3', { text: t('quizDiagTitle') }),
-  quizVerdict,
-  quizFacts,
-  h('div', { class: 'buttons' }, h('button', { class: 'wv-btn', type: 'button', 'data-action': 'test', text: t('quizTest'), onclick: testQuiz }), quizUnmute),
-  h('p', { class: 'help', text: t('quizTestHelp') }),
-  quizTestResult,
+);
+quizEnabled.setAttribute('role', 'switch');
+quizEnabled.setAttribute('aria-labelledby', 'quiz-title');
+// A group of the translation section, between screen translation and the translation service.
+const quizSection = h(
+  'div',
+  { class: 'group', id: 'quiz' },
+  h('div', { class: 'card-head' }, h('h3', { id: 'quiz-title', text: t('optQuizTitle') }), h('label', { class: 'head-switch' }, quizEnabled)),
+  quizProgress.element,
+  quizBody,
+  h(
+    'details',
+    { class: 'more', id: 'quiz-diagnostics' },
+    h('summary', { text: t('quizDiagTitle') }),
+    quizVerdict,
+    quizFacts,
+    h('div', { class: 'buttons' }, h('button', { class: 'wv-btn', type: 'button', 'data-action': 'test', text: t('quizTest'), onclick: testQuiz }), quizUnmute),
+    h('p', { class: 'help', text: t('quizTestHelp') }),
+    quizTestResult,
+  ),
 );
 
 // --- Page ----------------------------------------------------------------------------------------
 
 const ocrSection = createOcrSection({ flashSaved, switchRow, fieldRow });
-const passageSection = createPassageSection({ flashSaved, switchRow, fieldRow });
+// The rows about where and when translations are made open the "Translation settings" group.
+const passageSection = createPassageSection({
+  flashSaved,
+  switchRow,
+  fieldRow,
+  leadRows: [
+    fieldRow('optTargetLang', 'optTargetLangHelp', targetSelect),
+    targetNote,
+    switchRow(doubleClick, 'optDoubleClick', 'optDoubleClickHelp'),
+    // Only meaningful in the browsers where recordings replace the browser's voice. (append()
+    // would write a `false` out as text, hence the empty string.)
+    speech.usesRecordings ? switchRow(ttsFallback, 'optTtsFallback', 'optTtsFallbackHelp') : '',
+  ],
+});
 const aiSection = createAiSection({ flashSaved, switchRow, fieldRow });
 const providerSection = createProviderSection({ flashSaved });
 const cacheSection = createCacheSection();
@@ -654,34 +657,24 @@ const panels = {
   settings: h(
     'div',
     { id: 'panel-settings', role: 'tabpanel', 'aria-labelledby': 'tab-settings' },
-    // Only there when a support page is configured (config.js). (append() would write a null out as text.)
-    supportCard() || '',
+    // 1. Translation: the interface language on its own, then how and into what a translation
+    // is made, screen translation, flash cards, who translates, the AI.
     h(
       'section',
-      { class: 'card' },
-      h('h2', null, h('label', { for: 'ui-language', text: t('optUiLang') })),
-      h('p', { class: 'help', text: t('optUiLangHelp') }),
-      h('div', { class: 'field' }, uiLanguage),
+      { class: 'card', id: 'translation' },
+      h('h2', { text: t('optTranslationTitle') }),
+      h('div', { class: 'fields' }, fieldRow('optUiLang', 'optUiLangHelp', uiLanguage)),
+      passageSection.element,
+      ocrSection.element,
+      quizSection,
+      providerSection.element,
+      aiSection.element,
+      cacheSection.element,
     ),
-    h(
-      'section',
-      { class: 'card' },
-      h('h2', { text: t('optTargetLang') }),
-      h('p', { class: 'help', text: t('optTargetLangHelp') }),
-      currentTarget,
-      targetList.element,
-    ),
-    providerSection.element,
-    h('section', { class: 'card' }, switchRow(doubleClick, 'optDoubleClick', 'optDoubleClickHelp')),
-    passageSection.element,
-    aiSection.element,
-    // Only meaningful in the browsers where recordings replace the browser's voice. (append()
-    // would write a `false` out as text, hence the empty string.)
-    speech.usesRecordings ? h('section', { class: 'card' }, switchRow(ttsFallback, 'optTtsFallback', 'optTtsFallbackHelp')) : '',
-    quizSection,
-    ocrSection.element,
+    // 2. Backup and synchronisation
     backupSection,
-    cacheSection.element,
+    // 3. Support. Only there when a support page is configured (config.js); append() would write a null out as text.
+    supportCard() || '',
   ),
   feedback: h('div', { id: 'panel-feedback', role: 'tabpanel', 'aria-labelledby': 'tab-feedback' }, feedbackPanel.element),
 };

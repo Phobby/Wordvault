@@ -5,6 +5,7 @@
 
 import { anthropic } from './anthropic.js';
 import { gemini } from './gemini.js';
+import { nvidia } from './nvidia.js';
 import { ollama } from './ollama.js';
 import { openai } from './openai.js';
 
@@ -22,7 +23,8 @@ import { openai } from './openai.js';
  * @property {number} [pageChunkChars] The same for translating a page (ai/page-translate.js).
  * @property {(config: AiSettings) => string[]} origins
  *   The host permissions a request with this configuration needs (match patterns).
- * @property {(request: { system: string, prompt: string, maxTokens: number }, config: AiSettings, options?: { signal?: AbortSignal | null, timeoutMs?: number }) => Promise<string>} generate
+ * @property {(request: { system: string, prompt: string, maxTokens: number, image?: { mime: string, data: string } | null }, config: AiSettings, options?: { signal?: AbortSignal | null, timeoutMs?: number }) => Promise<string>} generate
+ *   `image`: a picture sent along with the prompt (base64 `data`), for models that read pictures.
  *   One answer as plain text. Rejects with a WordvaultError: 'network', 'timeout', 'aborted'
  *   (lib/errors.js) or one of the `ai_*` codes (providers/shared.js).
  *
@@ -30,7 +32,7 @@ import { openai } from './openai.js';
  */
 
 /** @type {Map<string, AiProvider>} */
-const providers = new Map([gemini, anthropic, openai, ollama].map((provider) => [provider.id, provider]));
+const providers = new Map([gemini, anthropic, nvidia, openai, ollama].map((provider) => [provider.id, provider]));
 
 /** @returns {AiProvider | null} */
 export const getAiProvider = (id) => providers.get(id) || null;

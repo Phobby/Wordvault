@@ -8,6 +8,7 @@
 
 import { getAiProvider } from './providers/index.js';
 import { parseBase } from './providers/shared.js';
+import { toHostList } from './sites.js';
 
 export const AI_CONFIG_KEY = 'aiConfig';
 
@@ -35,6 +36,10 @@ export const DEFAULT_AI_CONFIG = Object.freeze({
   promptSite: 'chatgpt',
   /** The length last asked for in "Summarise this page": 'short', 'medium' or 'detailed'. */
   summaryLength: 'medium',
+  /** The provider the user has agreed to send pictures to ("Ask about the image"); asked apart from text. */
+  imageConsent: '',
+  /** Which models read pictures, as found out by trying (ai/vision.js): { 'provider|model|address': boolean }. */
+  vision: {},
 });
 
 const clean = (value, max = 300) => (typeof value === 'string' ? value.trim().slice(0, max) : '');
@@ -44,8 +49,10 @@ export async function getAiConfig() {
   const stored = (await chrome.storage.local.get(AI_CONFIG_KEY))[AI_CONFIG_KEY];
   const config = { ...DEFAULT_AI_CONFIG, ...(stored && typeof stored === 'object' ? stored : {}) };
   config.providers = config.providers && typeof config.providers === 'object' ? config.providers : {};
-  config.blocked = Array.isArray(config.blocked) ? config.blocked : [];
-  config.allowed = Array.isArray(config.allowed) ? config.allowed : [];
+  // Arrays of hosts; a list kept as text (one host per line) is read as one, blank lines and duplicates dropped.
+  config.blocked = toHostList(config.blocked);
+  config.allowed = toHostList(config.allowed);
+  config.vision = config.vision && typeof config.vision === 'object' ? config.vision : {};
   return config;
 }
 

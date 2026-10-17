@@ -13,10 +13,11 @@ import { resolveTargetLanguage } from '../lib/translator.js';
 import { PROMPT_SITES, activeAi, getAiConfig, missing, settingsFor, updateAiConfig } from './config.js';
 import { DEFAULT_TIMEOUT_MS } from './http.js';
 import { PAGE_ANSWER_TOKENS, PAGE_CHUNK_CHARS, PAGE_CHUNK_ITEMS, PAGE_MAX_CHARS, parsePageTranslation, tidyItems } from './page-translate.js';
-import { MAX_ANSWER_TOKENS, asOneText, explainPassagePrompt, explainWordPrompt, pageTranslatePrompt, summaryJoinPrompt, summaryPartPrompt, summaryPrompt } from './prompts.js';
+import { MAX_ANSWER_TOKENS, asOneText, explainPassagePrompt, explainScreenPrompt, explainWordPrompt, imageQuestionPrompt, pageTranslatePrompt, summaryJoinPrompt, summaryPartPrompt, summaryPrompt } from './prompts.js';
 import { getAiProvider } from './providers/index.js';
 import { siteStatus } from './sites.js';
 import { PART_SUMMARY_CHARS, lengthOf, planSummary } from './summary.js';
+import { knownVision, probeVision, refusedPicture, visionKey } from './vision.js';
 
 /** Answers kept for this browser session: `ai:<digest>` in storage.session. Never on disk. */
 const CACHE_PREFIX = 'ai:';
@@ -100,8 +101,10 @@ async function allowedToReach(provider, settings) {
  * @returns {Promise<{ text: string, cached: boolean }>}
  */
 async function ask({ provider, settings, config }, prompt, request) {
+  // Answers about a picture are not kept: the key would have to hold the picture.
+  const caching = config.cache !== false && !prompt.image;
   const key = CACHE_PREFIX + (await digest([provider.id, settings.model, settings.baseUrl, prompt.task]));
-  if (config.cache !== false) {
+  if (caching) {
     const known = await recall(key);
     if (known) return { text: known, cached: true };
   }
@@ -111,8 +114,8 @@ async function ask({ provider, settings, config }, prompt, request) {
   if (own && request) underWay.set(request, controller);
   const done = keepAwake();
   try {
-    const text = await provider.generate({ system: prompt.system, prompt: prompt.prompt, maxTokens: prompt.maxTokens || MAX_ANSWER_TOKENS }, settings, { signal: controller.signal, timeoutMs: provider.timeoutMs || DEFAULT_TIMEOUT_MS });
-    if (config.cache !== false) await remember(key, text);
+    const text = await provider.generate({ system: prompt.system, prompt: prompt.prompt, maxTokens: prompt.maxTokens || MAX_ANSWER_TOKENS, image: prompt.image || null }, settings, { signal: controller.signal, timeoutMs: provider.timeoutMs || DEFAULT_TIMEOUT_MS });
+    if (caching) await remember(key, text);
     return { text, cached: false };
   } finally {
     done();
@@ -129,6 +132,10 @@ async function status(sender) {
     provider: provider ? { id: provider.id, name: provider.name, model: settings.model } : null,
     /** Text has to go to this provider before the user has said yes to that: ask first. */
     consent: Boolean(provider) && config.consent === provider.id,
+    /** The same for pictures ("Ask about the image"), asked apart from text. */
+    imageConsent: Boolean(provider) && config.imageConsent === provider.id,
+    /** Whether the model reads pictures: true, false, or null when that has not been tried yet. */
+    vision: provider ? knownVision(config, provider.id, settings) : null,
     site,
     promptSite: PROMPT_SITES[config.promptSite] ? PROMPT_SITES[config.promptSite].name : PROMPT_SITES.chatgpt.name,
   };
@@ -138,9 +145,10 @@ async function status(sender) {
 async function buildPrompt(payload) {
   const targetLang = await resolveTargetLanguage();
   const title = typeof payload?.title === 'string' ? payload.title : '';
-  if (payload?.kind === 'passage') {
+  if (payload?.kind === 'passage' || payload?.kind === 'screen') {
     const text = tidyPassage(payload.text);
     if (!text) throw new WordvaultError('empty');
+    if (payload.kind === 'screen') return { ...explainScreenPrompt({ text, title, targetLang }), task: ['screen', text, targetLang] };
     const built = explainPassagePrompt({ text, title, targetLang });
     // what decides the answer, without the per-request markers: the key of the session cache
     return { ...built, task: ['passage', text, targetLang] };
@@ -171,7 +179,7 @@ const named = (state) => ({ id: state.provider.id, name: state.provider.name, mo
 
 /**
  * "Explain with AI": a word in its sentence, or a selected passage.
- * @param {{ kind: 'word' | 'passage', text: string, sentence?: string, title?: string, sourceLang?: string, requestId?: string, agree?: boolean }} payload
+ * @param {{ kind: 'word' | 'passage' | 'screen', text: string, sentence?: string, title?: string, sourceLang?: string, requestId?: string, agree?: boolean }} payload
  *        agree: the user has just said yes to the notice about text being sent.
  */
 async function explain(payload, sender) {
@@ -179,6 +187,73 @@ async function explain(payload, sender) {
   const prompt = await buildPrompt(payload);
   const { text, cached } = await ask(state, prompt, typeof payload?.requestId === 'string' ? payload.requestId : '');
   return { text, cached, provider: named(state) };
+}
+
+// --- Ask about the image -----------------------------------------------------------------------
+
+/** The pictures the page may send: what the panel makes of a part of the screen (features/image-ask). */
+const IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
+/** Base64 characters: about 6 MB of picture. The panel sends far less (crop.js). */
+const IMAGE_MAX_CHARS = 8_000_000;
+
+function imageOf(payload) {
+  const image = payload?.image;
+  if (!image || !IMAGE_TYPES.has(image.mime) || typeof image.data !== 'string' || image.data.length === 0 || image.data.length > IMAGE_MAX_CHARS || !/^[A-Za-z0-9+/]+=*$/.test(image.data)) {
+    throw new WordvaultError('empty', 'no usable picture');
+  }
+  return { mime: image.mime, data: image.data };
+}
+
+/** Keeps what was found out about the model: it reads pictures, or it does not. */
+async function recordVision(providerId, settings, sees) {
+  const config = await getAiConfig();
+  await updateAiConfig({ vision: { ...config.vision, [visionKey(providerId, settings)]: sees } });
+}
+
+/**
+ * "Ask about the image": a picture of a part of the screen the user chose, with their question,
+ * to the provider in use. Before anything is sent: a provider is set up, the site is not one the
+ * features are off on, the user has agreed to pictures going to this provider (apart from text),
+ * and the model reads pictures, which is tried with a small test picture the first time.
+ * @param {{ image: { mime: string, data: string }, question?: string, title?: string, requestId?: string, agree?: boolean }} payload
+ */
+async function askAboutImage(payload, sender) {
+  let state = await activeAi();
+  if (!state.provider || !state.ready) throw new WordvaultError('ai_not_configured', '');
+  const site = siteStatus(hostOf(sender), state.config);
+  if (site !== 'ok') throw new WordvaultError('ai_site', site);
+  const image = imageOf(payload);
+  if (state.config.imageConsent !== state.provider.id) {
+    if (payload?.agree !== true) throw new WordvaultError('ai_image_consent', state.provider.name);
+    state = { ...state, config: await updateAiConfig({ imageConsent: state.provider.id }) };
+  }
+  const { provider, settings } = state;
+  if (!(await allowedToReach(provider, settings))) throw new WordvaultError('ai_permission', '');
+  let sees = knownVision(state.config, provider.id, settings);
+  if (sees === null) {
+    const done = keepAwake();
+    try {
+      sees = await probeVision(provider, settings, { timeoutMs: provider.timeoutMs || DEFAULT_TIMEOUT_MS });
+    } finally {
+      done();
+    }
+    await recordVision(provider.id, settings, sees);
+  }
+  if (!sees) throw new WordvaultError('ai_no_vision', provider.name);
+
+  const targetLang = await resolveTargetLanguage();
+  const built = imageQuestionPrompt({ question: typeof payload?.question === 'string' ? payload.question : '', title: typeof payload?.title === 'string' ? payload.title : '', targetLang });
+  try {
+    const { text } = await ask(state, { ...built, image, task: ['image'] }, typeof payload?.requestId === 'string' ? payload.requestId : '');
+    return { text, provider: named(state) };
+  } catch (error) {
+    // The test picture went through, this one did not, and the provider says it is about the picture.
+    if (refusedPicture(error)) {
+      await recordVision(provider.id, settings, false);
+      throw new WordvaultError('ai_no_vision', provider.name);
+    }
+    throw error;
+  }
 }
 
 // --- Summarise this page -----------------------------------------------------------------------
@@ -289,7 +364,16 @@ async function test(payload) {
   const done = keepAwake();
   try {
     const text = await provider.generate({ system: 'You are a connection test. Answer with the single word OK.', prompt: 'Say OK.', maxTokens: MAX_ANSWER_TOKENS }, settings, { timeoutMs: provider.timeoutMs || DEFAULT_TIMEOUT_MS });
-    return { ok: true, model: settings.model, sample: text.slice(0, 40) };
+    // The connection works: whether the model also reads pictures is tried right after, and
+    // kept (ai/vision.js). If that cannot be found out now, it is tried again before the first picture.
+    let vision = null;
+    try {
+      vision = await probeVision(provider, settings, { timeoutMs: provider.timeoutMs || DEFAULT_TIMEOUT_MS });
+      await recordVision(provider.id, settings, vision);
+    } catch {
+      vision = null;
+    }
+    return { ok: true, model: settings.model, sample: text.slice(0, 40), vision };
   } finally {
     done();
   }
@@ -307,6 +391,7 @@ function fromOwnPage(handler) {
 export const aiHandlers = {
   'wv:ai:status': (payload, sender) => status(sender),
   'wv:ai:explain': explain,
+  'wv:ai:image': askAboutImage,
   'wv:ai:summary:plan': summaryPlan,
   'wv:ai:summarize': summarize,
   'wv:ai:page:plan': pagePlan,

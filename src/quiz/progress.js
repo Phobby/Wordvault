@@ -97,18 +97,22 @@ export function freezeOffer(days, frozen, today) {
 
 /**
  * The ranks, by the number of learned words. This is the one place the thresholds live.
- * Beginner, Middle, Mafya and Boss are the user's own names and ranges; the three that fill
- * the gaps (below 100, 300 to 500, 2000 and up) are ours. A rank lasts until the next one's
- * `from`. `tone` picks the colours of the badge (shared/progress-ui.js).
+ * Beginner, Middle, Mafya and Boss are the user's own names; the three that fill the gaps are
+ * ours. A rank lasts until the next one's `from`. `tone` picks the colours of the badge
+ * (shared/progress-ui.js).
+ *
+ * The thresholds are two thirds of the first ones (100, 200, 300, 500, 1000, 2000), rounded to
+ * fives: a word counts as learned only after several right answers spread over days, and at
+ * the old pace the first step up took months.
  */
 export const RANKS = Object.freeze([
   Object.freeze({ id: 'rookie', from: 0, nameKey: 'rankRookie', tone: 'slate' }),
-  Object.freeze({ id: 'beginner', from: 100, nameKey: 'rankBeginner', tone: 'green' }),
-  Object.freeze({ id: 'middle', from: 200, nameKey: 'rankMiddle', tone: 'blue' }),
-  Object.freeze({ id: 'senior', from: 300, nameKey: 'rankSenior', tone: 'violet' }),
-  Object.freeze({ id: 'mafya', from: 500, nameKey: 'rankMafya', tone: 'crimson' }),
-  Object.freeze({ id: 'boss', from: 1000, nameKey: 'rankBoss', tone: 'gold' }),
-  Object.freeze({ id: 'legend', from: 2000, nameKey: 'rankLegend', tone: 'aurora' }),
+  Object.freeze({ id: 'beginner', from: 65, nameKey: 'rankBeginner', tone: 'green' }),
+  Object.freeze({ id: 'middle', from: 135, nameKey: 'rankMiddle', tone: 'blue' }),
+  Object.freeze({ id: 'senior', from: 200, nameKey: 'rankSenior', tone: 'violet' }),
+  Object.freeze({ id: 'mafya', from: 335, nameKey: 'rankMafya', tone: 'crimson' }),
+  Object.freeze({ id: 'boss', from: 665, nameKey: 'rankBoss', tone: 'gold' }),
+  Object.freeze({ id: 'legend', from: 1335, nameKey: 'rankLegend', tone: 'aurora' }),
 ]);
 
 /**

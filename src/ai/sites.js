@@ -39,6 +39,62 @@ export function parseHostList(text) {
   return [...new Set(hosts)].slice(0, 500);
 }
 
+/** How many hosts the settings page lets one list hold. ASSUMPTION: far more than anyone types by hand. */
+export const MAX_SITES = 200;
+
+/** One label of a host name: letters, digits and inner hyphens, at most 63 characters. */
+const HOST_LABEL = /^(?!-)[a-z0-9¡-￿-]{1,63}(?<!-)$/;
+const IPV4 = /^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/;
+
+/** Whether a normalised host could be a real one: "localhost", an IPv4 address, or labels with a top-level domain that is not a number. */
+function isHostName(host) {
+  if (host === 'localhost') return true;
+  const ip = IPV4.exec(host);
+  if (ip) return ip.slice(1).every((part) => Number(part) <= 255);
+  const labels = host.split('.');
+  return labels.length >= 2 && labels.every((label) => HOST_LABEL.test(label)) && !/^\d+$/.test(labels.at(-1));
+}
+
+/**
+ * One host as the user types it into a list: cleaned (scheme, path, query, port, "www." and
+ * spaces dropped, lower case), checked, and written the way the browser writes the page's host
+ * (punycode for names in other scripts), so that it matches.
+ * @returns {{ host: string } | { error: 'empty' | 'invalid' }}
+ */
+export function checkHost(value) {
+  const text = String(value ?? '').trim();
+  if (!text) return { error: 'empty' };
+  const host = normalizeHost(text);
+  if (!host || !isHostName(host)) return { error: 'invalid' };
+  try {
+    return { host: new URL(`http://${host}`).hostname };
+  } catch {
+    return { error: 'invalid' };
+  }
+}
+
+/**
+ * A list with one more host typed in.
+ * @returns {{ list: string[], host: string } | { error: 'empty' | 'invalid' | 'duplicate' | 'full', host?: string }}
+ */
+export function addHost(list, value) {
+  const checked = checkHost(value);
+  if (checked.error) return checked;
+  if (list.includes(checked.host)) return { error: 'duplicate', host: checked.host };
+  if (list.length >= MAX_SITES) return { error: 'full' };
+  return { list: [...list, checked.host], host: checked.host };
+}
+
+/**
+ * A stored list as the code uses it: an array of clean hosts without duplicates. Also reads a
+ * list kept as text, one host per line, so that no stored form makes the settings fail.
+ */
+export function toHostList(value) {
+  if (typeof value === 'string') return parseHostList(value);
+  if (!Array.isArray(value)) return [];
+  return parseHostList(value.filter((entry) => typeof entry === 'string').join('\n'));
+}
+
 /** Whether a host is `entry` or a subdomain of it. */
 const covers = (entry, host) => host === entry || host.endsWith(`.${entry}`);
 

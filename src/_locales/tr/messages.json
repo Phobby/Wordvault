@@ -10,5 +10,8 @@
   },
   "cmdTranslateSelection": {
     "message": "Seçili metni çevir"
+  },
+  "cmdAskImage": {
+    "message": "Ekranın bir bölümünü yapay zekâya sor"
   }
 }

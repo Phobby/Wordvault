@@ -457,8 +457,10 @@ viewer, the stores) the right-click translation is shown in a small window (`pas
 the text is handed to that window through `storage.session`, never through the address or the disk.
 The shortcut cannot read the selection on those pages; a sign on the toolbar button says so.
 
-**Settings** (the "Translate a selection" section, `options/passage.js`): "Right-click menu",
-"Translate button on selection", the shortcut and how to change it, "Ask phrases in the quiz".
+**Settings** (the "Translation settings" group, `options/passage.js`): the target language and
+"Translate on double click" first, then "Right-click menu", "Translate button on selection" and the
+shortcut; how to change the shortcut, the length limit and where a selection goes are under
+"Details" (`options/disclosure.js`).
 
 ### AI features (with the user's own provider)
 
@@ -474,6 +476,7 @@ request goes from the browser straight to the provider.
 | --- | --- | --- | --- |
 | Google Gemini | `generativelanguage.googleapis.com/v1beta/models/{model}:streamGenerateContent?alt=sse` | `x-goog-api-key` header | `gemini-3.5-flash-lite` |
 | Claude API | `api.anthropic.com/v1/messages` | `x-api-key`, `anthropic-version: 2023-06-01` | `claude-haiku-5-5` |
+| NVIDIA (build.nvidia.com) | `integrate.api.nvidia.com/v1/chat/completions` (OpenAI protocol) | `Authorization: Bearer nvapi-…` | none (the user copies one from build.nvidia.com) |
 | OpenAI-compatible | `{address}/chat/completions` | `Authorization: Bearer` (may be empty) | none (the user types one) |
 | Ollama | `{address}/api/chat` (default `http://localhost:11434`) | none | none (the user types one) |
 
@@ -685,11 +688,8 @@ modes feed the same scheduler; speed is scored in classic only.
   there is no voice the card says so, nothing is written to the word, another word takes its place and
   that language (where recordings are used, that word) is not asked by listening for 24 hours.
 
-**The quiz that comes by itself** uses the four switches in the settings (Classic, Writing, Listening,
-Expert; only Classic by default). With more than one on, one is drawn at random for each question; if
-the drawn mode does not suit a word, another switched-on mode is used. With all four on, an
-informational "Mixed" label shows next to the title; there is no separate Mixed switch. The last
-switch that is on cannot be turned off (a warning is shown).
+**The quiz that comes by itself** asks at the level chosen with the difficulty picker of the toolbar
+popup (below), the same as the quiz started by hand; there is no separate setting for it.
 
 **The quiz started by hand** (`popup/quiz-starter.js`, `quiz/difficulty.js`). The "Quiz" section of the
 extension popup has a "Start quiz" button and a difficulty picker next to it. The picker is one
@@ -741,13 +741,13 @@ words:
 
 | Learned | Rank (English text, key) |
 | --- | --- |
-| 0-99 | Rookie (`rankRookie`) |
-| 100-199 | Beginner (`rankBeginner`) |
-| 200-299 | Middle (`rankMiddle`) |
-| 300-499 | Senior (`rankSenior`) |
-| 500-999 | Mafya (`rankMafya`) |
-| 1000-1999 | Boss (`rankBoss`) |
-| 2000+ | Legend (`rankLegend`) |
+| 0-64 | Rookie (`rankRookie`) |
+| 65-134 | Beginner (`rankBeginner`) |
+| 135-199 | Middle (`rankMiddle`) |
+| 200-334 | Senior (`rankSenior`) |
+| 335-664 | Mafya (`rankMafya`) |
+| 665-1334 | Boss (`rankBoss`) |
+| 1335+ | Legend (`rankLegend`) |
 
 The names come from the interface strings (`rank*` keys) and so follow the interface language. The
 badge (a shield with as many lines as steps), the flame and the celebration are drawn in
@@ -888,12 +888,13 @@ how the last quiz was shown (with the ways tried before it and why they failed),
 and why (`quizState.lastShown`, `lastSkip`), how the last question ended. The line under "Test now" says
 how the test was shown.
 
-A quiz needs at least 10 words in the vault (adjustable) and at least 4 different meanings in the target
-language.
+A quiz needs a word in the vault; the levels with four choices (Easy, Hard) need at least 4 different
+meanings in the target language. The quiz that comes by itself asks at the level chosen in the toolbar
+popup. Phrases kept from translated selections are never asked.
 
 #### Trying the scheduler
 
-1. Have at least 10 words in the vault. Settings → **Flash cards** → **Frequency** → **Every minute
+1. Have at least 4 words with different meanings in the vault. Settings → **Flash cards** → **Frequency** → **Every minute
    (for testing)**. In the panel, "Next quiz" should show one minute later, and "Scheduler (alarm)" the
    same time.
 2. Keep the browser in front and wait without touching anything. After a minute the quiz appears by

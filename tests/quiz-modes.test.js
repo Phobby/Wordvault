@@ -8,7 +8,8 @@ import { beforeEach, test } from 'node:test';
 import { updateSettings } from '../src/lib/settings.js';
 import { addEntry, getEntry } from '../src/lib/vault.js';
 import { listeningQuestion, questionInMode, writingQuestion } from '../src/quiz/question.js';
-import { answerQuestion, enabledModes, getQuizState, pickMode, recordAnswer, testQuiz } from '../src/quiz/scheduler.js';
+import { setDifficulty } from '../src/quiz/difficulty.js';
+import { answerQuestion, getQuizState, recordAnswer, testQuiz } from '../src/quiz/scheduler.js';
 import { readSession } from '../src/quiz/session.js';
 import { createDevice, use } from './helpers/chrome.js';
 import { loadScripts } from './helpers/hover.js';
@@ -124,19 +125,6 @@ test('a way that does not work for a word falls back to another that is switched
   assert.equal(questionInMode(CARDS[0], CARDS.slice(0, 2), 'classic', seeded(), { allowed: ['classic', 'writing'] }).mode, 'writing', 'too few choices: typed instead');
 });
 
-test('which way the quiz that comes by itself uses: one of those switched on, drawn for each question', () => {
-  assert.deepEqual(enabledModes({ quizModeClassic: true }), ['classic']);
-  assert.deepEqual(enabledModes({}), ['classic'], 'none switched on: the classic way');
-  assert.deepEqual(enabledModes({ quizModeWriting: true, quizModeExpert: true }), ['writing', 'expert']);
-  const all = { quizModeClassic: true, quizModeWriting: true, quizModeListening: true, quizModeExpert: true };
-  const drawn = new Set(Array.from({ length: 80 }, (_, index) => pickMode(all, {}, () => (index % 20) / 20)));
-  assert.deepEqual([...drawn].sort(), ['classic', 'expert', 'listening', 'writing'], 'all four come up');
-  assert.equal(pickMode(all, {}, () => 0.999999), 'expert');
-  assert.equal(pickMode({ quizModeWriting: true }, {}), 'writing');
-  const two = { quizModeClassic: true, quizModeListening: true };
-  assert.ok(Array.from({ length: 40 }, (_, index) => pickMode(two, {}, () => index / 40)).every((mode) => mode === 'classic' || mode === 'listening'), 'never one that is switched off');
-});
-
 // --- through the scheduler ---
 
 let device;
@@ -147,8 +135,9 @@ beforeEach(async () => {
   await addEntry({ text: 'sea', translation: 'deniz', sourceLang: 'en', targetLang: 'tr' });
 });
 
-test('with only writing switched on, the quiz asks for a typed word and carries the accent setting', async () => {
-  await updateSettings({ targetLang: 'tr', quizModeClassic: false, quizModeWriting: true, quizAccentTolerant: true });
+test('at Medium, the quiz that comes by itself asks for a typed word and carries the accent setting', async () => {
+  await setDifficulty('medium');
+  await updateSettings({ targetLang: 'tr', quizAccentTolerant: true });
   const shown = await testQuiz({ methods: ['card'] });
   assert.equal(shown.ok, true, shown.reason);
   const { question } = await readSession();
@@ -170,11 +159,10 @@ test('a typed answer is recorded for its way of asking; a hint makes it partly r
   assert.deepEqual((await getQuizState()).speed, [], 'typing time is not the user\'s pace at picking');
 });
 
-test('a word that cannot be said aloud: nothing is held against it, another word takes its place, and its language is not asked by ear again', async () => {
-  await updateSettings({ targetLang: 'tr', quizModeClassic: true, quizModeListening: true, quizQuestionsPerQuiz: 1 });
-  const realRandom = Math.random;
-  Math.random = () => 0.99; // of the two that are on, listening is drawn
-  const shown = await testQuiz({ methods: ['card'] }).finally(() => (Math.random = realRandom));
+test('a word that cannot be said aloud: nothing is held against it, another word takes its place, typed (Medium), and its language is not asked by ear again', async () => {
+  await setDifficulty('hard');
+  await updateSettings({ targetLang: 'tr', quizQuestionsPerQuiz: 1 });
+  const shown = await testQuiz({ methods: ['card'] });
   assert.equal(shown.ok, true, shown.reason);
   const session = await readSession();
   assert.equal(session.question.mode, 'listening');
@@ -185,7 +173,7 @@ test('a word that cannot be said aloud: nothing is held against it, another word
   assert.ok(reply.next, 'the quiz goes on, although it was to ask one question only');
   assert.equal(reply.next.index, 1, 'still the first question');
   assert.notEqual(reply.next.question.id, session.question.id);
-  assert.notEqual(reply.next.question.mode, 'listening', 'English has no voice here: not asked by ear');
+  assert.equal(reply.next.question.mode, 'writing', 'English has no voice here: typed instead of heard');
   const after = await getEntry(session.question.id);
   assert.deepEqual([after.quiz, after.rev], [before.quiz, before.rev + (after.dueAt !== before.dueAt ? 1 : 0)], 'no answer was recorded');
   assert.ok((await getQuizState()).noVoice.en > Date.now());
@@ -200,7 +188,7 @@ test('where recordings stand in for the voice, a missing one is about the word, 
 });
 
 test('settings changed in quick succession all take effect', async () => {
-  await Promise.all([updateSettings({ quizModeWriting: true }), updateSettings({ quizAccentTolerant: true }), updateSettings({ quizDailyGoal: 3 }), updateSettings({ quizListenChoices: 'spelling' })]);
+  await Promise.all([updateSettings({ quizTimeoutSeconds: 40 }), updateSettings({ quizAccentTolerant: false }), updateSettings({ quizDailyGoal: 3 }), updateSettings({ quizListenChoices: 'spelling' })]);
   const { settings } = await chrome.storage.local.get('settings');
-  assert.deepEqual([settings.quizModeWriting, settings.quizAccentTolerant, settings.quizDailyGoal, settings.quizListenChoices], [true, true, 3, 'spelling']);
+  assert.deepEqual([settings.quizTimeoutSeconds, settings.quizAccentTolerant, settings.quizDailyGoal, settings.quizListenChoices], [40, false, 3, 'spelling']);
 });

@@ -626,6 +626,8 @@
   /** What is asked about: the word with its sentence, or the passage. The page's title goes along. */
   function aiPayload() {
     const title = session.standalone ? '' : document.title;
+    // Text read from a picture of the screen gets a prompt of its own: it may be misread.
+    if (session.mode === 'passage' && session.origin === 'screen') return { kind: 'screen', text: session.text, title };
     return session.mode === 'passage'
       ? { kind: 'passage', text: session.text, title }
       : { kind: 'word', text: session.text, sentence: session.sentence, title, sourceLang: session.sourceLang };
@@ -659,7 +661,7 @@
       ];
     } else if (ai.state === 'consent') {
       children = [
-        note(t(session.mode === 'passage' ? 'aiConsentPassage' : 'aiConsentWord', { provider: ai.provider })),
+        note(t(session.origin === 'screen' ? 'aiConsentScreen' : session.mode === 'passage' ? 'aiConsentPassage' : 'aiConsentWord', { provider: ai.provider })),
         row(aiButton('aiConsentYes', () => runAi(true), { class: 'wv-btn wv-btn-sm wv-btn-primary', 'data-action': 'ai-agree' }), aiButton('aiCancel', resetAi)),
       ];
     } else if (ai.state === 'loading') {
@@ -972,12 +974,15 @@
    * @param {'word' | 'passage'} [request.mode]  'passage': a selected sentence or paragraph.
    * @param {boolean} [request.fromField]  The text was selected inside something the user types
    *                                    in: it is translated, but never offered to an AI.
+   * @param {'screen'} [request.origin]  The text was read from a picture of the screen (OCR).
+   * @param {boolean} [request.autoExplain]  Ask the AI at once, as if its button had been pressed
+   *                                    (the user pressed "Explain" somewhere else to open this).
    * @param {boolean} [request.standalone]  The popup is all there is in its window (the window
    *                                    that stands in on pages nothing can be drawn on):
    *                                    it fills it, and closing it closes the window.
    */
   function open(args) {
-    const { text, range, point, sentence = '', sample = '', pageLang = '', rect: lastRect = null, avoid = null, mode = 'word', standalone = false, fromField = false } = args;
+    const { text, range, point, sentence = '', sample = '', pageLang = '', rect: lastRect = null, avoid = null, mode = 'word', standalone = false, fromField = false, origin = '', autoExplain = false } = args;
     ui ||= build();
     if (!session) {
       for (const [type, listener, options] of LISTENERS) window.addEventListener(type, listener, options);
@@ -992,6 +997,7 @@
       mode: mode === 'passage' ? 'passage' : 'word',
       standalone: standalone === true,
       fromField: fromField === true,
+      origin: origin === 'screen' ? 'screen' : '',
       ai: { state: 'idle' }, // "Explain with AI": idle until the user asks
       text,
       range,
@@ -1035,6 +1041,8 @@
     session.prefsReady = loadPrefs();
     lookup();
     position();
+    // Asked for by the user's press on "Explain"; the usual checks (provider, site, consent) apply.
+    if (autoExplain === true) startAi();
   }
 
   function close() {
@@ -1055,10 +1063,12 @@
    * Opens the popup for a word found by a word source. This is all the popup needs to know
    * about hovering: the hit carries the word, its line and where it is.
    * @param {Object} hit  A WordHit (core/hover/word-source.js).
+   * @param {{ fromField?: boolean, origin?: 'screen' }} [extra]  As for open().
    */
-  function openForHit(hit) {
+  function openForHit(hit, extra = {}) {
     const { rect, area } = hit;
     open({
+      ...extra,
       text: hit.text,
       range: hit.range,
       rect: new DOMRect(rect.left, rect.top, rect.width, rect.height),
@@ -1080,7 +1090,8 @@
     session?.controller?.abort();
     ui.surface.unmount();
     ui = null;
-    if (args) open(args);
+    // an explanation that was asked for is not asked for again
+    if (args) open({ ...args, autoExplain: false });
   });
 
   WV.popup = {

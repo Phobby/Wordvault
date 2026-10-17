@@ -5,7 +5,7 @@
 // stored, and is forgotten as soon as the words are back.
 
 import { WordvaultError } from '../../lib/errors.js';
-import { getSettings } from '../../lib/settings.js';
+import { DEFAULT_MIN_CONFIDENCE } from './filters.js';
 
 const OFFSCREEN_PAGE = 'features/screen-ocr/offscreen.html';
 
@@ -17,7 +17,8 @@ export function captureErrorCode(message) {
   return 'ocr_capture';
 }
 
-async function capture(windowId) {
+/** A picture of what is visible of the tab, as a data URL (PNG). */
+export async function captureTab(windowId) {
   try {
     const dataUrl = await chrome.tabs.captureVisibleTab(windowId, { format: 'png' });
     if (!dataUrl) throw new Error('empty capture');
@@ -69,10 +70,11 @@ async function readHere(request, onProgress) {
  *        the picture has been taken: only from then on may the page show anything over itself.
  */
 export async function scanTab({ area, viewport }, tab, onProgress = () => {}) {
-  const dataUrl = await capture(tab.windowId);
+  const dataUrl = await captureTab(tab.windowId);
   onProgress({ stage: 'loading', progress: 0 });
-  const settings = await getSettings();
-  const request = { dataUrl, area, viewport, languages: settings.ocrLanguages, minConfidence: settings.ocrMinConfidence };
+  // Always every bundled language, at the engine's usual confidence (filters.js): the source
+  // language of a word is found by the translation when it is clicked, as for page text.
+  const request = { dataUrl, area, viewport, languages: 'auto', minConfidence: DEFAULT_MIN_CONFIDENCE };
   try {
     return offscreenApi() ? await readInOffscreen(request, tab.id) : await readHere(request, onProgress);
   } catch (error) {

@@ -239,18 +239,18 @@ test('quiz days are in the JSON export and come back with the import', async () 
 
 // --- ranks ---
 
-test('ranks: the ranges that were asked for, and the gaps filled', () => {
-  assert.deepEqual(RANKS.map((rank) => [rank.id, rank.from]), [['rookie', 0], ['beginner', 100], ['middle', 200], ['senior', 300], ['mafya', 500], ['boss', 1000], ['legend', 2000]]);
+test('ranks: two thirds of the first thresholds, rounded to fives', () => {
+  assert.deepEqual(RANKS.map((rank) => [rank.id, rank.from]), [['rookie', 0], ['beginner', 65], ['middle', 135], ['senior', 200], ['mafya', 335], ['boss', 665], ['legend', 1335]]);
+  const first = [0, 100, 200, 300, 500, 1000, 2000];
+  RANKS.forEach((rank, index) => assert.ok(Math.abs(rank.from - (first[index] * 2) / 3) <= 2.5, rank.id));
   const idAt = (learned) => rankOf(learned).id;
-  // asked for: 100-200 Beginner, 200-300 Middle, 500-1000 Mafya, 1000-2000 Boss
-  assert.deepEqual([100, 150, 199].map(idAt), ['beginner', 'beginner', 'beginner']);
-  assert.deepEqual([200, 299].map(idAt), ['middle', 'middle']);
-  assert.deepEqual([500, 999].map(idAt), ['mafya', 'mafya']);
-  assert.deepEqual([1000, 1999].map(idAt), ['boss', 'boss']);
-  // filled in: below 100, 300 to 500, 2000 and up
-  assert.deepEqual([0, 1, 99].map(idAt), ['rookie', 'rookie', 'rookie']);
-  assert.deepEqual([300, 499].map(idAt), ['senior', 'senior']);
-  assert.deepEqual([2000, 50_000].map(idAt), ['legend', 'legend']);
+  assert.deepEqual([0, 1, 64].map(idAt), ['rookie', 'rookie', 'rookie']);
+  assert.deepEqual([65, 134].map(idAt), ['beginner', 'beginner']);
+  assert.deepEqual([135, 199].map(idAt), ['middle', 'middle']);
+  assert.deepEqual([200, 334].map(idAt), ['senior', 'senior']);
+  assert.deepEqual([335, 664].map(idAt), ['mafya', 'mafya']);
+  assert.deepEqual([665, 1334].map(idAt), ['boss', 'boss']);
+  assert.deepEqual([1335, 50_000].map(idAt), ['legend', 'legend']);
   // every number of words has exactly one rank, and ranks only go up
   let last = 0;
   for (let learned = 0; learned <= 2500; learned++) {
@@ -263,12 +263,14 @@ test('ranks: the ranges that were asked for, and the gaps filled', () => {
 });
 
 test('ranks: words to go and progress through the rank', () => {
-  assert.deepEqual(rankOf(0), { index: 0, id: 'rookie', nameKey: 'rankRookie', tone: 'slate', learned: 0, from: 0, next: { id: 'beginner', nameKey: 'rankBeginner', from: 100 }, remaining: 100, progress: 0 });
-  const middle = rankOf(250);
-  assert.deepEqual([middle.id, middle.remaining, middle.progress, middle.next.id], ['middle', 50, 0.5, 'senior']);
-  assert.deepEqual([rankOf(99).remaining, rankOf(100).remaining, rankOf(100).progress], [1, 100, 0]);
+  assert.deepEqual(rankOf(0), { index: 0, id: 'rookie', nameKey: 'rankRookie', tone: 'slate', learned: 0, from: 0, next: { id: 'beginner', nameKey: 'rankBeginner', from: 65 }, remaining: 65, progress: 0 });
+  const middle = rankOf(160);
+  assert.deepEqual([middle.id, middle.remaining, middle.next.id], ['middle', 40, 'senior']);
+  assert.ok(Math.abs(middle.progress - 25 / 65) < 1e-9);
+  assert.deepEqual([rankOf(64).remaining, rankOf(65).remaining, rankOf(65).progress], [1, 70, 0]);
   const top = rankOf(2345);
   assert.deepEqual([top.id, top.next, top.remaining, top.progress], ['legend', null, 0, 1]);
   for (const odd of [-5, NaN, undefined, 'x']) assert.equal(rankOf(odd).id, 'rookie');
   assert.equal(rankOf(150.9).learned, 150);
 });
+

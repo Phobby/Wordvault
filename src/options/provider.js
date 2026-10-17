@@ -5,6 +5,7 @@
 // The key is stored with the other settings in chrome.storage.local and nowhere else: it is
 // not part of the backup, of synchronisation or of feedback.
 
+import { disclosure } from './disclosure.js';
 import { matchSupported } from '../lib/languages.js';
 import { getSettings, updateSettings } from '../lib/settings.js';
 import { deeplOrigin } from '../providers/deepl.js';
@@ -74,9 +75,9 @@ export function createProviderSection({ flashSaved }) {
     h('label', { class: 'sync-mode' }, choices[id], h('span', { class: 'switch-text' }, h('strong', { text: getProvider(id).name }), h('span', { class: 'help', text: t(helpKey) })));
 
   const element = h(
-    'section',
-    { class: 'card', id: 'provider' },
-    h('h2', { text: t('optProviderTitle') }),
+    'div',
+    { class: 'group', id: 'provider' },
+    h('h3', { text: t('optProviderTitle') }),
     h('p', { class: 'help', text: t('optProviderHelp') }),
     h('div', { class: 'sync-modes' }, option(DEFAULT_PROVIDER_ID, 'optProviderMymemoryHelp'), option(DEEPL, 'optProviderDeeplHelp')),
     warning,
@@ -158,7 +159,7 @@ export function createProviderSection({ flashSaved }) {
  */
 export function createCacheSection() {
   const facts = h('p', { class: 'help cache-facts', role: 'status' });
-  const done = h('span', { class: 'unit', role: 'status' });
+  const done = h('p', { class: 'help cache-done', role: 'status' });
   const clear = h('button', {
     class: 'wv-btn',
     type: 'button',
@@ -172,22 +173,32 @@ export function createCacheSection() {
       await render();
     },
   });
+  // The explanation of the layers is there on request; what is kept now and the button are not folded.
+  const noSession = h('p', { class: 'help', hidden: true, text: t('optCacheNoSession') });
+  const details = disclosure(
+    [
+      h('p', { class: 'help', text: t('optCacheHelp') }),
+      h('ul', { class: 'cache-layers' }, h('li', { text: t('optCacheLayerPage') }), h('li', { text: t('optCacheLayerSession') }), h('li', { text: t('optCacheLayerWeek') })),
+      h('p', { class: 'help', text: t('optCacheVault') }),
+      noSession,
+    ],
+    { describedBy: 'cache-title' },
+  );
   const element = h(
-    'section',
-    { class: 'card', id: 'cache' },
-    h('h2', { text: t('optCacheTitle') }),
-    h('p', { class: 'help', text: t('optCacheHelp') }),
-    h('ul', { class: 'cache-layers' }, h('li', { text: t('optCacheLayerPage') }), h('li', { text: t('optCacheLayerSession') }), h('li', { text: t('optCacheLayerWeek') })),
-    h('p', { class: 'help', text: t('optCacheVault') }),
-    facts,
-    h('div', { class: 'buttons' }, clear, done),
+    'div',
+    { class: 'group', id: 'cache' },
+    h('div', { class: 'group-head' }, h('h3', { id: 'cache-title', text: t('optCacheTitle') }), details.button),
+    h('div', { class: 'cache-row' }, facts, clear),
+    done,
+    details.panel,
   );
 
   async function render() {
     const stats = await globalThis.WV.send('wv:cache:stats').catch(() => null);
     if (!stats) return;
     const size = stats.entries === 0 ? '0 KB' : `${Math.max(1, Math.round(stats.bytes / 1024))} KB`;
-    facts.textContent = t('optCacheFacts', { count: stats.entries, size: size }) + (stats.hasSession ? '' : ` ${t('optCacheNoSession')}`);
+    facts.textContent = t('optCacheFacts', { count: stats.entries, size: size });
+    noSession.hidden = stats.hasSession;
   }
 
   return { element, render };

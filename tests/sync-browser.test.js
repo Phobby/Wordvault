@@ -5,10 +5,10 @@ import { beforeEach, test } from 'node:test';
 
 import { addEntry, listEntries, removeEntry } from '../src/lib/vault.js';
 import { decodeDocument, encodeDocument, fromBase64, toBase64 } from '../src/sync/codec.js';
-import { syncNow } from '../src/sync/engine.js';
+import { SYNC, SYNC_REMOTE_ALARM, remoteChanged, syncNow } from '../src/sync/engine.js';
 import { readLocalDocument } from '../src/sync/local.js';
 import { serializeDocument } from '../src/sync/merge.js';
-import { browser } from '../src/sync/providers/browser.js';
+import { browser, deviceId } from '../src/sync/providers/browser.js';
 import { getSyncProvider } from '../src/sync/providers/index.js';
 import { getSyncStatus, setSyncConfig } from '../src/sync/state.js';
 import { createDevice, syncStorageArea, use } from './helpers/chrome.js';
@@ -44,53 +44,152 @@ test('nothing stored yet reads as "no remote copy"', async () => {
   assert.deepEqual(await browser.connect(), {});
 });
 
+/** This device's keys in the browser's sync storage. */
+const own = async () => {
+  const id = await deviceId();
+  return { meta: `wv:${id}:m`, piece: (index) => `wv:${id}:${index}`, pieces: () => Object.keys(stored()).filter((key) => key.startsWith(`wv:${id}:`) && !key.endsWith(':m')) };
+};
+
+test('every device has a name of its own, kept in local storage only', async () => {
+  const id = await deviceId();
+  assert.match(id, /^[0-9a-f]{12}$/);
+  assert.equal(await deviceId(), id);
+  assert.notEqual(await (use(createDevice('B')), deviceId()), id);
+  assert.equal(device.sync.data.size, 0);
+});
+
 test('a small document is one piece; what is read back is what was written', async () => {
   const data = noise(900);
   const { version } = await browser.write(session, data, null);
   assert.equal(version, '1');
-  assert.deepEqual(Object.keys(stored()).sort(), ['wv_0', 'wv_meta']);
-  assert.deepEqual(stored().wv_meta, { v: 1, n: 1, rev: 1, at: T0 });
+  const keys = await own();
+  assert.deepEqual(Object.keys(stored()).sort(), [keys.piece(0), keys.meta].sort());
+  const { h, ...meta } = stored()[keys.meta];
+  assert.deepEqual(meta, { v: 2, n: 1, rev: 1, at: T0 });
+  assert.match(h, /^[0-9a-f]{16}$/);
   const read = await browser.read(session);
   assert.deepEqual([...read.data], [...data]);
   assert.equal(read.version, '1');
+  assert.deepEqual(read.others, []);
 });
 
 test('a larger document is cut into pieces of about 7 KB, written in one call', async () => {
   const data = noise(30_000);
   await browser.write(session, data, null);
-  const pieces = Object.keys(stored()).filter((key) => key !== 'wv_meta');
+  const keys = await own();
+  const pieces = keys.pieces();
   assert.equal(pieces.length, Math.ceil(toBase64(data).length / 7000));
   assert.ok(pieces.every((key) => stored()[key].length <= 7000 && key.length + stored()[key].length + 2 < 8192), 'each piece fits into one item');
-  assert.equal(stored().wv_meta.n, pieces.length);
+  assert.equal(stored()[keys.meta].n, pieces.length);
   assert.deepEqual(device.sync.calls, [`set ${pieces.length + 1}`], 'one write for the whole version');
   assert.deepEqual([...(await browser.read(session)).data], [...data]);
 });
 
 test('a shorter version removes the pieces the longer one left behind', async () => {
+  const keys = await own();
   await browser.write(session, noise(30_000), null);
-  assert.equal(stored().wv_meta.n, 6);
+  assert.equal(stored()[keys.meta].n, 6);
   const { version } = await browser.write(session, noise(9000, 3), '1');
   assert.equal(version, '2');
-  assert.deepEqual(Object.keys(stored()).sort(), ['wv_0', 'wv_1', 'wv_meta']);
+  assert.deepEqual(Object.keys(stored()).sort(), [keys.piece(0), keys.piece(1), keys.meta].sort());
   assert.deepEqual([...(await browser.read(session)).data], [...noise(9000, 3)]);
   // other things in the browser's sync storage are not Wordvault's to touch
   await device.sync.set({ somethingElse: 1 });
   await browser.write(session, noise(100), '2');
-  assert.deepEqual(Object.keys(stored()).sort(), ['somethingElse', 'wv_0', 'wv_meta']);
+  assert.deepEqual(Object.keys(stored()).sort(), ['somethingElse', keys.piece(0), keys.meta].sort());
 });
 
 test('a write against a version that is no longer there is refused', async () => {
+  const keys = await own();
   await browser.write(session, noise(100), null);
   await assert.rejects(browser.write(session, noise(100, 2), null), { code: 'sync_conflict' });
   await assert.rejects(browser.write(session, noise(100, 2), '7'), { code: 'sync_conflict' });
-  assert.equal(stored().wv_meta.rev, 1, 'and nothing was written');
+  assert.equal(stored()[keys.meta].rev, 1, 'and nothing was written');
   assert.equal((await browser.write(session, noise(100, 2), '1')).version, '2');
 });
 
-test('a version of which a piece has not arrived yet is not taken for a document', async () => {
-  await browser.write(session, noise(20_000), null);
-  device.sync.data.delete('wv_1');
-  await assert.rejects(browser.read(session), { code: 'sync_incomplete' });
+/** Writes `data` as the copy of another device, the way its Wordvault would. */
+async function writeAs(name, data, area = device.sync) {
+  use(createDevice(name, { sync: area }));
+  await browser.write(session, data, (await browser.read(session))?.version ?? null);
+  const id = await deviceId();
+  use(device);
+  return id;
+}
+
+test('the other devices\' copies are read as well, and only complete ones', async () => {
+  await browser.write(session, noise(500), null);
+  const b = await writeAs('B', noise(20_000, 5));
+  let read = await browser.read(session);
+  assert.deepEqual(read.others.map((other) => other.id), [b]);
+  assert.deepEqual([...read.others[0].data], [...noise(20_000, 5)]);
+  assert.deepEqual([...read.data], [...noise(500)], 'and this device\'s own is still the main one');
+
+  // a piece still on its way: that copy is left out this time, nothing fails
+  const missing = device.sync.data.get(`wv:${b}:1`);
+  device.sync.data.delete(`wv:${b}:1`);
+  read = await browser.read(session);
+  assert.deepEqual(read.others, []);
+  // a piece of an older version of the same copy: the fingerprint does not match, left out too
+  device.sync.data.set(`wv:${b}:1`, missing.split('').reverse().join(''));
+  assert.deepEqual((await browser.read(session)).others, []);
+});
+
+test('a device with no copy of its own yet still reads the others\'', async () => {
+  const b = await writeAs('B', noise(300, 9));
+  const read = await browser.read(session);
+  assert.equal(read.data, null);
+  assert.equal(read.version, null);
+  assert.deepEqual(read.others.map((other) => other.id), [b]);
+});
+
+test('two devices writing at the same moment cannot spoil each other\'s copy', async () => {
+  // what the browsers do: each device writes into its own storage, then sync merges key by key
+  const a = syncStorageArea();
+  const b = syncStorageArea();
+  use(createDevice('A', { sync: a }));
+  await browser.write(session, noise(20_000, 1), null);
+  const idA = await deviceId();
+  use(createDevice('B', { sync: b }));
+  await browser.write(session, noise(20_000, 2), null);
+  const idB = await deviceId();
+  for (const [key, value] of b.data) a.data.set(key, value);
+  for (const [key, value] of a.data) b.data.set(key, value);
+  for (const [area, id, mine, theirs] of [[a, idA, 1, 2], [b, idB, 2, 1]]) {
+    use(createDevice('again', { sync: area }));
+    await chrome.storage.local.set({ syncDeviceId: id });
+    const read = await browser.read(session);
+    assert.deepEqual([...read.data], [...noise(20_000, mine)]);
+    assert.deepEqual([...read.others[0].data], [...noise(20_000, theirs)]);
+  }
+});
+
+test('the shared copy of earlier versions is merged in once, then removed', async () => {
+  const legacy = toBase64(noise(9000, 4));
+  await device.sync.set({ wv_meta: { v: 1, n: 2, rev: 3, at: T0 }, wv_0: legacy.slice(0, 7000), wv_1: legacy.slice(7000) });
+  const read = await browser.read(session);
+  assert.equal(read.data, null);
+  assert.deepEqual(read.others.map((other) => other.id), ['legacy']);
+  assert.deepEqual([...read.others[0].data], [...noise(9000, 4)]);
+  await browser.write(session, noise(100), null);
+  assert.deepEqual(Object.keys(stored()).filter((key) => key.startsWith('wv_')), []);
+});
+
+test('copies of devices that have not synchronised for 60 days are removed', async () => {
+  const b = await writeAs('B', noise(300, 9));
+  const c = await writeAs('C', noise(300, 8));
+  device.sync.data.set(`wv:${c}:m`, { ...device.sync.data.get(`wv:${c}:m`), at: T0 - 61 * 86_400_000 });
+  await browser.write(session, noise(100), null);
+  assert.ok(stored()[`wv:${b}:m`], 'a device that is still there keeps its copy');
+  assert.deepEqual(Object.keys(stored()).filter((key) => key.startsWith(`wv:${c}:`)), []);
+});
+
+test('changes are told apart: another device\'s copy, or this device\'s own write', async () => {
+  const keys = await own();
+  assert.equal(await browser.isForeignChange([keys.meta, keys.piece(0)]), false);
+  assert.equal(await browser.isForeignChange(['somethingElse']), false);
+  assert.equal(await browser.isForeignChange(['wv:0123456789ab:m']), true);
+  assert.equal(await browser.isForeignChange(['wv_meta']), true);
 });
 
 test('a document that does not fit is refused before anything is written', async () => {
@@ -123,6 +222,8 @@ test('disconnecting leaves the stored copy alone unless asked to delete it', asy
   await device.sync.set({ somethingElse: 1 });
   await browser.disconnect(session, { deleteRemote: false });
   assert.equal(Object.keys(stored()).length, 4);
+  // the copies of other devices go too: Wordvault's data leaves the browser's sync storage
+  await writeAs('B', noise(100));
   await browser.disconnect(session, { deleteRemote: true });
   assert.deepEqual(Object.keys(stored()), ['somethingElse']);
 });
@@ -161,9 +262,70 @@ test('two browsers signed in to the same account end up with the same vault', as
   use(b);
   assert.equal(serializeDocument(await readLocalDocument()), mine);
   // what sits in the browser's storage is the compressed document, nothing else
-  const pieces = [...account.data].filter(([key]) => /^wv_\d+$/.test(key)).sort(([x], [y]) => Number(x.slice(3)) - Number(y.slice(3)));
-  const document = await decodeDocument(fromBase64(pieces.map(([, value]) => value).join('')));
-  assert.equal(serializeDocument(document), mine);
+  use(a);
+  const keys = await own();
+  const text = [...account.data].filter(([key]) => key.startsWith(keys.meta.slice(0, -1)) && key !== keys.meta).sort(([x], [y]) => Number(x.split(':')[2]) - Number(y.split(':')[2])).map(([, value]) => value).join('');
+  assert.equal(serializeDocument(await decodeDocument(fromBase64(text))), mine);
+});
+
+/** Firefox Sync and Chrome sync: what one browser stored reaches the other, key by key. */
+const carry = (from, to) => {
+  for (const [key, value] of from.data) to.data.set(key, structuredClone(value));
+};
+
+test('two browsers that synchronised at the same moment still end up with the same vault', async () => {
+  const storeA = syncStorageArea();
+  const storeB = syncStorageArea();
+  const a = use(createDevice('A', { sync: storeA }));
+  await setSyncConfig({ mode: 'browser', providerId: 'browser', connection: {}, connectedAt: T0 });
+  const b = use(createDevice('B', { sync: storeB }));
+  await setSyncConfig({ mode: 'browser', providerId: 'browser', connection: {}, connectedAt: T0 });
+
+  // both add words and synchronise before the browsers have exchanged anything
+  use(a);
+  for (const text of ['book', 'door']) await addEntry(word(text));
+  await syncNow();
+  use(b);
+  for (const text of ['sea', 'sky']) await addEntry(word(text));
+  await syncNow();
+  // the browsers exchange their sync storage, both ways
+  carry(storeA, storeB);
+  carry(storeB, storeA);
+  for (const one of [a, b]) {
+    use(one);
+    const status = await syncNow({ reason: 'remote' });
+    assert.equal(status.state, 'idle', JSON.stringify(status.error));
+    assert.deepEqual((await listEntries()).map((entry) => entry.text).sort(), ['book', 'door', 'sea', 'sky']);
+  }
+  // a removal travels the same way and the word does not come back
+  use(a);
+  await removeEntry('en|tr|door');
+  await syncNow();
+  carry(storeA, storeB);
+  use(b);
+  await syncNow({ reason: 'remote' });
+  carry(storeB, storeA);
+  use(a);
+  await syncNow({ reason: 'remote' });
+  for (const one of [a, b]) {
+    use(one);
+    assert.deepEqual((await listEntries()).map((entry) => entry.text).sort(), ['book', 'sea', 'sky']);
+  }
+});
+
+test('another device\'s copy arriving starts a synchronisation; this device\'s own writes do not', async () => {
+  use(device);
+  await setSyncConfig({ mode: 'browser', providerId: 'browser', connection: {}, connectedAt: T0 });
+  const keys = await own();
+  await remoteChanged([keys.meta, keys.piece(0)]);
+  assert.equal(device.alarmTimes()[SYNC_REMOTE_ALARM], undefined);
+  await remoteChanged(['wv:0123456789ab:m']);
+  assert.equal(device.alarmTimes()[SYNC_REMOTE_ALARM], T0 + SYNC.DEBOUNCE_MS);
+  // and only while browser sync is the mode chosen
+  await chrome.alarms.clear(SYNC_REMOTE_ALARM);
+  await setSyncConfig({ mode: 'off', providerId: '', connection: null, connectedAt: 0 });
+  await remoteChanged(['wv:0123456789ab:m']);
+  assert.equal(device.alarmTimes()[SYNC_REMOTE_ALARM], undefined);
 });
 
 test('a vault too large for browser sync: synchronisation stops, the vault stays whole and usable', async () => {

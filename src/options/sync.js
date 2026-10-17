@@ -126,7 +126,6 @@ export function createSyncControls({ onSaved }) {
     h('p', { class: 'help', text: t('syncIntro') }),
     modes,
     panel,
-    h('p', { class: 'help sync-note', text: t('syncIcloudNote') }),
   );
 
   const say = (text, bad = false) => {

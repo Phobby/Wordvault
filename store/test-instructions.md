@@ -9,7 +9,7 @@ No account or login is needed. All core features work right after installation.
 
 2. SAVE: In the bubble press "Add to vault". Click the Wordvault toolbar button: the word is in the list. Click it to see its dictionary entry.
 
-3. QUIZ: Save at least 10 words (or lower "Words needed to start" in the settings). Open the extension's settings (toolbar popup → "Settings", or the extension's "Options"). Under "Flash cards" press "Test now": a four-choice question appears.
+3. QUIZ: Save at least 4 words with different meanings. Open the extension's settings (toolbar popup → "Settings", or the extension's "Options"). Under "Flashcard", open "Why is there no quiz?" and press "Test now": a four-choice question appears.
 
 4. YOUTUBE CAPTIONS: Open a YouTube video that has captions, turn captions on, pause, and hold the pointer over a word in the caption. The translation bubble opens.
 

@@ -14,5 +14,8 @@
   "cmdTranslateSelection": {
     "message": "Translate the selected text",
     "description": "Name of the keyboard shortcut, as the browser lists it."
+  },
+  "cmdAskImage": {
+    "message": "Ask AI about a part of the screen"
   }
 }

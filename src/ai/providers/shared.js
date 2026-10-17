@@ -8,7 +8,7 @@ import { hideSecrets } from '../http.js';
  * Error codes of the AI features (lib/errors.js has the general ones: network, timeout, aborted):
  *   ai_auth        the key is wrong, revoked, or may not use this model
  *   ai_quota       the quota or the credit is used up, or too many requests
- *   ai_model       there is no model of that name at this provider
+ *   ai_model       there is no model of that name at this provider (or no longer: 410 Gone)
  *   ai_overloaded  the provider is having trouble; trying again later may work
  *   ai_origin      the provider turned the browser extension away (Ollama's origin list)
  *   ai_request     the provider did not accept the request (its own words are in the detail)
@@ -19,7 +19,7 @@ export function refusal({ status, message = '', kind = '' }, secrets = []) {
   const text = `${kind} ${message}`.toLowerCase();
   let code = 'ai_request';
   if (status === 401 || /api[ _-]?key|authentication|unauthori[sz]ed|invalid[ _]?x-api-key/.test(text)) code = 'ai_auth';
-  else if (status === 404 || /model[ _]not[ _]found|model .* (not found|does not exist)|unknown model/.test(text)) code = 'ai_model';
+  else if (status === 404 || status === 410 || /model[ _]not[ _]found|model .* (not found|does not exist)|unknown model/.test(text)) code = 'ai_model';
   else if (status === 429 || status === 402 || /quota|rate[ _-]?limit|resource_exhausted|insufficient|billing|credit/.test(text)) code = 'ai_quota';
   else if (status === 403) code = 'ai_auth';
   else if (status >= 500) code = 'ai_overloaded';

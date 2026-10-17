@@ -1,6 +1,6 @@
 // The four levels of difficulty: the selector in the toolbar popup (its round and its memory),
-// the switches for the quiz that comes by itself ("Mixed", never none), the expert question,
-// and a quiz started by hand.
+// which also sets how the quiz that comes by itself asks, the expert question, and a quiz
+// started by hand.
 
 import assert from 'node:assert/strict';
 import { beforeEach, test } from 'node:test';
@@ -10,7 +10,7 @@ import { addEntry, getEntry } from '../src/lib/vault.js';
 import { DEFAULT_DIFFICULTY, DIFFICULTIES, difficultyOf, getDifficulty, nextDifficulty, setDifficulty } from '../src/quiz/difficulty.js';
 import { MODES } from '../src/quiz/learning.js';
 import { expertQuestion, questionInMode } from '../src/quiz/question.js';
-import { answerQuestion, claimSession, enabledModes, isMixed, qualityOf, recordAnswer, startManualQuiz, toggleMode } from '../src/quiz/scheduler.js';
+import { answerQuestion, automaticMode, claimSession, qualityOf, recordAnswer, startManualQuiz } from '../src/quiz/scheduler.js';
 import { readSession } from '../src/quiz/session.js';
 import { streakStatus } from '../src/quiz/streak.js';
 import { createDevice, use } from './helpers/chrome.js';
@@ -74,33 +74,19 @@ test('the chosen level is remembered on this device, across restarts', async () 
 
 test('the level is not a setting: it is not synchronised, exported or reset with the quiz settings', async () => {
   await setDifficulty('expert');
-  await updateSettings({ quizModeClassic: true });
+  await updateSettings({ quizDailyGoal: 4 });
   assert.ok(!JSON.stringify((await chrome.storage.local.get('settings')).settings).includes('expert'));
   assert.deepEqual(await chrome.storage.sync.get(null), {});
 });
 
-// --- the switches for the quiz that comes by itself ---
+// --- the quiz that comes by itself ---
 
-const ALL = { quizModeClassic: true, quizModeWriting: true, quizModeListening: true, quizModeExpert: true };
-
-test('all four switched on is "Mixed"; anything less is not', () => {
-  assert.equal(isMixed(ALL), true);
-  assert.equal(isMixed({ ...ALL, quizModeExpert: false }), false);
-  assert.equal(isMixed({ quizModeClassic: true }), false);
-  assert.equal(isMixed({}), false);
-  assert.deepEqual(enabledModes(ALL), ['classic', 'writing', 'listening', 'expert']);
-});
-
-test('a mode can be switched on and off, but the last one that is on stays on', () => {
-  assert.deepEqual(toggleMode({ quizModeClassic: true }, 'expert', true), { quizModeClassic: true, quizModeWriting: false, quizModeListening: false, quizModeExpert: true });
-  assert.deepEqual(toggleMode(ALL, 'classic', false), { ...ALL, quizModeClassic: false });
-  assert.equal(toggleMode({ quizModeClassic: true }, 'classic', false), null, 'none would be left: refused');
-  assert.equal(toggleMode({ quizModeWriting: true }, 'writing', false), null);
-  assert.deepEqual(toggleMode({ quizModeWriting: true }, 'classic', true), { quizModeClassic: true, quizModeWriting: true, quizModeListening: false, quizModeExpert: false });
-  assert.equal(toggleMode(ALL, 'nonsense', true), null);
-  // nothing stored as on (old data): the classic way is used, and switching another on works
-  assert.deepEqual(enabledModes({}), ['classic']);
-  assert.deepEqual(toggleMode({}, 'writing', true), { quizModeClassic: false, quizModeWriting: true, quizModeListening: false, quizModeExpert: false });
+test('the quiz that comes by itself asks at the level chosen in the toolbar popup', async () => {
+  assert.equal(await automaticMode(), 'classic', 'nothing chosen: easy');
+  for (const level of DIFFICULTIES) {
+    await setDifficulty(level.id);
+    assert.equal(await automaticMode(), level.mode);
+  }
 });
 
 // --- expert: heard and typed ---
@@ -150,9 +136,9 @@ test('an expert answer is recorded under expert, weighs the most, and counts for
 
 // --- a quiz started by hand ---
 
-test('a quiz started by hand asks in the chosen way only, whatever is switched on for the timed quiz', async () => {
+test('a quiz started by hand asks in the chosen way only, even with the timed quiz switched off', async () => {
   await fill();
-  await updateSettings({ quizModeClassic: true, quizModeWriting: false, quizModeListening: false, quizModeExpert: false, quizEnabled: false });
+  await updateSettings({ quizEnabled: false });
   for (const level of DIFFICULTIES) {
     const started = await startManualQuiz({ mode: level.mode });
     assert.deepEqual([started.ok, started.reason, started.here], [true, 'shown', true], level.id);

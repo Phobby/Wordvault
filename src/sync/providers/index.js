@@ -14,12 +14,15 @@
  *   Stores changes to the connection (a refreshed token) so that they survive.
  *
  * @typedef {Object} RemoteCopy
- * @property {Uint8Array} data     The stored bytes (sync/codec.js knows what they mean).
- * @property {string} version      Whatever tells this state of the remote copy from the next one:
+ * @property {Uint8Array | null} data  The stored bytes (sync/codec.js knows what they mean).
+ *                                 null where only `others` exist (browser sync: other devices'
+ *                                 copies, none of this device's yet).
+ * @property {string | null} version      Whatever tells this state of the remote copy from the next one:
  *                                 an ETag, a revision, a counter. Passed back to write().
  * @property {{ id: string, data: Uint8Array }[]} [others]
  *   Further Wordvault files found next to the main one (two devices created one each at the
- *   same moment). The engine merges them in and has them removed once the merge is stored.
+ *   same moment). The engine merges them in and has them removed once the merge is stored. Without
+ *   `removeOthers` they are copies kept by other devices (browser sync): merged in, left alone.
  *
  * @typedef {Object} SyncProvider
  * @property {string} id
@@ -38,6 +41,8 @@
  *   if there is none). Otherwise rejects with WordvaultError('sync_conflict') and stores nothing.
  * @property {(session: SyncSession, ids: string[]) => Promise<void>} [removeOthers]
  *   Removes the extra files read() reported.
+ * @property {(keys: string[]) => Promise<boolean>} [isForeignChange]
+ *   Browser sync only: whether a change to the browser's sync storage came from another device.
  * @property {(session: SyncSession) => Promise<{ name?: string, email?: string } | null>} accountInfo
  *   Who the connected account belongs to, where that can be told without further permissions.
  * @property {(session: SyncSession) => Promise<{ used: number, total: number }>} [usage]

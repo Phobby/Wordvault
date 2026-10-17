@@ -1,13 +1,14 @@
 // The "AI" part of the options page: the one provider the AI features use (or none: they are
 // off by default), its key, model and address, a test of them, how to get a key, and the lists
-// of sites the features stay off or on.
+// of sites the features stay off or on (options/host-list.js).
 //
 // The key is written to chrome.storage.local from here and read from there by the background
 // script. It goes nowhere else (ai/config.js).
 
 import { DEFAULT_AI_CONFIG, PROMPT_SITES, getAiConfig, missing, settingsFor, updateAiConfig } from '../ai/config.js';
 import { getAiProvider, listAiProviders } from '../ai/providers/index.js';
-import { parseHostList } from '../ai/sites.js';
+import { disclosure } from './disclosure.js';
+import { createHostList } from './host-list.js';
 
 const { h, t } = globalThis.WV;
 
@@ -38,6 +39,7 @@ const TEST_ERRORS = {
 const GUIDES = {
   gemini: { steps: ['optAiGeminiStep1', 'optAiGeminiStep2', 'optAiGeminiStep3'], notes: ['optAiGeminiFree', 'optAiGeminiData'] },
   anthropic: { steps: ['optAiClaudeStep1', 'optAiClaudeStep2', 'optAiClaudeStep3'], notes: ['optAiClaudePaid'] },
+  nvidia: { steps: ['optAiNvidiaStep1', 'optAiNvidiaStep2', 'optAiNvidiaStep3'], notes: ['optAiNvidiaNote'] },
   openai: { steps: ['optAiOpenaiStep1', 'optAiOpenaiStep2', 'optAiOpenaiStep3'], notes: ['optAiOpenaiNote'] },
   ollama: { steps: ['optAiOllamaStep1', 'optAiOllamaStep2', 'optAiOllamaStep3'], notes: ['optAiOllamaLocal'] },
 };
@@ -92,18 +94,25 @@ export function createAiSection({ flashSaved, switchRow, fieldRow }) {
     },
   });
   const promptSite = h('select', { 'data-ai': 'prompt-site', onchange: () => save({ promptSite: promptSite.value }) }, ...Object.entries(PROMPT_SITES).map(([id, site]) => h('option', { value: id, text: site.name })));
-  const list = (name) => {
-    const area = h('textarea', { rows: '3', spellcheck: 'false', autocomplete: 'off', 'data-ai': name, placeholder: 'example.com', onchange: () => save({ [name]: parseHostList(area.value) }) });
-    return area;
-  };
-  const blocked = list('blocked');
-  const allowed = list('allowed');
-  const listRow = (titleKey, helpKey, area) => h('label', { class: 'fb-field' }, h('span', { class: 'fb-label' }, h('strong', { text: t(titleKey) }), h('span', { class: 'help', text: t(helpKey) })), area);
+  const blocked = createHostList({ name: 'blocked', titleKey: 'optAiBlocked', hintKey: 'optAiBlockedHint', onChange: (hosts) => save({ blocked: hosts }) });
+  const allowed = createHostList({ name: 'allowed', titleKey: 'optAiAllowed', hintKey: 'optAiAllowedHint', onChange: (hosts) => save({ allowed: hosts }) });
+  // What is sent, what never is, and how the lists work: there for whoever wants to read it, folded away.
+  const privacyDetails = disclosure(
+    [
+      h('p', { class: 'help', text: t('optAiPrivacy') }),
+      h('p', { class: 'help', 'data-ai': 'summary-note', text: t('aiSummaryNote') }),
+      h('p', { class: 'help', 'data-ai': 'page-note', text: t('aiPageNote') }),
+      h('p', { class: 'help', text: t('optAiCacheHelp') }),
+      h('p', { class: 'help', text: t('optAiBuiltInNote') }),
+      h('p', { class: 'help', text: t('optAiListsNote') }),
+    ],
+    { describedBy: 'ai-privacy-title' },
+  );
 
   const element = h(
-    'section',
-    { class: 'card', id: 'ai' },
-    h('h2', { text: t('optAiTitle') }),
+    'div',
+    { class: 'group', id: 'ai' },
+    h('h3', { text: t('optAiTitle') }),
     h('p', { class: 'help', text: t('optAiHelp') }),
     h(
       'div',
@@ -111,18 +120,17 @@ export function createAiSection({ flashSaved, switchRow, fieldRow }) {
       option(OFF, t('optAiOff'), 'optAiOffHelp'),
       option('gemini', getAiProvider('gemini').name, 'optAiGeminiHelp'),
       option('anthropic', getAiProvider('anthropic').name, 'optAiClaudeHelp'),
+      option('nvidia', getAiProvider('nvidia').name, 'optAiNvidiaHelp'),
       option('openai', t('optAiOpenai'), 'optAiOpenaiHelp'),
       option('ollama', getAiProvider('ollama').name, 'optAiOllamaHelp'),
     ),
     panel,
-    h('h3', { text: t('optAiPrivacyTitle') }),
-    h('p', { class: 'help', text: t('optAiPrivacy') }),
-    h('p', { class: 'help', 'data-ai': 'summary-note', text: t('aiSummaryNote') }),
-    h('p', { class: 'help', 'data-ai': 'page-note', text: t('aiPageNote') }),
+    h('div', { class: 'group-head' }, h('h4', { id: 'ai-privacy-title', text: t('optAiPrivacyTitle') }), privacyDetails.button),
+    privacyDetails.panel,
     h('div', { class: 'buttons' }, consent, withdraw),
-    switchRow(cache, 'optAiCache', 'optAiCacheHelp'),
-    listRow('optAiBlocked', 'optAiBlockedHelp', blocked),
-    listRow('optAiAllowed', 'optAiAllowedHelp', allowed),
+    switchRow(cache, 'optAiCache', 'optAiCacheHint'),
+    blocked.element,
+    allowed.element,
     fieldRow('optAiPromptSite', 'optAiPromptSiteHelp', promptSite),
   );
 
@@ -187,7 +195,9 @@ export function createAiSection({ flashSaved, switchRow, fieldRow }) {
     status.replaceChildren(h('span', { class: 'wv-spinner' }), ' ', t('optAiTesting'));
     try {
       const answer = await globalThis.WV.send('wv:ai:test', { provider: provider.id, settings });
-      say(t('optAiOk', { provider: provider.name, model: answer.model }));
+      // Tried right after the connection: whether the model also reads pictures (ai/vision.js).
+      const vision = answer.vision === true ? t('optAiVisionYes') : answer.vision === false ? t('optAiVisionNo') : '';
+      say([t('optAiOk', { provider: provider.name, model: answer.model }), vision].filter(Boolean).join(' '));
     } catch (error) {
       const known = TEST_ERRORS[error?.code];
       // The provider's own words for what we have no name for; they never hold the key.
@@ -232,8 +242,8 @@ export function createAiSection({ flashSaved, switchRow, fieldRow }) {
     withdraw.hidden = !agreed;
     cache.checked = config.cache !== false;
     promptSite.value = PROMPT_SITES[config.promptSite] ? config.promptSite : 'chatgpt';
-    if (document.activeElement !== blocked) blocked.value = config.blocked.join('\n');
-    if (document.activeElement !== allowed) allowed.value = config.allowed.join('\n');
+    blocked.render(config.blocked);
+    allowed.render(config.allowed);
   }
 
   return { element, render };

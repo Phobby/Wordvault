@@ -5,6 +5,7 @@
 // as the right answer where the vault allows it, and never something that could also be right.
 
 import { sameLanguage } from '../lib/languages.js';
+import { isPhrase } from '../lib/vault.js';
 
 export const CHOICE_COUNT = 4;
 /** Wrong choices are drawn from this many best-matching candidates, so they vary between
@@ -65,9 +66,12 @@ export function tooSimilar(a, b) {
   return limit > 0 && editDistance(short, long, limit) <= limit;
 }
 
-/** Words that can be asked: saved with a translation into the language the user learns into. */
+/**
+ * Words that can be asked: saved with a translation into the language the user learns into.
+ * Phrases kept from translated selections are there to be read again and are never asked.
+ */
 export function askableCards(entries, targetLang) {
-  return entries.filter((entry) => entry.translation && sameLanguage(entry.targetLang, targetLang));
+  return entries.filter((entry) => entry.translation && !isPhrase(entry) && sameLanguage(entry.targetLang, targetLang));
 }
 
 /** How many different answers the given cards offer. A question needs CHOICE_COUNT of them. */

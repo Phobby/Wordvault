@@ -33,6 +33,8 @@ export const SYNC = Object.freeze({
 /** The periodic wake-up, and the one-off one after a change or a failed run. */
 export const SYNC_ALARM = 'wv:sync';
 export const SYNC_SOON_ALARM = 'wv:sync:soon';
+/** A moment after another device's copy arrived in the browser's sync storage. */
+export const SYNC_REMOTE_ALARM = 'wv:sync:remote';
 
 /** Errors that mean "not now": the run is repeated quietly. */
 const TRANSIENT = new Set(['network', 'timeout', 'sync_conflict', 'sync_incomplete', 'offline']);
@@ -61,7 +63,8 @@ async function exchange(provider, session, config) {
   // Whatever cannot be read as a Wordvault document stops the run here, before anything is
   // written: a damaged or foreign file is never overwritten with this device's vault. The same
   // goes for an encrypted file that the key at hand does not open.
-  const main = remote ? await decodeDocument(remote.data, secret) : null;
+  // A provider may have copies of other devices but none of this one yet (browser sync).
+  const main = remote?.data ? await decodeDocument(remote.data, secret) : null;
   const others = [];
   for (const other of remote?.others || []) others.push(await decodeDocument(other.data, secret));
 
@@ -75,7 +78,9 @@ async function exchange(provider, session, config) {
 
   const text = serializeDocument(merged);
   // Also written when only its form is to change: encrypted from now on, or no longer.
-  const mustWrite = !main || others.length > 0 || serializeDocument(main) !== text || isEncrypted(remote.data) !== encrypting;
+  // Further copies are rewritten into the main one only where they are extra files to remove;
+  // elsewhere they are other devices' own copies (browser sync), which stay as they are.
+  const mustWrite = !main || (others.length > 0 && Boolean(provider.removeOthers)) || serializeDocument(main) !== text || isEncrypted(remote.data) !== encrypting;
   if (mustWrite) await provider.write(session, await encodeDocument(merged, encrypting ? secret : null), remote ? remote.version : null);
   // Extra files (two devices created one each) go only now that the merged one is stored.
   if (others.length > 0 && provider.removeOthers) await provider.removeOthers(session, remote.others.map((other) => other.id));
@@ -134,18 +139,18 @@ async function run({ reason, sleep }) {
 // running one is followed by another. (Only the order is kept in memory; a stopped background
 // script has no run in progress and nothing to remember.)
 let running = null;
-let again = false;
+let again = null;
 
 /**
  * Synchronises now.
  * @param {Object} [options]
- * @param {'manual' | 'change' | 'startup' | 'periodic' | 'retry'} [options.reason]
+ * @param {'manual' | 'change' | 'remote' | 'startup' | 'periodic' | 'retry'} [options.reason]
  * @param {(ms: number) => Promise<void>} [options.sleep]  Tests pass their own.
  * @returns {Promise<import('./state.js').SyncStatus>} The status afterwards. Never rejects.
  */
 export function syncNow({ reason = 'manual', sleep = wait } = {}) {
   if (running) {
-    again = true;
+    again = again === 'remote' || reason === 'remote' ? 'remote' : 'change';
     return running;
   }
   running = run({ reason, sleep })
@@ -153,8 +158,9 @@ export function syncNow({ reason = 'manual', sleep = wait } = {}) {
     .finally(() => {
       running = null;
       if (again) {
-        again = false;
-        syncNow({ reason: 'change', sleep }).then(planRetry, () => {});
+        const next = again;
+        again = null;
+        syncNow({ reason: next, sleep }).then(planRetry, () => {});
       }
     });
   return running;
@@ -179,10 +185,12 @@ export async function unlockEncryption({ password, remember = false }) {
   if (config.mode === 'off' || !provider) throw new WordvaultError('sync_unknown_provider', config.providerId);
   const remote = await provider.read(sessionFor(config));
   let secret;
-  if (remote && isEncrypted(remote.data)) {
-    const { salt, rounds } = headerOf(remote.data);
+  // Browser sync may hold only other devices' copies so far; any one of them tells the salt.
+  const stored = remote?.data || remote?.others?.[0]?.data || null;
+  if (stored && isEncrypted(stored)) {
+    const { salt, rounds } = headerOf(stored);
     secret = await deriveSecret(password, salt, rounds);
-    await decodeDocument(remote.data, secret);
+    await decodeDocument(stored, secret);
   } else {
     secret = await deriveSecret(password);
   }
@@ -211,6 +219,7 @@ export async function ensureSyncScheduled() {
   if (config.mode === 'off') {
     await chrome.alarms.clear(SYNC_ALARM);
     await chrome.alarms.clear(SYNC_SOON_ALARM);
+    await chrome.alarms.clear(SYNC_REMOTE_ALARM);
     return;
   }
   const existing = await chrome.alarms.get(SYNC_ALARM);
@@ -245,7 +254,7 @@ export async function vaultChanged() {
   // During a run the change may be the engine's own (it writes what it fetched), or the user's:
   // either way the run is followed by another, which finds out.
   if (running) {
-    again = true;
+    again ||= 'change';
     return;
   }
   // The vault is as it was last synchronised: the engine's own writes, arriving late.
@@ -260,8 +269,39 @@ export async function vaultChanged() {
   }, SYNC.DEBOUNCE_MS);
 }
 
+/**
+ * The browser's sync storage changed. When another device's Wordvault wrote there (browser sync
+ * brought its copy over), its words are fetched a moment later, without waiting for the periodic
+ * alarm. Pieces of one copy may arrive in several steps; the wait lets them come together.
+ * @param {string[]} keys  The keys that changed.
+ */
+let remoteDebounce = 0;
+
+export async function remoteChanged(keys) {
+  const config = await getSyncConfig();
+  if (config.mode !== 'browser') return;
+  const provider = getSyncProvider(config.providerId);
+  if (!provider?.isForeignChange || !(await provider.isForeignChange(keys))) return;
+  if (running) {
+    again = 'remote';
+    return;
+  }
+  // An alarm of its own: the one for local changes skips the run when the vault is unchanged.
+  await chrome.alarms.create(SYNC_REMOTE_ALARM, { when: Date.now() + SYNC.DEBOUNCE_MS });
+  clearTimeout(remoteDebounce);
+  remoteDebounce = setTimeout(() => {
+    chrome.alarms.clear(SYNC_REMOTE_ALARM).catch(() => {});
+    syncInBackground('remote').catch(() => {});
+  }, SYNC.DEBOUNCE_MS);
+}
+
 /** @returns {Promise<boolean>} Whether the alarm was one of the engine's. */
 export async function onSyncAlarm(name) {
+  if (name === SYNC_REMOTE_ALARM) {
+    clearTimeout(remoteDebounce);
+    await syncInBackground('remote');
+    return true;
+  }
   if (name !== SYNC_ALARM && name !== SYNC_SOON_ALARM) return false;
   clearTimeout(debounce);
   const status = await getSyncStatus();

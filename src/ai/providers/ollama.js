@@ -8,6 +8,8 @@
 //     of `message.content`, the last with `done: true`; an error in the middle of a stream is a
 //     line with an `error` property;
 //   - errors: `{ "error": "..." }`, 404 when the model does not exist;
+//   - a picture: `images: [<base64>]` on the user message; only models that read pictures
+//     (llava, gemma3 and the like) look at it;
 //   - Ollama only accepts requests from origins it knows. A browser extension has to be
 //     allowed with the OLLAMA_ORIGINS variable (the FAQ's example:
 //     `OLLAMA_ORIGINS=chrome-extension://*,moz-extension://*,safari-web-extension://*`).
@@ -42,13 +44,13 @@ export const ollama = {
     return url ? [originPattern(url)] : [];
   },
 
-  async generate({ system, prompt }, config, { signal = null, timeoutMs } = {}) {
+  async generate({ system, prompt, image = null }, config, { signal = null, timeoutMs } = {}) {
     const base = parseBase(config.baseUrl);
     if (!base) throw new WordvaultError('ai_address', '');
     let text = '';
     const outcome = await postForStream(`${trimBase(base)}/api/chat`, {
       headers: {},
-      body: { model: config.model, messages: [{ role: 'system', content: system }, { role: 'user', content: prompt }], stream: true },
+      body: { model: config.model, messages: [{ role: 'system', content: system }, image ? { role: 'user', content: prompt, images: [image.data] } : { role: 'user', content: prompt }], stream: true },
       signal,
       timeoutMs: timeoutMs || ollama.timeoutMs,
       onData: (data) => {

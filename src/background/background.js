@@ -13,11 +13,13 @@ import { ensureSchema } from '../lib/schema.js';
 import { pageTranslationHandlers, registerPageTranslation } from '../features/page-translate/background.js';
 import { passageHandlers, registerPassage } from '../features/passage/background.js';
 import { registerScreenOcr, screenOcrHandlers } from '../features/screen-ocr/background.js';
+import { imageAskHandlers, registerImageAsk } from '../features/image-ask/background.js';
 import { registerSummary, summaryHandlers } from '../features/summary/background.js';
 import { i18nHandlers, registerI18n } from './i18n.js';
 import { rebuildMenus } from './menus.js';
 import { WordvaultError, serializeError } from '../lib/errors.js';
 import { fetchRecording } from '../lib/pronunciation.js';
+import { upgradeStoredSettings } from '../lib/settings.js';
 import { CLEANUP_ALARM, cleanupCache, ensureCacheCleanup } from '../lib/translation-cache.js';
 import { cancelTranslation, checkProvider, clearTranslationCaches, getPreferences, setSiteSourceLanguage, setTargetLanguage, translate, translatePassage, translationCacheStats } from '../lib/translator.js';
 import { ENTRY_PREFIX, TOMBSTONE_PREFIX, addEntry, appendNote, entryId, getEntry, hasEntry, isPhrase, removeEntry, updateEntry } from '../lib/vault.js';
@@ -25,7 +27,7 @@ import { NOTIFICATION_ID } from '../quiz/display.js';
 import { ackRank, freezeYesterday, getProgress } from '../quiz/progress-state.js';
 import { REMINDER_ALARM, REMINDER_NOTIFICATION, ensureReminder, runReminder } from '../quiz/reminder.js';
 import { DAYS_KEY } from '../quiz/streak.js';
-import { ensureSyncScheduled, onSyncAlarm, syncInBackground, turnOffEncryption, unlockEncryption, vaultChanged } from '../sync/engine.js';
+import { ensureSyncScheduled, onSyncAlarm, remoteChanged, syncInBackground, turnOffEncryption, unlockEncryption, vaultChanged } from '../sync/engine.js';
 import { ALARM_NAME, answerQuestion, claimSession, ensureScheduled, muteToday, openFromNotification, quizPageGone, runScheduledQuiz, startManualQuiz, testQuiz, unmute } from '../quiz/scheduler.js';
 
 /** Host name of the web page a message came from ('' for extension pages). */
@@ -144,6 +146,7 @@ const handlers = {
   // "Contact and feedback" on the options page, after the user has seen the data and pressed "Send".
   'wv:feedback:send': fromOwnPage((payload) => sendFeedback(payload)),
   ...screenOcrHandlers,
+  ...imageAskHandlers,
   ...passageHandlers,
   ...summaryHandlers,
   ...pageTranslationHandlers,
@@ -193,10 +196,13 @@ chrome.runtime.onInstalled.addListener(async ({ reason }) => {
 registerI18n();
 registerPassage();
 registerScreenOcr();
+registerImageAsk();
 registerSummary();
 registerPageTranslation();
 chrome.runtime.onInstalled.addListener(rebuildMenus);
 chrome.runtime.onStartup.addListener(rebuildMenus);
+// Settings stored by an older version: settings that are gone are dropped (lib/settings.js).
+chrome.runtime.onInstalled.addListener(() => upgradeStoredSettings().catch(() => {}));
 
 // --- Quiz timer --------------------------------------------------------------------------------
 // The alarm survives the background script being stopped, but not always a browser restart, so
@@ -250,6 +256,8 @@ chrome.runtime.onStartup.addListener(() => {
   syncInBackground('startup').catch(() => {});
 });
 chrome.storage.onChanged.addListener((changes, area) => {
+  // Browser sync brought another device's copy: fetch it now rather than at the next alarm.
+  if (area === 'sync') remoteChanged(Object.keys(changes)).catch(() => {});
   if (area !== 'local') return;
   if (changes.syncConfig) scheduleSync();
   // the vault, or the days a quiz was done (they travel with it)

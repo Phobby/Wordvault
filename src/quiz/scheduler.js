@@ -13,6 +13,7 @@
 import { getSettings } from '../lib/settings.js';
 import { resolveTargetLanguage } from '../lib/translator.js';
 import { getEntry, isPhrase, listEntries, updateEntry } from '../lib/vault.js';
+import { getDifficulty } from './difficulty.js';
 import { MODES, applyAnswer, expectedMs, levelOf, postpone, rateAnswer, recordSpeed, statusOf, usualMs } from './learning.js';
 import { localDay } from './progress.js';
 import { inQuietHours } from './reminder.js';
@@ -165,9 +166,8 @@ export function ensureScheduled() {
 
 /** What the vault offers for a quiz. */
 async function vaultStatus() {
-  // Phrases are in the vault to be read again, not to be asked, unless the user says otherwise.
-  const { quizIncludePhrases } = await getSettings();
-  const entries = (await listEntries()).filter((entry) => quizIncludePhrases === true || !isPhrase(entry));
+  // Phrases are in the vault to be read again, not to be asked (askableCards leaves them out too).
+  const entries = (await listEntries()).filter((entry) => !isPhrase(entry));
   const targetLang = await resolveTargetLanguage();
   const cards = askableCards(entries, targetLang);
   const now = Date.now();
@@ -201,13 +201,13 @@ async function lookAround(forced) {
 }
 
 /** Why a quiz cannot be shown at all right now, or '' if nothing stands in the way so far. */
-function standingReason(settings, status, state, now) {
+function standingReason(settings, status, state, now, mode) {
   if (!settings.quizEnabled) return 'disabled';
   if (state.mutedUntil > now) return 'muted';
   if (inQuietHours(now, settings.quizQuietStart, settings.quizQuietEnd)) return 'quiet_hours';
-  if (status.total < settings.quizMinCards) return 'below_min_cards';
+  if (status.askable === 0) return 'no_cards';
   // Four meanings are needed wherever there are choices; a quiz that only has words typed needs none.
-  if (status.meanings < CHOICE_COUNT && enabledModes(settings).some((mode) => mode === 'classic' || mode === 'listening')) return 'not_enough_choices';
+  if (status.meanings < CHOICE_COUNT && (mode === 'classic' || mode === 'listening')) return 'not_enough_choices';
   if (status.due === 0 && !settings.quizAllowNotDue) return 'nothing_due';
   return '';
 }
@@ -222,22 +222,24 @@ function standingReason(settings, status, state, now) {
  * @returns {{ ok: true, question: import('./question.js').Question, roundStartedAt: number } | { ok: false, reason: string }}
  *   `roundStartedAt`: to be stored once the question has really been asked.
  */
-function nextQuestion(status, state, { allowNotDue, exclude = [], random, settings = {}, mode: wanted = '' }) {
+function nextQuestion(status, state, { allowNotDue, exclude = [], random, settings = {}, mode: wanted = '', typedIfSilent = false }) {
   if (status.askable === 0) return { ok: false, reason: 'no_cards' };
   const now = Date.now();
   const roundStartedAt = state.roundStartedAt || now;
   const skipped = new Set(exclude);
-  // A quiz started by hand asks in the way that was chosen for it and in no other.
-  const fixed = MODES.includes(wanted);
-  const mode = fixed ? wanted : pickMode(settings, state, random);
-  const allowed = fixed ? [wanted] : enabledModes(settings);
+  // Asked in the way of the level chosen in the toolbar popup (quiz/difficulty.js), and in no other.
+  const mode = MODES.includes(wanted) ? wanted : 'classic';
+  const allowed = [mode];
   let unheard = false; // a word was passed over because this device cannot say it
   for (;;) {
     const pick = selectCard(status.cards.filter((card) => !skipped.has(card.id)), { now, random, recent: state.recent, allowNotDue, roundStartedAt });
     if (!pick) return { ok: false, reason: unheard ? 'no_voice' : skipped.size > exclude.length || status.meanings < CHOICE_COUNT ? 'not_enough_choices' : 'nothing_due' };
     // A language this device has no voice for is not asked by ear.
     const silent = [String(pick.card.sourceLang || '').toLowerCase(), `id:${pick.card.id}`].some((key) => (state.noVoice?.[key] || 0) > now);
-    const question = questionInMode(pick.card, status.cards, mode, random, { listenChoices: settings.quizListenChoices === 'spelling' ? 'spelling' : 'meaning', allowed, without: silent ? ['listening', 'expert'] : [] });
+    // ... the quiz that comes by itself types it instead (Medium, the nearest level that needs no
+    // voice); one started by hand at a listening level says so instead.
+    const ways = typedIfSilent && silent && (mode === 'listening' || mode === 'expert') ? [...allowed, 'writing'] : allowed;
+    const question = questionInMode(pick.card, status.cards, mode, random, { listenChoices: settings.quizListenChoices === 'spelling' ? 'spelling' : 'meaning', allowed: ways, without: silent ? ['listening', 'expert'] : [] });
     if (question) {
       // what the card needs to know from the settings travels with the question
       if (question.mode === 'writing') question.accentTolerant = settings.quizAccentTolerant === true;
@@ -245,43 +247,14 @@ function nextQuestion(status, state, { allowNotDue, exclude = [], random, settin
       if (question.mode === 'listening' || question.mode === 'expert') question.autoplay = settings.quizListenAutoplay !== false;
       return { ok: true, question, roundStartedAt: pick.newRound ? now : roundStartedAt };
     }
-    if (silent && allowed.some((way) => way === 'listening' || way === 'expert')) unheard = true;
+    if (silent && (mode === 'listening' || mode === 'expert') && !typedIfSilent) unheard = true;
     skipped.add(pick.card.id);
   }
 }
 
-const MODE_SETTINGS = Object.freeze({ classic: 'quizModeClassic', writing: 'quizModeWriting', listening: 'quizModeListening', expert: 'quizModeExpert' });
-
-/** The ways of asking that are switched on for the quiz that comes by itself; the classic way when none is. */
-export function enabledModes(settings) {
-  const on = MODES.filter((mode) => settings[MODE_SETTINGS[mode]] === true);
-  return on.length > 0 ? on : ['classic'];
-}
-
-/** All four switched on: what the settings page calls "Mixed". */
-export const isMixed = (settings) => MODES.every((mode) => settings[MODE_SETTINGS[mode]] === true);
-
-/**
- * What switching a mode on or off leaves: the switches as they are afterwards, or null when
- * that would leave none switched on (the change is then not made, and the page says why).
- * @param {Object} settings
- * @param {string} mode
- * @param {boolean} on
- * @returns {Record<string, boolean> | null}
- */
-export function toggleMode(settings, mode, on) {
-  if (!MODE_SETTINGS[mode]) return null;
-  const after = Object.fromEntries(MODES.map((name) => [MODE_SETTINGS[name], name === mode ? Boolean(on) : settings[MODE_SETTINGS[name]] === true]));
-  return Object.values(after).some(Boolean) ? after : null;
-}
-
-/**
- * How the next word is asked by the quiz that comes by itself: one of the ways that are
- * switched on, drawn at random for every question.
- */
-export function pickMode(settings, state, random = Math.random) {
-  const modes = enabledModes(settings);
-  return modes[Math.min(modes.length - 1, Math.floor(random() * modes.length))];
+/** The way the quiz that comes by itself asks: that of the level chosen in the toolbar popup. */
+export async function automaticMode() {
+  return (await getDifficulty().catch(() => null))?.mode || 'classic';
 }
 
 const remember = (state, id) => [...state.recent, id].slice(-REMEMBERED_QUESTIONS);
@@ -325,20 +298,23 @@ export async function showQuiz({ forced = false, methods, random, mode = '', her
   let method = '';
   let tried = [];
   try {
-    const [settings, status, state, running] = await Promise.all([getSettings(), vaultStatus(), getQuizState(), readSession()]);
+    const [settings, status, state, running, level] = await Promise.all([getSettings(), vaultStatus(), getQuizState(), readSession(), automaticMode()]);
     const now = Date.now();
-    reason = forced ? '' : standingReason(settings, status, state, now);
+    // a quiz started by hand names its way; the one that comes by itself takes the chosen level's
+    const byHand = MODES.includes(mode);
+    const asked = byHand ? mode : level;
+    reason = forced ? '' : standingReason(settings, status, state, now, asked);
     // One quiz at a time. ("Test now" takes the place of whatever is there.)
     if (!reason && !forced && isOnScreen(running, now)) reason = 'already_showing';
     if (!reason) {
-      const built = nextQuestion(status, state, { allowNotDue: forced || settings.quizAllowNotDue, random, settings, mode });
+      const built = nextQuestion(status, state, { allowNotDue: forced || settings.quizAllowNotDue, random, settings, mode: asked, typedIfSilent: !byHand });
       // `here`: the page that asked shows the quiz itself; nothing has to be looked for or opened.
       const scene = !built.ok ? { reason: built.reason } : here ? {} : await lookAround(forced);
       reason = scene.reason || '';
       if (!reason) {
         // A quiz this one takes the place of may have left its window open.
         if (running?.windowId) await chrome.windows.remove(running.windowId).catch(() => {});
-        const session = await writeSession({ ...newSession({ question: built.question, total: total > 0 ? total : questionsPerQuiz(settings), forced, timeoutSeconds: cardTimeoutSeconds(settings), now }), mode: MODES.includes(mode) ? mode : '', ...(here ? { offeredTo: here } : {}) });
+        const session = await writeSession({ ...newSession({ question: built.question, total: total > 0 ? total : questionsPerQuiz(settings), forced, timeoutSeconds: cardTimeoutSeconds(settings), now }), mode: asked, byHand, ...(here ? { offeredTo: here } : {}) });
         if (here) method = here;
         else ({ method, tried } = await display(session, scene, { methods: methods || methodOrder(displayPreference(settings)), forced }));
         if (method) {
@@ -492,7 +468,7 @@ export async function answerQuestion(answer) {
   const over = outcome === 'timeout' || outcome === 'closed' || asked.length >= session.total;
   if (!over) {
     const [settings, status, state] = await Promise.all([getSettings(), vaultStatus(), getQuizState()]);
-    const built = nextQuestion(status, state, { allowNotDue: session.forced || settings.quizAllowNotDue, exclude: session.asked, settings, mode: session.mode || '' });
+    const built = nextQuestion(status, state, { allowNotDue: session.forced || settings.quizAllowNotDue, exclude: session.asked, settings, mode: MODES.includes(session.mode) ? session.mode : await automaticMode(), typedIfSilent: session.byHand !== true });
     if (built.ok) {
       const next = await writeSession({ ...after, question: built.question, asked: [...asked, built.question.id] });
       await saveQuizState({ recent: remember(state, built.question.id), roundStartedAt: built.roundStartedAt, modeTurn: (Number(state.modeTurn) || 0) + 1 });
@@ -638,12 +614,13 @@ export function qualityOf({ correct, ms, unknown, mode, hints = 0, letters = 0 }
 
 /** Everything the "Why is there no quiz?" panel shows. */
 export async function getDiagnostics() {
-  const [settings, state, status, alarm, notifications] = await Promise.all([getSettings(), getQuizState(), vaultStatus(), chrome.alarms.get(ALARM_NAME), notificationsAllowed()]);
+  const [settings, state, status, alarm, notifications, mode] = await Promise.all([getSettings(), getQuizState(), vaultStatus(), chrome.alarms.get(ALARM_NAME), notificationsAllowed(), automaticMode()]);
   const now = Date.now();
   return {
     enabled: settings.quizEnabled,
     intervalMinutes: intervalMinutes(settings),
-    minCards: settings.quizMinCards,
+    /** The way the quiz that comes by itself asks (the level chosen in the toolbar popup). */
+    mode,
     timeoutSeconds: cardTimeoutSeconds(settings),
     questionsPerQuiz: questionsPerQuiz(settings),
     /** The chosen way of showing a quiz, and the order in which the ways are tried. */
@@ -661,7 +638,7 @@ export async function getDiagnostics() {
     due: status.due,
     targetLang: status.targetLang,
     /** Why no quiz can come at all ('' if one can). */
-    standingReason: standingReason(settings, status, state, now),
+    standingReason: standingReason(settings, status, state, now, mode),
     nextAt: state.nextQuizAt,
     /** When the browser will wake the extension up for it (0: no alarm is set). */
     alarmAt: alarm ? alarm.scheduledTime : 0,

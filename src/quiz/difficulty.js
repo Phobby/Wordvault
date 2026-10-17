@@ -1,7 +1,6 @@
-// The four levels of difficulty, and the one chosen for a quiz started by hand from the toolbar
-// popup. Each level is one way of asking (quiz/question.js). The choice is this device's and
-// is remembered; it has nothing to do with which ways the quiz that comes by itself uses
-// (those are switches in the settings).
+// The four levels of difficulty, and the one chosen in the toolbar popup. Each level is one way
+// of asking (quiz/question.js). The choice is this device's and is remembered; both the quiz
+// started by hand and the quiz that comes by itself ask at that level (quiz/scheduler.js).
 
 const STORAGE_KEY = 'quizDifficulty';
 

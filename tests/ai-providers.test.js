@@ -33,8 +33,8 @@ afterEach(() => {
   globalThis.fetch = realFetch;
 });
 
-test('the four providers are there, each with what the settings page needs', () => {
-  assert.deepEqual(listAiProviders().map((provider) => provider.id), ['gemini', 'anthropic', 'openai', 'ollama']);
+test('the five providers are there, each with what the settings page needs', () => {
+  assert.deepEqual(listAiProviders().map((provider) => provider.id), ['gemini', 'anthropic', 'nvidia', 'openai', 'ollama']);
   for (const provider of listAiProviders()) {
     assert.equal(typeof provider.generate, 'function');
     assert.equal(typeof provider.origins, 'function');
@@ -42,6 +42,7 @@ test('the four providers are there, each with what the settings page needs', () 
   }
   assert.deepEqual(getAiProvider('gemini').origins({}), ['https://generativelanguage.googleapis.com/*']);
   assert.deepEqual(getAiProvider('anthropic').origins({}), ['https://api.anthropic.com/*']);
+  assert.deepEqual(getAiProvider('nvidia').origins({}), ['https://integrate.api.nvidia.com/*']);
   assert.deepEqual(getAiProvider('ollama').origins({ baseUrl: 'http://localhost:11434' }), ['http://localhost/*']);
   assert.deepEqual(getAiProvider('openai').origins({ baseUrl: 'https://openrouter.ai/api/v1' }), ['https://openrouter.ai/*']);
   assert.equal(getAiProvider('nothing'), null);
@@ -123,6 +124,38 @@ test('OpenAI-compatible: the address the user gave, a bearer key, a stream that 
   assert.equal(await openai.generate(request, { apiKey: '', model: 'local', baseUrl: 'http://localhost:1234/v1' }), 'Tamam.');
   assert.equal(calls[1].url, 'http://localhost:1234/v1/chat/completions');
   assert.equal('Authorization' in calls[1].headers, false);
+});
+
+test('NVIDIA: its own address, a bearer key, the OpenAI protocol', async () => {
+  const nvidia = getAiProvider('nvidia');
+  assert.equal(nvidia.needsKey, true);
+  assert.equal(nvidia.needsBase, false);
+  assert.equal(nvidia.defaultModel, '', 'NVIDIA retires models: the user names one');
+  reply = () => streamed(['data: {"choices":[{"delta":{"content":"Mer"}}]}\n\ndata: {"choices":[{"delta":{"content":"haba"}}]}\n\ndata: [DONE]\n\n'], 'text/event-stream');
+  assert.equal(await nvidia.generate(request, { apiKey: KEY, model: 'deepseek-ai/deepseek-v4-flash', baseUrl: 'https://elsewhere.example/v1' }), 'Merhaba');
+  assert.equal(calls[0].url, 'https://integrate.api.nvidia.com/v1/chat/completions', 'an address typed for another provider is not used');
+  assert.equal(calls[0].headers.Authorization, `Bearer ${KEY}`);
+  assert.equal(calls[0].body.model, 'deepseek-ai/deepseek-v4-flash');
+  assert.deepEqual(calls[0].body.chat_template_kwargs, { enable_thinking: false }, 'thinking is switched off');
+  // a model that does not accept the switch is asked again without it
+  let attempt = 0;
+  reply = () => (attempt++ === 0 ? json(400, { status: 400, title: 'Bad Request', detail: 'unexpected chat_template_kwargs' }) : json(200, { choices: [{ message: { content: 'Tamam' } }] }));
+  assert.equal(await nvidia.generate(request, { apiKey: KEY, model: 'm' }), 'Tamam');
+  assert.equal(calls.length, 3);
+  assert.equal('chat_template_kwargs' in calls[2].body, false);
+  // the OpenAI-compatible provider sends nothing of the kind
+  reply = () => json(200, { choices: [{ message: { content: 'x' } }] });
+  await getAiProvider('openai').generate(request, { apiKey: KEY, model: 'm', baseUrl: 'https://api.openai.com/v1' });
+  assert.equal('chat_template_kwargs' in calls[3].body, false);
+  // refusals in NVIDIA's own form: { status, title, detail }
+  reply = () => json(401, { status: 401, title: 'Unauthorized', detail: `Authentication failed for ${KEY}` });
+  await assert.rejects(nvidia.generate(request, { apiKey: KEY, model: 'm' }), (error) => error.code === 'ai_auth' && !error.detail.includes(KEY));
+  reply = () => json(404, { status: 404, title: 'Not Found', detail: 'Function not found for account' });
+  await assert.rejects(nvidia.generate(request, { apiKey: KEY, model: 'm' }), (error) => error.code === 'ai_model');
+  reply = () => json(410, { status: 410, title: 'Gone', detail: 'Model has reached end of life' });
+  await assert.rejects(nvidia.generate(request, { apiKey: KEY, model: 'm' }), (error) => error.code === 'ai_model');
+  reply = () => json(429, { status: 429, title: 'Too Many Requests' });
+  await assert.rejects(nvidia.generate(request, { apiKey: KEY, model: 'm' }), (error) => error.code === 'ai_quota');
 });
 
 test('OpenAI-compatible: refusals; a key echoed back is never passed on', async () => {

@@ -7,6 +7,8 @@ const SETTINGS_KEY = 'settings';
 const SITE_SOURCES_KEY = 'siteSourceLangs';
 
 export const DEFAULT_SETTINGS = Object.freeze({
+  /** The shape of the stored settings (migrateSettings). */
+  settingsVersion: 2,
   /**
    * Language translations are made into. '' means the user has not chosen yet: until they do,
    * the browser's UI language is used and the UI asks them to confirm or change it.
@@ -28,8 +30,6 @@ export const DEFAULT_SETTINGS = Object.freeze({
   quizEnabled: true,
   /** A quiz is shown at most this often. */
   quizIntervalMinutes: 20,
-  /** The quiz starts once the vault holds this many words. */
-  quizMinCards: 10,
   /** When no word is due for review, ask one anyway (the hardest) instead of skipping the quiz. */
   quizAllowNotDue: true,
   /** A quiz nobody answers goes away after this many seconds; nothing is held against the word. */
@@ -42,19 +42,8 @@ export const DEFAULT_SETTINGS = Object.freeze({
    * Whatever is chosen, the other ways follow when it is not possible (quiz/display.js).
    */
   quizDisplay: 'auto',
-  /**
-   * The ways a word is asked by the quiz that comes by itself, each on its own switch:
-   * 'classic' (pick the meaning from four), 'writing' (type the word for a meaning),
-   * 'listening' (hear the word, pick from four), 'expert' (hear the word, type it). With
-   * several switched on, each question draws one of them. At least one stays on. (The quiz
-   * started by hand from the toolbar popup has its own choice: quiz/difficulty.js.)
-   */
-  quizModeClassic: true,
-  quizModeWriting: false,
-  quizModeListening: false,
-  quizModeExpert: false,
   /** Writing: an answer that differs only in accents ("cafe" for "café") counts as right. */
-  quizAccentTolerant: false,
+  quizAccentTolerant: true,
   /** Listening and expert: say the word once when the question appears. */
   quizListenAutoplay: true,
   /** Listening: what the four choices are: 'meaning' (translations) or 'spelling' (the words themselves). */
@@ -74,26 +63,57 @@ export const DEFAULT_SETTINGS = Object.freeze({
   /** No quiz and no reminder between these times of day ('HH:MM'; both empty: no quiet hours). */
   quizQuietStart: '',
   quizQuietEnd: '',
-  /** Phrases kept from translated selections are asked by the quiz like words. Off: only words are. */
-  quizIncludePhrases: false,
   /** "Translate with Wordvault" in the right-click menu of selected text. */
   contextMenuTranslate: true,
   /** A small "Translate" button next to a selection of more than one word. */
   selectionButton: true,
   /** Screen text scanning: start the next selection with the area that was scanned last. */
   ocrRememberArea: false,
-  /** Screen text scanning: languages the text is read with: 'auto', or a language tag ('en', 'tr'). */
-  ocrLanguages: 'auto',
-  /** Screen text scanning: words the engine is less sure of than this (0-100) are not shown. */
-  ocrMinConfidence: 60,
   /** Screen text scanning, for troubleshooting: draw the box of every word that was found. */
   ocrShowBoxes: false,
 });
 
+/**
+ * Settings that are gone. They may still be stored by an older version; they are dropped when
+ * read, and from storage with the next write.
+ *   quizMinCards                 the quiz starts with any vault; the choices need four meanings, no more
+ *   quizMode*                    the quiz that comes by itself asks at the level chosen in the toolbar popup
+ *   quizIncludePhrases           phrases are never asked
+ *   ocrLanguages, ocrMinConfidence  the scan reads with every bundled language, at a fixed confidence
+ */
+export const REMOVED_SETTINGS = Object.freeze(['quizMinCards', 'quizModeClassic', 'quizModeWriting', 'quizModeListening', 'quizModeExpert', 'quizIncludePhrases', 'ocrLanguages', 'ocrMinConfidence']);
+
+/**
+ * Stored settings of any earlier version, in the current shape. Pure.
+ * Version 2: accent tolerance became the default. Every older store holds the old default
+ * (false) whether or not it was chosen, so it is switched on once; the user can switch it off.
+ * @param {object | undefined} stored
+ */
+export function migrateSettings(stored) {
+  const settings = { ...(stored && typeof stored === 'object' ? stored : {}) };
+  for (const key of REMOVED_SETTINGS) delete settings[key];
+  if (!(Number(settings.settingsVersion) >= 2)) settings.quizAccentTolerant = true;
+  settings.settingsVersion = DEFAULT_SETTINGS.settingsVersion;
+  return settings;
+}
+
 /** @returns {Promise<typeof DEFAULT_SETTINGS>} */
 export async function getSettings() {
   const stored = (await chrome.storage.local.get(SETTINGS_KEY))[SETTINGS_KEY];
-  return { ...DEFAULT_SETTINGS, ...(stored && typeof stored === 'object' ? stored : {}) };
+  return { ...DEFAULT_SETTINGS, ...migrateSettings(stored) };
+}
+
+/** Writes stored settings of an older version back in the current shape (at start-up). */
+export function upgradeStoredSettings() {
+  const done = turns.then(async () => {
+    const stored = (await chrome.storage.local.get(SETTINGS_KEY))[SETTINGS_KEY];
+    if (!stored || typeof stored !== 'object') return false;
+    const stale = stored.settingsVersion !== DEFAULT_SETTINGS.settingsVersion || REMOVED_SETTINGS.some((key) => key in stored);
+    if (stale) await chrome.storage.local.set({ [SETTINGS_KEY]: migrateSettings(stored) });
+    return stale;
+  });
+  turns = done.catch(() => {});
+  return done;
 }
 
 // Changing a setting is "read all of them, change one, write all of them". Two changes made

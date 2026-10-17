@@ -1,7 +1,8 @@
-// The "Translate a selection" part of the options page: the right-click menu item, the button
-// next to a selection, the keyboard shortcut and where to change it, and whether phrases kept
-// from translations are asked by the quiz.
+// The "Translation settings" group: the rows the page puts first (the target language, double
+// click), then how a selection is translated: the right-click menu item, the button next to a
+// selection, and the keyboard shortcut and where to change it.
 
+import { disclosure } from './disclosure.js';
 import { PASSAGE_MAX_CHARS } from '../lib/passage.js';
 import { getSettings, updateSettings } from '../lib/settings.js';
 
@@ -16,10 +17,11 @@ const isMac = /mac/i.test(navigator.userAgentData?.platform || navigator.platfor
 const OPTION_KEY = /⌥|Alt|Option/i;
 
 /**
- * @param {{ flashSaved: () => void, switchRow: Function, fieldRow: Function }} page  Helpers of the options page.
+ * @param {{ flashSaved: () => void, switchRow: Function, fieldRow: Function, leadRows?: Array<Node | string> }} page
+ *        Helpers of the options page; leadRows: rows of its own that open the group.
  * @returns {{ element: HTMLElement, render: () => Promise<void> }}
  */
-export function createPassageSection({ flashSaved, switchRow, fieldRow }) {
+export function createPassageSection({ flashSaved, switchRow, fieldRow, leadRows = [] }) {
   const toggle = (key) => {
     const input = h('input', {
       type: 'checkbox',
@@ -33,7 +35,6 @@ export function createPassageSection({ flashSaved, switchRow, fieldRow }) {
   };
   const menu = toggle('contextMenuTranslate');
   const button = toggle('selectionButton');
-  const phrases = toggle('quizIncludePhrases');
 
   const shortcut = h('strong', { class: 'ocr-shortcut', 'data-shortcut': TRANSLATE_COMMAND });
   const warning = h('p', { class: 'ocr-warning', role: 'status', hidden: true });
@@ -59,26 +60,37 @@ export function createPassageSection({ flashSaved, switchRow, fieldRow }) {
     },
   });
 
-  const element = h(
-    'section',
-    { class: 'card', id: 'selection' },
-    h('h2', { text: t('optSelTitle') }),
-    h('p', { class: 'help', text: t('optSelHelp', { max: PASSAGE_MAX_CHARS }) }),
-    switchRow(menu, 'optSelMenu', 'optSelMenuHelp'),
-    switchRow(button, 'optSelButton', 'optSelButtonHelp'),
-    fieldRow('optSelShortcut', isFirefox ? 'optSelShortcutHelpFirefox' : 'optSelShortcutHelpChrome', shortcut),
-    warning,
+  // How to change the shortcut, folded under the row: what stays in view is the shortcut itself
+  // and, where the browser can open its page, the button that does.
+  const shortcutDetails = disclosure([
+    h('p', { class: 'help', text: t(isFirefox ? 'optSelShortcutHelpFirefox' : 'optSelShortcutHelpChrome') }),
     // A page may not open the browser's shortcut settings by a link, so the address is given as text.
-    h('div', { class: 'ocr-address-row' }, address, copy, openSettings),
-    switchRow(phrases, 'optSelPhrases', 'optSelPhrasesHelp'),
-    h('p', { class: 'help', text: t('optSelPrivacy') }),
+    h('div', { class: 'ocr-address-row' }, address, copy),
+  ]);
+  // The limit and where a selection goes: said once, on request.
+  const groupDetails = disclosure([h('p', { class: 'help', text: t('optSelHelp', { max: PASSAGE_MAX_CHARS }) }), h('p', { class: 'help', text: t('optSelPrivacy') })], { describedBy: 'selection-title' });
+
+  const element = h(
+    'div',
+    { class: 'group', id: 'selection' },
+    h('div', { class: 'group-head' }, h('h3', { id: 'selection-title', text: t('optTranslateSettings') }), groupDetails.button),
+    groupDetails.panel,
+    h(
+      'div',
+      { class: 'fields' },
+      ...leadRows,
+      switchRow(menu, 'optSelMenu', 'optSelMenuHelp'),
+      switchRow(button, 'optSelButton', 'optSelButtonHelp'),
+      fieldRow('optSelShortcut', null, shortcut, openSettings, shortcutDetails.button),
+      warning,
+      shortcutDetails.panel,
+    ),
   );
 
   async function render() {
     const settings = await getSettings();
     menu.checked = settings.contextMenuTranslate !== false;
     button.checked = settings.selectionButton !== false;
-    phrases.checked = settings.quizIncludePhrases === true;
     try {
       const command = (await chrome.commands.getAll()).find((candidate) => candidate.name === TRANSLATE_COMMAND);
       const assigned = command?.shortcut || '';

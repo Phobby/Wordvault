@@ -31,6 +31,9 @@
       "suggested_key": { "default": "Alt+Shift+S", "mac": "Command+Shift+E", "windows": "Alt+Shift+S", "linux": "Alt+Shift+S", "chromeos": "Alt+Shift+S" },
       "description": "__MSG_cmdScanScreen__"
     },
+    "ask-image": {
+      "description": "__MSG_cmdAskImage__"
+    },
     "translate-selection": {
       "suggested_key": { "default": "Ctrl+Shift+U", "mac": "Command+Shift+U" },
       "description": "__MSG_cmdTranslateSelection__"
@@ -96,8 +99,10 @@
         "core/hover/word-source.js",
         "features/screen-ocr/content/area.js",
         "features/screen-ocr/content/selector.js",
+        "features/screen-ocr/content/phrase.js",
         "features/screen-ocr/content/layer.js",
-        "features/screen-ocr/content/screen-ocr.js"
+        "features/screen-ocr/content/screen-ocr.js",
+        "features/image-ask/content/image-ask.js"
       ],
       "run_at": "document_idle",
       "all_frames": false

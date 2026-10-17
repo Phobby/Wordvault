@@ -1,6 +1,8 @@
-// The "Scan text on screen" part of the options page: the shortcut and where to change it,
-// the languages text is read with, how sure the engine has to be, and two switches.
+// The "Screen translation" group of the translation section: the shortcut and where to change
+// it, and two switches. The language is always found by itself and the engine's confidence is fixed
+// (features/screen-ocr/scan.js); neither is a setting.
 
+import { disclosure } from './disclosure.js';
 import { getSettings, updateSettings } from '../lib/settings.js';
 
 const { h, t } = globalThis.WV;
@@ -47,47 +49,34 @@ export function createOcrSection({ flashSaved, switchRow, fieldRow }) {
     },
   });
 
-  const language = h(
-    'select',
-    { onchange: () => save({ ocrLanguages: language.value }) },
-    h('option', { value: 'auto', text: t('optOcrLangAuto') }),
-    h('option', { value: 'en', text: globalThis.WV.languages.name('en') }),
-    h('option', { value: 'tr', text: globalThis.WV.languages.name('tr') }),
-  );
-  const confidence = h('input', {
-    type: 'number',
-    min: '0',
-    max: '95',
-    step: '5',
-    onchange: () => {
-      const value = Math.max(0, Math.min(95, Math.round(Number(confidence.value) || 0)));
-      confidence.value = String(value);
-      save({ ocrMinConfidence: value });
-    },
-  });
   const showBoxes = h('input', { type: 'checkbox', onchange: () => save({ ocrShowBoxes: showBoxes.checked }) });
   const remember = h('input', { type: 'checkbox', onchange: () => save({ ocrRememberArea: remember.checked }) });
 
-  const element = h(
-    'section',
-    { class: 'card', id: 'ocr' },
-    h('h2', { text: t('optOcrTitle') }),
-    h('p', { class: 'help', text: t('optOcrHelp') }),
-    fieldRow('optOcrShortcut', isFirefox ? 'optOcrShortcutHelpFirefox' : 'optOcrShortcutHelpChrome', shortcut),
-    warning,
+  // How to change the shortcut, folded under the row, as in "Translation settings" (options/passage.js).
+  const shortcutDetails = disclosure([
+    h('p', { class: 'help', text: t(isFirefox ? 'optOcrShortcutHelpFirefox' : 'optOcrShortcutHelpChrome') }),
     // A page may not open the browser's shortcut settings by a link, so the address is given as text.
-    h('div', { class: 'ocr-address-row' }, address, copy, openSettings),
-    fieldRow('optOcrLang', 'optOcrLangHelp', language),
-    fieldRow('optOcrConfidence', 'optOcrConfidenceHelp', confidence),
-    switchRow(showBoxes, 'optOcrShowBoxes', 'optOcrShowBoxesHelp'),
-    switchRow(remember, 'optOcrRemember', 'optOcrRememberHelp'),
-    h('p', { class: 'help', text: t('optOcrEngine') }),
+    h('div', { class: 'ocr-address-row' }, address, copy),
+  ]);
+
+  const element = h(
+    'div',
+    { class: 'group', id: 'ocr' },
+    h('h3', { text: t('optOcrTitle') }),
+    h('p', { class: 'help', text: t('optOcrHelp') }),
+    h(
+      'div',
+      { class: 'fields' },
+      fieldRow('optOcrShortcut', null, shortcut, openSettings, shortcutDetails.button),
+      warning,
+      shortcutDetails.panel,
+      switchRow(remember, 'optOcrRemember', 'optOcrRememberHelp'),
+      switchRow(showBoxes, 'optOcrShowBoxes', 'optOcrShowBoxesHelp'),
+    ),
   );
 
   async function render() {
     const settings = await getSettings();
-    if (document.activeElement !== language) language.value = ['auto', 'en', 'tr'].includes(settings.ocrLanguages) ? settings.ocrLanguages : 'auto';
-    if (document.activeElement !== confidence) confidence.value = String(settings.ocrMinConfidence);
     showBoxes.checked = settings.ocrShowBoxes === true;
     remember.checked = settings.ocrRememberArea === true;
     try {

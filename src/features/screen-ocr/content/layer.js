@@ -3,6 +3,17 @@
 // The text layer: what was read from the picture, laid exactly over the place it was read
 // from, the way a scanned PDF carries its text. The text itself is invisible (the page under
 // it shows the real thing) but it can be pointed at and selected.
+//
+// Pointing at it:
+//   click            the word (the translation bubble opens for it)
+//   drag             the words from where the drag began to where it ends, in reading order,
+//                    within one block (content/phrase.js); they are translated as a phrase
+//   Shift+click      the phrase from the last word clicked to this one
+//   double-click     the whole line of the word, as a phrase
+//   Escape           drops the selection; a second Escape closes the layer
+// The browser's own text selection is not used: it would follow the page's layout, not the
+// reading order of the picture. The layer keeps the presses to itself, so a drag over a video
+// neither pauses nor seeks it.
 
 (function (WV) {
   if (!WV.supported || WV.ocrLayer) return;
@@ -19,13 +30,13 @@
     }
     .wv-ocr-word {
       position: absolute; margin: 0; padding: 0; overflow: hidden; white-space: pre;
-      color: transparent; cursor: text; line-height: 1; transform-origin: 0 0;
+      color: transparent; cursor: pointer; line-height: 1; transform-origin: 0 0;
       font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
-      border-radius: 2px; user-select: text; -webkit-user-select: text;
+      border-radius: 2px; user-select: none; -webkit-user-select: none; touch-action: none;
     }
-    .wv-ocr-word { cursor: pointer; }
+    .wv-ocr-words.wv-dragging .wv-ocr-word { cursor: text; }
     .wv-ocr-word:hover, .wv-ocr-word.wv-active { background: rgba(255, 204, 0, 0.45); }
-    .wv-ocr-word::selection { background: rgba(79, 70, 229, 0.35); color: transparent; }
+    .wv-ocr-word.wv-selected { background: rgba(79, 70, 229, 0.35); }
     /* Troubleshooting ("show OCR boxes" in the settings): where every word was found. */
     .wv-ocr-boxes .wv-ocr-word { outline: 1px solid rgba(255, 60, 60, 0.9); }
     .wv-ocr-tools {
@@ -35,7 +46,18 @@
     }
     .wv-ocr-status { display: flex; align-items: center; gap: 8px; }
     .wv-ocr-error { color: var(--wv-danger); }
+    .wv-ocr-actions { display: flex; align-items: center; gap: 4px; }
+    .wv-ocr-actions[hidden], .wv-ocr-edit[hidden] { display: none; }
+    .wv-ocr-edit { display: flex; align-items: center; gap: 4px; }
+    .wv-ocr-edit input {
+      width: min(420px, 60vw); font: inherit; padding: 3px 8px; border-radius: 999px;
+      border: 1px solid var(--wv-border); background: var(--wv-bg); color: var(--wv-fg);
+    }
   `;
+  /** A press that moves less than this is a click, not a drag (CSS px). */
+  const DRAG_DISTANCE = 4;
+  /** How long a notice about the selection stays in the status line. */
+  const NOTICE_MS = 3500;
 
   /** Distance between the scanned area and the little bar with its status and close button. */
   const GAP = 6;
@@ -43,6 +65,11 @@
 
   let ui = null;
   let current = null; // { area, scrollX, scrollY } while the layer is on screen
+  let shown = null; // the result on screen, with what the controller wants told
+  let selected = { ids: [], anchor: null, edited: null }; // the phrase, and the word Shift+click extends from
+  let press = null; // a press under way: { id, x, y, pointerId, dragging }
+  let editing = null; // { resolve } while the phrase is being corrected
+  let noticeTimer = 0;
 
   function build() {
     const surface = WV.createSurface(CSS);
@@ -50,10 +77,33 @@
     const words = h('div', { class: 'wv-ocr-words' });
     const status = h('span', { class: 'wv-ocr-status', role: 'status' });
     const close = h('button', { class: 'wv-btn-icon', type: 'button', title: t('ocrClose'), 'aria-label': t('ocrClose'), onclick: () => hide() }, icon(ICON_CLOSE));
-    const tools = h('div', { class: 'wv-ocr-tools' }, status, close);
+    const action = (name, labelKey) => h('button', { class: 'wv-btn wv-btn-sm', type: 'button', 'data-ocr-action': name, text: t(labelKey), onclick: () => shown?.onAction(name) });
+    const buttons = {
+      explainAll: action('explainAll', 'ocrExplainAll'),
+      explainSelection: action('explainSelection', 'ocrExplainSelection'),
+      translateSelection: action('translateSelection', 'ocrTranslateSelection'),
+      edit: action('edit', 'ocrEditSelection'),
+    };
+    const actions = h('div', { class: 'wv-ocr-actions', hidden: true }, ...Object.values(buttons));
+    const editInput = h('input', { type: 'text', dir: 'auto', spellcheck: 'false', 'aria-label': t('ocrEditLabel'), onkeydown: onEditKey });
+    const edit = h(
+      'div',
+      { class: 'wv-ocr-edit', hidden: true },
+      editInput,
+      h('button', { class: 'wv-btn wv-btn-sm wv-btn-primary', type: 'button', text: t('ocrEditDone'), onclick: () => finishEdit(true) }),
+      h('button', { class: 'wv-btn wv-btn-sm', type: 'button', text: t('ocrCancel'), onclick: () => finishEdit(false) }),
+    );
+    const tools = h('div', { class: 'wv-ocr-tools' }, actions, edit, status, close);
     const layer = h('div', { class: 'wv-ocr-layer' }, frame, words, tools);
+    words.addEventListener('pointerdown', onPointerDown);
+    words.addEventListener('pointermove', onPointerMove);
+    words.addEventListener('pointerup', onPointerUp);
+    words.addEventListener('pointercancel', cancelPress);
+    words.addEventListener('dblclick', onDoubleClick);
+    // Presses on the words are the layer's: the page under it (a video player) never hears of them.
+    for (const type of ['click', 'mousedown', 'mouseup', 'contextmenu']) words.addEventListener(type, (event) => event.target.closest?.('.wv-ocr-word') && event.stopPropagation());
     surface.root.append(layer);
-    return { surface, layer, frame, words, status, tools, close };
+    return { surface, layer, frame, words, status, tools, close, actions, buttons, edit, editInput };
   }
 
   // The interface language changed. A result on screen keeps its status line (it says what
@@ -67,6 +117,9 @@
     }
     ui.close.title = t('ocrClose');
     ui.close.setAttribute('aria-label', t('ocrClose'));
+    const labels = { explainAll: 'ocrExplainAll', explainSelection: 'ocrExplainSelection', translateSelection: 'ocrTranslateSelection', edit: 'ocrEditSelection' };
+    for (const [name, key] of Object.entries(labels)) ui.buttons[name].textContent = t(key);
+    ui.editInput.setAttribute('aria-label', t('ocrEditLabel'));
   });
 
   function place(element, rect) {
@@ -93,10 +146,182 @@
 
   function onKeyDown(event) {
     if (event.key !== 'Escape' || event.isComposing) return;
+    if (editing) return; // the field handles it
     if (WV.popup?.isOpen()) return; // the bubble is on top; Escape is for it first
     event.preventDefault();
     event.stopImmediatePropagation();
+    // First the selection (or the drag under way), then the layer.
+    if (press || selected.ids.length > 0) {
+      cancelPress();
+      select([]);
+      return;
+    }
     hide();
+  }
+
+  // --- Selecting words ---------------------------------------------------------------------------
+
+  const wordNode = (event) => event.target.closest?.('.wv-ocr-word') || null;
+  const idOf = (node) => Number(node.dataset.word);
+  const wordById = (id) => shown?.result.words.find((word) => word.id === id) || null;
+  const nodeById = (id) => ui?.words.querySelector(`[data-word="${id}"]`) || null;
+
+  /** Marks the phrase on screen and tells the buttons whether there is one. */
+  function select(ids, { anchor = selected.anchor } = {}) {
+    selected = { ids: [...ids], anchor, edited: null };
+    const set = new Set(ids);
+    for (const node of ui?.words.children || []) node.classList.toggle('wv-selected', set.has(idOf(node)));
+    updateButtons();
+  }
+
+  function updateButtons() {
+    if (!ui) return;
+    const none = selected.ids.length === 0;
+    for (const name of ['explainSelection', 'translateSelection', 'edit']) ui.buttons[name].disabled = none;
+  }
+
+  function notice(text) {
+    if (!shown) return;
+    clearTimeout(noticeTimer);
+    ui.status.className = 'wv-ocr-status';
+    ui.status.textContent = text;
+    placeTools(current.area);
+    noticeTimer = setTimeout(() => {
+      if (!shown) return;
+      ui.status.textContent = t('ocrResult', { count: shown.result.words.length });
+      placeTools(current.area);
+    }, NOTICE_MS);
+  }
+
+  /** A phrase was chosen: shown, and handed on to be translated. */
+  function choose(startId, endId) {
+    const { ids, clamped } = WV.ocrPhrase.range(shown.result.words, startId, endId);
+    if (ids.length === 0) return;
+    select(ids);
+    if (clamped) notice(t('ocrSelectionOneBlock'));
+    WV.ocrLayer.setActive(null);
+    shown.onPhrase(ids);
+  }
+
+  function onPointerDown(event) {
+    const node = wordNode(event);
+    if (!node || event.button !== 0 || !shown || editing) return;
+    // No text selection, no focus taken from the page, and nothing for the page to act on.
+    event.preventDefault();
+    event.stopPropagation();
+    const id = idOf(node);
+    if (event.shiftKey && selected.anchor !== null && wordById(selected.anchor)) {
+      choose(selected.anchor, id);
+      return;
+    }
+    press = { id, x: event.clientX, y: event.clientY, pointerId: event.pointerId, dragging: false };
+    node.setPointerCapture?.(event.pointerId);
+  }
+
+  function onPointerMove(event) {
+    if (!press || event.pointerId !== press.pointerId) return;
+    event.stopPropagation();
+    if (!press.dragging) {
+      if (Math.hypot(event.clientX - press.x, event.clientY - press.y) < DRAG_DISTANCE) return;
+      press.dragging = true;
+      ui.words.classList.add('wv-dragging');
+      WV.popup?.close();
+    }
+    const id = wordIdAt(event.clientX, event.clientY);
+    if (id === null) return;
+    select(WV.ocrPhrase.range(shown.result.words, press.id, id).ids, { anchor: press.id });
+  }
+
+  function onPointerUp(event) {
+    if (!press || event.pointerId !== press.pointerId) return;
+    event.stopPropagation();
+    const { id, dragging } = press;
+    cancelPress();
+    const end = wordIdAt(event.clientX, event.clientY);
+    if (dragging && end !== null && end !== id) {
+      choose(id, end);
+      return;
+    }
+    if (dragging && selected.ids.length > 1) {
+      // let go between words: the phrase is what was marked last
+      shown.onPhrase(selected.ids);
+      return;
+    }
+    // A click: the word, as before. It is where a Shift+click extends from.
+    select([], { anchor: id });
+    const node = nodeById(id);
+    const word = wordById(id);
+    if (node && word) shown.onWord(word, node);
+  }
+
+  function cancelPress() {
+    if (press) {
+      try {
+        nodeById(press.id)?.releasePointerCapture?.(press.pointerId);
+      } catch {
+        // already released
+      }
+    }
+    press = null;
+    ui?.words.classList.remove('wv-dragging');
+  }
+
+  function onDoubleClick(event) {
+    const node = wordNode(event);
+    if (!node || !shown || editing) return;
+    event.preventDefault();
+    event.stopPropagation();
+    const word = wordById(idOf(node));
+    const line = shown.result.lines.find((candidate) => candidate.id === word?.lineId);
+    if (!line || line.words.length === 0) return;
+    selected.anchor = line.words[0];
+    choose(line.words[0], line.words[line.words.length - 1]);
+  }
+
+  // --- Correcting the phrase ---------------------------------------------------------------------
+
+  function onEditKey(event) {
+    if (event.isComposing) return;
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      finishEdit(true);
+    } else if (event.key === 'Escape') {
+      event.preventDefault();
+      finishEdit(false);
+    }
+  }
+
+  function finishEdit(keep) {
+    if (!editing) return;
+    const { resolve } = editing;
+    editing = null;
+    const text = ui.editInput.value.replace(/\s+/g, ' ').trim();
+    ui.edit.hidden = true;
+    ui.actions.hidden = false;
+    if (current) placeTools(current.area);
+    resolve(keep && text ? text : null);
+  }
+
+  /**
+   * Lets the user correct what was read before it is translated or explained.
+   * @param {string} text  The phrase as read.
+   * @returns {Promise<string | null>} The corrected text; null when they cancelled.
+   */
+  function edit(text) {
+    if (!shown) return Promise.resolve(null);
+    if (editing) finishEdit(false);
+    return new Promise((resolve) => {
+      editing = { resolve };
+      ui.editInput.value = text;
+      ui.actions.hidden = true;
+      ui.edit.hidden = false;
+      placeTools(current.area);
+      ui.editInput.focus();
+      ui.editInput.select();
+    }).then((corrected) => {
+      if (corrected !== null) selected.edited = corrected;
+      return corrected;
+    });
   }
 
   function open(area) {
@@ -122,6 +347,7 @@
       ui.words.replaceChildren();
       ui.layer.classList.remove('wv-ocr-boxes');
     }
+    forgetResult();
     ui.status.className = 'wv-ocr-status';
     ui.status.replaceChildren(h('span', { class: 'wv-spinner' }), text);
     placeTools(area);
@@ -134,9 +360,14 @@
    * @param {Object} [options]
    * @param {boolean} [options.showBoxes]  Draw the box of every word (troubleshooting).
    * @param {(word: Object, element: Element) => void} [options.onWord]  A word was clicked.
+   * @param {(ids: number[]) => void} [options.onPhrase]  Words were selected together.
+   * @param {(name: 'explainAll' | 'explainSelection' | 'translateSelection' | 'edit') => void} [options.onAction]
+   *        A button of the bar was pressed.
    */
-  function showResult(result, { showBoxes = false, onWord = () => {} } = {}) {
+  function showResult(result, { showBoxes = false, onWord = () => {}, onPhrase = () => {}, onAction = () => {} } = {}) {
     open(result.area);
+    forgetResult();
+    shown = { result, onWord, onPhrase, onAction };
     ui.layer.classList.toggle('wv-ocr-boxes', showBoxes);
     const nodes = result.words.map((word) => {
       const node = h('span', {
@@ -144,11 +375,6 @@
         'data-word': String(word.id),
         dir: 'auto',
         text: word.text,
-        onclick: (event) => {
-          // A click that ends a drag has selected text; that is not a lookup of one word.
-          if (!event.isTrusted || String(ui.surface.root.getRootNode().getSelection?.() || '').trim().length > word.text.length) return;
-          onWord(word, node);
-        },
       });
       place(node, word.rect);
       // Glyphs are about as tall as the box; the width is then stretched to match exactly.
@@ -169,12 +395,28 @@
     }
     ui.status.className = 'wv-ocr-status';
     ui.status.textContent = t('ocrResult', { count: result.words.length });
+    ui.actions.hidden = false;
+    updateButtons();
     placeTools(result.area);
+  }
+
+  /** What belongs to the result on screen goes with it. */
+  function forgetResult() {
+    if (editing) finishEdit(false);
+    cancelPress();
+    clearTimeout(noticeTimer);
+    shown = null;
+    selected = { ids: [], anchor: null, edited: null };
+    if (ui) {
+      ui.actions.hidden = true;
+      ui.edit.hidden = true;
+    }
   }
 
   /** @param {string} message  Localized. */
   function showError(area, message) {
     open(area);
+    forgetResult();
     ui.words.replaceChildren();
     ui.status.className = 'wv-ocr-status wv-ocr-error';
     ui.status.textContent = message;
@@ -184,6 +426,7 @@
   function hide() {
     if (!current) return;
     const { onClose } = current;
+    forgetResult();
     current = null;
     window.removeEventListener('keydown', onKeyDown, true);
     window.removeEventListener('scroll', onScroll);
@@ -217,6 +460,9 @@
 
   WV.ocrLayer = {
     setActive,
+    edit,
+    /** The phrase selected on screen: its words, and the text as the user corrected it (null: as read). */
+    selection: () => ({ ids: [...selected.ids], edited: selected.edited }),
     rectOf,
     wordIdAt,
     showBusy,

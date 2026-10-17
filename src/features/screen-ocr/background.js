@@ -38,7 +38,7 @@ function tellPage(tabId, { stage, progress }) {
   chrome.tabs.sendMessage(tabId, { type: 'wv:ocr:stage', stage, progress }, { frameId: 0 }).catch(() => {});
 }
 
-const askPage = (tabId) => chrome.tabs.sendMessage(tabId, { type: 'wv:ocr:start' }, { frameId: 0 });
+const askPage = (tabId, type) => chrome.tabs.sendMessage(tabId, { type }, { frameId: 0 });
 
 /**
  * Chrome does not put content scripts into tabs that were already open when the extension was
@@ -60,21 +60,27 @@ async function injectContentScripts(tabId) {
   }
 }
 
-/** Asks the page to let the user choose an area. */
-export async function startScan(tab) {
+/**
+ * Asks the page to let the user choose an area: for a scan, or for "Ask about the image"
+ * (features/image-ask), which starts the same way.
+ * @param {string} type  The message the page's script listens for.
+ */
+export async function startInPage(tab, type) {
   const target = tab?.id != null ? tab : await activeTab();
   if (!target) return;
   try {
-    await askPage(target.id);
+    await askPage(target.id, type);
   } catch {
     try {
       if (!(await injectContentScripts(target.id))) throw new Error('cannot inject');
-      await askPage(target.id);
+      await askPage(target.id, type);
     } catch {
       await sayNotHere(target);
     }
   }
 }
+
+export const startScan = (tab) => startInPage(tab, 'wv:ocr:start');
 
 /** The item in the right-click menu; the menu itself is built in background/menus.js. */
 const menuItem = () => ({

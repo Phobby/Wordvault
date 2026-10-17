@@ -41,7 +41,7 @@ PRIVACY
 • No account, no analytics, no tracking, no ads.
 • There is no server for your vault: nothing about your words or the pages you visit goes to the developer.
 • The text you ask to have translated goes to the translation service, and nothing else of the page does.
-• Screen scanning reads the picture inside your browser. The picture is not stored and never leaves your device.
+• Screen scanning reads the picture inside your browser. The picture is not stored and never leaves your device. Only “Ask about the image”, when you press “Ask” and have agreed to it, sends the part of the screen you chose to your own AI provider.
 • Your vault is sent only if you turn synchronisation on, and only to the account or server you choose. The default is "Only this device".
 • The feedback form sends something only when you press "Send", after showing you exactly what will be sent.
 
@@ -68,7 +68,7 @@ GİZLİLİK
 • Hesap yok, analitik yok, izleme yok, reklam yok.
 • Kasan için bir sunucu yoktur: kelimelerin ve gezdiğin sayfalarla ilgili hiçbir şey geliştiriciye gitmez.
 • Çevirisini istediğin metin çeviri servisine gider; sayfanın başka hiçbir şeyi gitmez.
-• Ekran taraması görüntüyü tarayıcının içinde okur. Görüntü saklanmaz ve cihazından çıkmaz.
+• Ekran taraması görüntüyü tarayıcının içinde okur. Görüntü saklanmaz ve cihazından çıkmaz. Yalnızca “Görsel hakkında sor”, sen “Sor”a basıp onay verdiğinde, seçtiğin alanın görüntüsünü kendi yapay zekâ sağlayıcına gönderir.
 • Kasan yalnızca sen eşitlemeyi açarsan ve yalnızca senin seçtiğin hesaba ya da sunucuya gönderilir. Varsayılan "Sadece bu cihaz"tır.
 • Geri bildirim formu yalnızca sen "Gönder"e bastığında, gidecek veriyi tam olarak gösterdikten sonra bir şey gönderir.
 

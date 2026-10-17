@@ -5,6 +5,8 @@
 //   - POST https://generativelanguage.googleapis.com/v1beta/models/{model}:streamGenerateContent?alt=sse
 //   - the key travels in the header `x-goog-api-key`, never in the address;
 //   - body: `systemInstruction`, `contents[].parts[].text`, `generationConfig.maxOutputTokens`;
+//   - a picture goes along as a part of its own: `{ inlineData: { mimeType, data } }`, data in
+//     base64 (ai.google.dev/gemini-api/docs/image-understanding);
 //   - the answer's text is in `candidates[].content.parts[].text`, one piece per event;
 //   - errors: `{ error: { code, message, status } }`; 429 when a limit or the quota is reached,
 //     404 for an unknown model, 400/401/403 for a key that is not valid.
@@ -26,14 +28,15 @@ export const gemini = {
   keyPage: 'https://aistudio.google.com/apikey',
   origins: () => [`${BASE}/*`],
 
-  async generate({ system, prompt, maxTokens }, config, { signal = null, timeoutMs } = {}) {
+  async generate({ system, prompt, maxTokens, image = null }, config, { signal = null, timeoutMs } = {}) {
     let text = '';
     let blocked = '';
+    const parts = image ? [{ inlineData: { mimeType: image.mime, data: image.data } }, { text: prompt }] : [{ text: prompt }];
     const outcome = await postForStream(`${BASE}/v1beta/models/${encodeURIComponent(config.model)}:streamGenerateContent?alt=sse`, {
       headers: { 'x-goog-api-key': config.apiKey },
       body: {
         systemInstruction: { parts: [{ text: system }] },
-        contents: [{ role: 'user', parts: [{ text: prompt }] }],
+        contents: [{ role: 'user', parts }],
         generationConfig: { maxOutputTokens: maxTokens },
       },
       signal,

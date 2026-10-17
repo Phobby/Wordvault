@@ -4,6 +4,10 @@
 // photograph and read it, lay the text over the place it was read from, and open the
 // translation bubble for the word that is clicked. The picture is taken and handled in the
 // extension's own context; only the words and their boxes come back here.
+//
+// Words selected together (layer.js) open the bubble as a phrase. The bar over the area offers
+// to explain all of it or the phrase with AI (ai/background.js): only the text that was read is
+// sent, never the picture, and only when the user presses the button and has agreed to it.
 
 (function (WV) {
   // Top frame only: the screenshot is of the whole tab, and so is the selection.
@@ -26,6 +30,7 @@
   let busy = false;
   let pending = null; // the area being read
   let result = null; // what is on screen: words, lines, blocks
+  let overFields = false; // the area covers a field the user types into: nothing of it goes to an AI
 
   const nextFrame = () => new Promise((resolve) => requestAnimationFrame(resolve));
   /** The word without the punctuation the engine attached to it. */
@@ -70,25 +75,100 @@
       const block = result.blocks.find((candidate) => candidate.id === word.blockId);
       const blockRect = block ? WV.ocrLayer.rectOf(block.words) : null;
       const lineRect = line ? WV.ocrLayer.rectOf(line.words) : null;
-      const codes = String(result.info.languages || '').split('+');
       return {
         text,
         line: line ? line.text : text,
         rect: WV.ocrLayer.rectOf([word.id]),
         area: blockRect && blockRect.height <= window.innerHeight * 0.3 ? blockRect : lineRect,
         // Read with one language: that is the language. With several, the line decides.
-        lang: codes.length === 1 ? LANGUAGE_TAGS[codes[0]] || '' : '',
+        lang: scanLanguage(),
         key: `ocr:${word.id}`,
       };
     },
   });
+
+  /** Language of the text, where the scan was read with one. */
+  function scanLanguage() {
+    const codes = String(result?.info.languages || '').split('+');
+    return codes.length === 1 ? LANGUAGE_TAGS[codes[0]] || '' : '';
+  }
+
+  /**
+   * Whether the scanned area covers a password field or a field the user types into. What was
+   * read there may be what they typed: it is translated if they ask, never offered to an AI.
+   */
+  function coversFields(area) {
+    const right = area.x + area.width;
+    const bottom = area.y + area.height;
+    const fields = document.querySelectorAll('input:not([type=hidden]):not([type=button]):not([type=submit]):not([type=reset]):not([type=checkbox]):not([type=radio]):not([type=range]):not([type=color]):not([type=file]):not([type=image]), textarea, [contenteditable=""], [contenteditable="true"]');
+    for (const field of fields) {
+      const box = field.getBoundingClientRect();
+      if (box.width > 0 && box.height > 0 && box.left < right && box.right > area.x && box.top < bottom && box.bottom > area.y) return true;
+    }
+    return false;
+  }
+
+  /** All that was read, block by block in reading order, one block per line. */
+  const wholeText = () => result.blocks.map((block) => WV.ocrPhrase.join(result.words, block.words)).filter(Boolean).join('\n');
+
+  /**
+   * Opens the bubble for a phrase of the scan, or all of it.
+   * @param {{ ids: number[], text: string, explain?: boolean }} phrase  explain: ask the AI at once.
+   */
+  function openPhrase({ ids, text, explain = false }) {
+    const rect = WV.ocrLayer.rectOf(ids);
+    if (!rect || !text) return;
+    WV.popup.open({
+      text,
+      range: null,
+      rect,
+      avoid: rect,
+      point: { x: rect.left, y: rect.bottom },
+      mode: 'passage',
+      sentence: text,
+      sample: text,
+      pageLang: scanLanguage(),
+      origin: 'screen',
+      fromField: overFields,
+      autoExplain: explain,
+    });
+  }
+
+  /** The phrase selected on screen, as read or as corrected. */
+  function selectedPhrase() {
+    const { ids, edited } = WV.ocrLayer.selection();
+    return ids.length === 0 ? null : { ids, text: edited || WV.ocrPhrase.join(result.words, ids) };
+  }
+
+  async function onAction(name) {
+    if (!result) return;
+    if (name === 'explainAll') {
+      openPhrase({ ids: result.words.map((word) => word.id), text: wholeText(), explain: true });
+      return;
+    }
+    const phrase = selectedPhrase();
+    if (!phrase) return;
+    if (name === 'edit') {
+      WV.popup?.close();
+      const corrected = await WV.ocrLayer.edit(phrase.text);
+      if (corrected && result) openPhrase({ ids: phrase.ids, text: corrected });
+      return;
+    }
+    openPhrase({ ...phrase, explain: name === 'explainSelection' });
+  }
+
+  function onPhrase(ids) {
+    if (!result) return;
+    const phrase = selectedPhrase() || { ids, text: WV.ocrPhrase.join(result.words, ids) };
+    openPhrase(phrase);
+  }
 
   function openWord(word, element) {
     const rect = element.getBoundingClientRect();
     const hit = WV.wordSource.normalise(source.wordAt({ x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 }), source.id);
     if (!hit) return;
     WV.ocrLayer.setActive(element);
-    WV.popup.openForHit(hit);
+    WV.popup.openForHit(hit, { fromField: overFields, origin: 'screen' });
   }
 
   function showError(area, error) {
@@ -120,7 +200,8 @@
         showError(found.area, { code: 'ocr_no_text' });
       } else {
         result = found;
-        WV.ocrLayer.showResult(found, { showBoxes: settings.ocrShowBoxes === true, onWord: openWord });
+        overFields = coversFields(found.area);
+        WV.ocrLayer.showResult(found, { showBoxes: settings.ocrShowBoxes === true, onWord: openWord, onPhrase, onAction });
         WV.ocrLayer.onClose(() => {
           result = null;
           source.emit({ type: 'gone' });

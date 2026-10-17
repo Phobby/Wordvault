@@ -209,20 +209,25 @@ test('waking up for a due quiz: the start-up check and the quiz do not undo each
 });
 
 test('too few words or meanings: nothing is sent and the reason is recorded', async () => {
-  await fill(9);
-  assert.equal(await runScheduledQuiz(), 'below_min_cards');
+  assert.equal(await runScheduledQuiz(), 'no_cards', 'an empty vault');
   assert.equal(device.cards().length, 0);
   assert.equal(alarmAt(), T0 + 20 * MINUTE, 'checked again at the regular interval');
   const state = await getQuizState();
-  assert.deepEqual(state.lastAttempt, { at: T0, reason: 'below_min_cards' });
-  assert.deepEqual(state.lastSkip, { at: T0, reason: 'below_min_cards' });
+  assert.deepEqual(state.lastAttempt, { at: T0, reason: 'no_cards' });
+  assert.deepEqual(state.lastSkip, { at: T0, reason: 'no_cards' });
   assert.equal(state.lastShown, null);
 
+  // there is no number of words to wait for any more: three words are enough to type, not to choose from
   device = use(createDevice('other', { uiLanguage: 'tr' }));
-  await updateSettings({ quizMinCards: 2 });
   await fill(3);
   assert.equal(await runScheduledQuiz(), 'not_enough_choices');
   assert.equal(device.cards().length, 0);
+});
+
+test('an old minimum number of words, still stored, is ignored: four meanings are enough for the choices', async () => {
+  await chrome.storage.local.set({ settings: { quizMinCards: 50 } });
+  await fill(4);
+  assert.equal(await runScheduledQuiz(), 'shown');
 });
 
 test('a bad moment does not skip the quiz: it is tried again a few minutes later', async (t) => {
@@ -281,13 +286,14 @@ test('only one tab is ever asked, and only its top frame', async (t) => {
 });
 
 test('the diagnostics say what the panel needs to know', async (t) => {
-  await fill(9);
+  await fill(3);
   await ensureScheduled();
   let d = await getDiagnostics();
   assert.deepEqual(
-    { enabled: d.enabled, intervalMinutes: d.intervalMinutes, total: d.total, minCards: d.minCards, askable: d.askable, meanings: d.meanings, targetLang: d.targetLang, standingReason: d.standingReason, nextAt: d.nextAt, alarmAt: d.alarmAt, lastAttempt: d.lastAttempt, lastShown: d.lastShown, lastSkip: d.lastSkip },
-    { enabled: true, intervalMinutes: 20, total: 9, minCards: 10, askable: 9, meanings: 9, targetLang: 'tr', standingReason: 'below_min_cards', nextAt: T0 + 20 * MINUTE, alarmAt: T0 + 20 * MINUTE, lastAttempt: null, lastShown: null, lastSkip: null },
+    { enabled: d.enabled, intervalMinutes: d.intervalMinutes, total: d.total, mode: d.mode, askable: d.askable, meanings: d.meanings, targetLang: d.targetLang, standingReason: d.standingReason, nextAt: d.nextAt, alarmAt: d.alarmAt, lastAttempt: d.lastAttempt, lastShown: d.lastShown, lastSkip: d.lastSkip },
+    { enabled: true, intervalMinutes: 20, total: 3, mode: 'classic', askable: 3, meanings: 3, targetLang: 'tr', standingReason: 'not_enough_choices', nextAt: T0 + 20 * MINUTE, alarmAt: T0 + 20 * MINUTE, lastAttempt: null, lastShown: null, lastSkip: null },
   );
+  assert.equal('minCards' in d, false, 'no minimum number of words any more');
 
   await fill();
   device.browser.page.blocked = 'video_playing';

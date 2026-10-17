@@ -144,25 +144,25 @@ test('progress: streak with today\'s count, rank by learned words, and a freeze 
   const progress = await getProgress(at(12));
   assert.deepEqual([progress.streak.count, progress.streak.alive, progress.streak.answered, progress.streak.goal], [0, false, 2, 5]);
   assert.deepEqual([progress.streak.freezeDay, progress.streak.freezeSaves], [days(-1)[0], 3]);
-  assert.deepEqual([progress.rank.id, progress.rank.learned, progress.rank.remaining], ['rookie', 3, 97]);
+  assert.deepEqual([progress.rank.id, progress.rank.learned, progress.rank.remaining], ['rookie', 3, 62]);
   assert.equal(await freezeYesterday(at(12)), true);
   const after = await getProgress(at(12));
   assert.deepEqual([after.streak.count, after.streak.alive, after.streak.freezeDay], [3, true, '']);
 });
 
 test('a new rank is celebrated once, and the rank an update finds is not a new rank', async () => {
-  for (let index = 0; index < 99; index++) await addEntry(learned(index));
+  for (let index = 0; index < 64; index++) await addEntry(learned(index));
   assert.equal((await getProgress(at(12))).rankUp, false, 'first look: the rank that is there is simply the rank');
-  await addEntry(learned(99));
+  await addEntry(learned(64));
   const up = await getProgress(at(12));
   assert.deepEqual([up.rank.id, up.rankUp], ['beginner', true]);
   assert.equal((await getProgress(at(12))).rankUp, true, 'until it has been shown');
   assert.equal(await ackRank(), 1);
   assert.equal((await getProgress(at(12))).rankUp, false);
   // falling back a rank and reaching it again is celebrated again
-  await chrome.storage.local.remove('vault:en|tr|word 99');
+  await chrome.storage.local.remove('vault:en|tr|word 64');
   assert.equal((await getProgress(at(12))).rankUp, false);
   await ackRank();
-  await addEntry(learned(99));
+  await addEntry(learned(64));
   assert.equal((await getProgress(at(12))).rankUp, true);
 });

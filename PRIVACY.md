@@ -59,13 +59,18 @@ kasaya eklersen onunla birlikte saklanır; altyazı akışı kaydedilmez ya da i
 
 ### Yapay zekâ özellikleri (yalnızca sen bir sağlayıcı bağlarsan ve her seferinde sen başlatırsan)
 
-Varsayılan olarak kapalıdır. Ayarlardan kendi yapay zekâ sağlayıcını (Google Gemini, Claude API,
+Varsayılan olarak kapalıdır. Ayarlardan kendi yapay zekâ sağlayıcını (Google Gemini, Claude API, NVIDIA,
 OpenAI uyumlu bir servis ya da bilgisayarındaki Ollama) bağlarsan çeviri penceresinde "Yapay zekâ ile
 açıkla" çalışır. Düğmeye **sen bastığında** şunlar, tarayıcından doğrudan **yalnızca seçtiğin
 sağlayıcıya** gider, başka hiçbir yere gönderilmez; arada Wordvault'un bir sunucusu yoktur:
 
 - kelime için: kelime, geçtiği cümle ve sayfanın başlığı;
 - seçtiğin cümle/paragraf için: o metin ve sayfanın başlığı;
+- ekran taramasında "Tümünü açıkla", "Seçimi açıkla" ya da çeviri penceresindeki "Yapay zekâ ile
+  açıkla" için: taranan alandan **okunan metin** (ya da yalnızca seçtiğin kısmı, düzelttiysen
+  düzeltilmiş hâli) ve sayfanın başlığı. **Ekran görüntüsü asla gönderilmez.** Taranan alan bir
+  parola alanının ya da yazı yazdığın bir kutunun üstüne geliyorsa açıklama düğmeleri hiçbir şey
+  göndermez;
 - "Sayfayı özetle" için (sayfanın sağ tık menüsü ya da Wordvault penceresi; yalnızca bir sağlayıcı
   ayarlıyken görünür): sayfanın **ana metni** ve başlığı. Menüler, reklamlar ve yan içerikler
   ayıklanır. Sayfa yalnızca sen özet isteyince okunur; kart önce ne kadar metnin, kaç parçada, hangi
@@ -96,15 +101,34 @@ Gemini'nin ücretsiz katmanında içeriğin ürünlerini geliştirmek için kull
 Sağlayıcı bağlı değilken "İstemi kopyala ve aç" hazır istemi panona kopyalar ve seçtiğin sohbet
 sitesini yeni sekmede açar; eklenti hiçbir şey göndermez, oraya sen yapıştırırsın.
 
+### Görsel hakkında sor (yalnızca sen başlattığında ve "Sor"a bastığında)
+
+Wordvault'un ekran **görüntüsü** gönderen tek özelliği budur. Sağ tık menüsünden ya da kendi
+atadığın kısayolla başlatıp ekranda bir alan seçtiğinde, o anki sekme görüntüsünden yalnızca o alan
+kırpılır (en uzun kenarı 1536 piksele küçültülür) ve yanında açılan pencerede önizlemesi gösterilir.
+**"Sor"a bastığında** bu görüntü, yazdığın soru ve sayfanın başlığı **yalnızca ayarladığın yapay zekâ
+sağlayıcısına** gider. Görüntü gönderimi için onay metinden ayrı sorulur; metin için verdiğin onay
+görüntüyü kapsamaz. Seçtiğin alan bir parola alanının ya da yazı yazdığın bir kutunun üstündeyse
+görüntü hiç gönderilmez. Hassas siteler listesindeki sayfalarda özellik kapalıdır. Görüntü diske
+yazılmaz, önbelleğe alınmaz, cevaplar da saklanmaz; pencereyi kapatınca bellekten gider.
+
+Modelin görselleri okuyup okuyamadığını anlamak için, ayarlardaki "Test et" sırasında (ya da ilk
+kullanımda) sağlayıcına bir kez 64×64 piksellik düz kırmızı bir test görseli gönderilir; senin
+ekranından hiçbir şey içermez. Sonuç yalnızca bu cihazda saklanır. Model görselleri okuyamıyorsa
+görüntün hiç gönderilmez ve bu sana söylenir.
+
 ### Ekrandan metin tarama (yalnızca sen başlattığında)
 
 Taramayı kısayolla ya da menüden başlattığında, o sekmenin o anki ekran görüntüsü alınır ve seçtiğin
 alan **bu tarayıcının içinde** okunur (Tesseract.js; motor ve dil verisi eklentinin içindedir, ağdan
 hiçbir şey indirilmez). Görüntü ve ondan okunan metin cihazından çıkmaz, hiçbir yere kaydedilmez;
-okuma bitince görüntü bellekten atılır. Eklentinin sekmelerin görüntüsünü kendiliğinden alma izni
+okuma bitince görüntü bellekten atılır (bunun tek istisnası, açıkça istediğinde "Görsel hakkında sor"
+özelliğidir; yukarıya bak). Eklentinin sekmelerin görüntüsünü kendiliğinden alma izni
 yoktur (`activeTab`: yalnızca senin başlattığın anda, yalnızca o sekme). Bulut OCR kullanılmaz.
-Okunan bir kelimeye tıklarsan yalnızca **o kelime** çeviri servisine gider; kasaya eklersen kelime,
-okunan satırıyla birlikte kasada saklanır.
+Okunan bir kelimeye tıklarsan yalnızca **o kelime** çeviri servisine gider; sürükleyerek birkaç
+kelime seçersen yalnızca **seçtiğin ifade** gider. Kasaya eklersen kelime (ya da ifade), okunan
+satırıyla birlikte kasada saklanır. Okunan metni yapay zekâ ile açıklatmak istersen ne gittiği
+yukarıdaki "Yapay zekâ özellikleri" bölümünde yazar.
 
 ### Sözlük ve telaffuz (kelimeyi kasaya eklediğinde ya da dinlediğinde)
 

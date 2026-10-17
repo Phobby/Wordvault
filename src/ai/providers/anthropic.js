@@ -5,6 +5,8 @@
 //   - POST https://api.anthropic.com/v1/messages
 //   - headers: `x-api-key`, `anthropic-version: 2023-06-01`, `content-type: application/json`;
 //   - body: `model`, `max_tokens`, `system` (top level), `messages`, `stream`;
+//   - a picture is a content block before the text: `{ type: 'image', source: { type: 'base64',
+//     media_type, data } }` (Vision);
 //   - streamed text arrives as `content_block_delta` events with a `text_delta`; an `error`
 //     event can come in the middle of a stream;
 //   - errors: `{ type: 'error', error: { type, message } }`: 401 authentication_error,
@@ -31,12 +33,13 @@ export const anthropic = {
   keyPage: 'https://platform.claude.com/settings/keys',
   origins: () => [`${BASE}/*`],
 
-  async generate({ system, prompt, maxTokens }, config, { signal = null, timeoutMs } = {}) {
+  async generate({ system, prompt, maxTokens, image = null }, config, { signal = null, timeoutMs } = {}) {
+    const content = image ? [{ type: 'image', source: { type: 'base64', media_type: image.mime, data: image.data } }, { type: 'text', text: prompt }] : prompt;
     let text = '';
     const fail = (status, error) => refusal({ status, message: error?.message || '', kind: error?.type || '' }, [config.apiKey]);
     const outcome = await postForStream(`${BASE}/v1/messages`, {
       headers: { 'x-api-key': config.apiKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
-      body: { model: config.model, max_tokens: maxTokens, system, messages: [{ role: 'user', content: prompt }], stream: true },
+      body: { model: config.model, max_tokens: maxTokens, system, messages: [{ role: 'user', content }], stream: true },
       signal,
       timeoutMs,
       onData: (data) => {
