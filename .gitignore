@@ -7,3 +7,10 @@ oauth.local.json
 # Cloudflare Worker: local state and local secrets, never committed
 .wrangler/
 .dev.vars
+# Never commit: local environment files, signing keys, packed builds, logs, coverage
+.env
+.env.*
+*.pem
+*.crx
+*.log
+coverage/

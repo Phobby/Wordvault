@@ -4,6 +4,7 @@
   "private": true,
   "type": "module",
   "description": "Browser extension for learning vocabulary while you browse: translate, save, review.",
+  "license": "PolyForm-Noncommercial-1.0.0",
   "scripts": {
     "build": "node build.js",
     "watch": "node build.js --watch",

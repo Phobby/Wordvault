@@ -1,35 +1,79 @@
-# Wordvault
+<p align="center">
+  <img src="src/icons/icon-128.png" width="96" height="96" alt="Wordvault icon">
+</p>
 
-A language-learning extension for Firefox and Chrome. Translate the words you don't know on web
-pages, save them to your vault, then review them with short quizzes. Everything runs in your
-browser; Wordvault has no server of its own.
+<h1 align="center">Wordvault</h1>
 
-> Development proceeds in stages. Ready now: the translation popup on double-click (source and
-> target language choice, pronunciation, "Add to vault"), the vault in the toolbar (list, search,
-> details, export/import) and the settings page with the target language and double-click
-> settings.
-> Next: the right-click menu, the part-of-speech label in the translation popup, the cache with its
-> 7-day cleanup, captions, and the rest of the settings page (translation provider and API key).
->
-> Synchronisation between devices (`SPEC-SYNC.md`, `SPEC-SYNC-UI.md`) is ready: data model, merge,
-> deletion records, the sync engine, the "Sync and backup" section of the settings page, browser
-> sync (`storage.sync`), Google Drive, the self-hosted mode (WebDAV, a simple HTTP
-> endpoint) and optional end-to-end encryption. The default is "This device only": nothing is sent
-> anywhere until the user picks a way and confirms it. Google Drive needs a one-time developer setup
-> (`SETUP-OAUTH.md`); until then its card says "Not configured".
-> Privacy: `PRIVACY.md`. Third-party software, content and trademarks: `src/THIRD-PARTY-NOTICES.md`.
->
-> The flash card system (`SPEC-QUIZ.md`, `SPEC-QUIZ-POPUP.md`) is being added in stages. Ready now:
-> the scheduler, the "Why is there no quiz?" diagnostics panel, "Test now", the learning algorithm,
-> question selection, choice generation, the quiz interface (answer timing, "I don't know", "Ask
-> later", timeout, series mode, "Not today"), showing the quiz in the extension's popup, in a
-> separate window or as a card on the page, and the flash card settings (on/off, frequency, number
-> of questions, display, minimum words, answer time, asking words that are not due). A daily
-> question limit, quiet hours, showing word states in the vault and a "Study now" mode come later.
->
-> The interface language (`SPEC-I18N.md`): stage 1 is done (own loader, English source, Turkish,
-> language choice in the settings); stages 2 (fifteen languages) and 3 (right-to-left, fonts,
-> contributor guide) are next.
+<p align="center">Learn the words you meet while you browse.<br>A vocabulary extension for Chrome and Firefox.</p>
+
+Double-click a word you don't know and its translation opens right next to it. One click saves it to
+your vault, with the sentence you found it in, and Wordvault brings it back in short flashcard quizzes
+until you know it. Everything runs in your browser: there is no account, and Wordvault has no server
+that receives your words or the pages you visit.
+
+<p align="center">
+  <img src="docs/store/screenshots/1-translation.png" width="640" alt="The translation bubble next to a double-clicked word">
+</p>
+
+## Features
+
+- **Translate in place**: double-click a word, select a sentence or paragraph (right-click menu,
+  "Translate" button or shortcut), or point at a word in YouTube captions. Pronunciation included.
+- **Scan text on screen**: drag over a paused video or an image and click the words; the text is
+  recognised on your device (English and Turkish text).
+- **Your vault**: saved words with their sentence, Wiktionary definitions and examples; search,
+  filter, export and import.
+- **Flashcard quizzes**: four ways to practise (pick, type, listen and pick, listen and type), spaced
+  repetition, a daily goal, a streak and ranks.
+- **Optional AI features** with your own provider (an API key for Google Gemini, Anthropic's Claude,
+  NVIDIA or an OpenAI-compatible service, or Ollama on your computer): explain a word or passage, ask
+  about an area of the screen, summarise or translate a page, and make a printable A4 practice test
+  from your vault. Off until you connect a provider.
+- **Optional sync** through your browser's sync, your own Google Drive or your own WebDAV server,
+  optionally encrypted with your password. Off until you turn it on.
+- Translations come from MyMemory by default, or from DeepL with your own API key. Interface in English
+  and Turkish.
+
+<p align="center">
+  <img src="docs/store/screenshots/3-quiz.png" width="640" alt="A flashcard quiz on a web page">
+</p>
+
+## Install and build
+
+There are no dependencies: Node.js 22.2 or later is enough.
+
+```sh
+node build.js              # dist/chrome and dist/firefox
+npm test                   # unit tests
+```
+
+Load `dist/chrome` with "Load unpacked" on `chrome://extensions` (developer mode), or `dist/firefox`
+from `about:debugging` in Firefox. How the store packages are made and checked against the source:
+[BUILD.md](BUILD.md). Google Drive sync needs a one-time setup: [SETUP-OAUTH.md](SETUP-OAUTH.md).
+
+## Privacy
+
+No account, no ads, no analytics, no tracking. What leaves the browser, when and where to:
+[privacy policy](https://phobby.github.io/wordvault-privacy/) (source: [PRIVACY.md](PRIVACY.md)).
+
+## Feedback and support
+
+Bug reports and ideas: [GitHub Issues](https://github.com/Phobby/Wordvault/issues). The extension
+also has a feedback form (Settings → Contact) that shows exactly what it will send before sending.
+
+## License
+
+Wordvault is source-available under the [PolyForm Noncommercial License 1.0.0](LICENSE): you may read,
+study, change and share the code for any noncommercial purpose. **Commercial use is not permitted.**
+
+The bundled third-party libraries keep their own licences: Tesseract.js, tesseract.js-core and the
+Tesseract language data (Apache-2.0) under `src/vendor/tesseract/`, and Mozilla's Readability
+(Apache-2.0) under `src/vendor/readability/`. Dictionary content comes from Wiktionary (CC BY-SA 4.0).
+Details: [src/THIRD-PARTY-NOTICES.md](src/THIRD-PARTY-NOTICES.md).
+
+---
+
+The rest of this file is the developer documentation: how each part works, and why.
 
 ## Building
 
@@ -102,6 +146,7 @@ tools/self-hosted-server.js  A one-file example server for "My own server" (see 
 docs/self-hosted.md     Self-hosted mode: WebDAV, the HTTP endpoint's protocol, the example server
 docs/store/             Store preparation: listings (en, tr), permission reasons, data declaration, reviewer notes, images
 BUILD.md                How the store packages are built from the source, and how to check them
+LICENSE                 PolyForm Noncommercial 1.0.0 (Wordvault's own code; vendored libraries keep theirs)
 RELEASE-CHECKLIST.md    The steps of a release, with the placeholders still to fill in
 docs/privacy.html       The web version of the privacy policy (en + tr), for GitHub Pages
 SETUP-OAUTH.md          The one-time developer setup for the cloud providers

@@ -58,7 +58,8 @@ The steps of a release, in order. Building: `BUILD.md`. Store texts and images: 
 - [ ] Notes to reviewer: `docs/store/en/reviewer-notes.md`.
 - [ ] Listing: summary and description from `docs/store/en/listing.md` (Turkish locale: `docs/store/tr/listing.md`);
       category Language Support; screenshots; privacy policy (paste the text or the URL); support e-mail.
-- [ ] Licence: choose one in the form (the repository has no licence file yet).
+- [ ] Licence: PolyForm Noncommercial 1.0.0 (`LICENSE`); in the form choose a custom licence and paste
+      its URL or text.
 - [ ] Submit.
 
 ## 6. Google Drive
