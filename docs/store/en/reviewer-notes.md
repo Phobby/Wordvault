@@ -30,39 +30,41 @@ Permissions are explained one by one in the "Privacy practices" tab. Optional ho
 
 ## addons.mozilla.org: notes to reviewer
 
+At most 3,000 characters (this text: 2,649).
+
 ```
-No account or login is needed to test; see TEST STEPS at the end.
+No account is needed to test; see TEST STEPS at the end.
 
 SOURCE CODE AND BUILD
-Our own code is not minified, transpiled or bundled: build.js copies src/ as it is and writes manifest.firefox.json next to it as manifest.json. The build makes exactly two changes: shared/i18n.js gets "const DEV = false;", and sync/config.js gets the Google OAuth client ID from oauth.local.json (included in the source zip; a client ID is public, there is no client secret).
+Our code is not minified, transpiled or bundled: build.js copies src/ as it is and writes manifest.firefox.json as manifest.json. It changes exactly two files: shared/i18n.js gets "const DEV = false;", and sync/config.js gets the Google OAuth client ID from oauth.local.json (in the source zip; a client ID is public, there is no client secret).
 
-Build steps (also in BUILD.md inside the source zip):
-1. Install Node.js 22.2 or later (tested with 22.22.1). Any OS. No npm install: there are no dependencies.
+Build steps (also in BUILD.md in the source zip):
+1. Node.js 22.2 or later, any OS. No npm install: there are no dependencies.
 2. Unzip wordvault-1.0.0-source.zip and open a terminal in that folder.
 3. Run: node build.js --release firefox
-4. The result is dist/firefox/, identical file for file to the uploaded package. To compare: cd dist/firefox && find . -type f | LC_ALL=C sort | xargs sha256sum
+4. dist/firefox/ is then identical, file for file, to the uploaded package.
 
-THIRD-PARTY LIBRARIES (all unmodified, official releases; in the source under src/vendor/, in the package under vendor/)
-- Tesseract.js 7.0.0: vendor/tesseract/tesseract.esm.min.js and vendor/tesseract/worker.min.js
-  https://registry.npmjs.org/tesseract.js/-/tesseract.js-7.0.0.tgz (files under dist/)
-- tesseract.js-core 7.0.0: vendor/tesseract/core/tesseract-core-{lstm,simd-lstm,relaxedsimd-lstm}.wasm.js
+THIRD-PARTY LIBRARIES (unmodified official releases; src/vendor/ in the source, vendor/ in the package)
+- Tesseract.js 7.0.0: vendor/tesseract/tesseract.esm.min.js, worker.min.js
+  https://registry.npmjs.org/tesseract.js/-/tesseract.js-7.0.0.tgz (dist/)
+- tesseract.js-core 7.0.0: vendor/tesseract/core/*.wasm.js
   https://registry.npmjs.org/tesseract.js-core/-/tesseract.js-core-7.0.0.tgz
-- Language data: vendor/tesseract/lang/{eng,tur}.traineddata.gz from @tesseract.js-data/eng 1.0.0 and @tesseract.js-data/tur 1.0.0 (4.0.0_best_int/)
+- Language data: vendor/tesseract/lang/{eng,tur}.traineddata.gz from @tesseract.js-data/eng and /tur 1.0.0 (4.0.0_best_int)
 - Readability 0.6.0: vendor/readability/Readability.js
   https://registry.npmjs.org/@mozilla/readability/-/readability-0.6.0.tgz
-SHA-256 checksums of every vendored file: vendor/tesseract/README.md and vendor/readability/README.md.
+SHA-256 of every vendored file: vendor/tesseract/README.md, vendor/readability/README.md.
 
 LINTER WARNINGS
-The three DANGEROUS_EVAL warnings are in the unmodified Tesseract.js files: webpack's globalThis fallback, new Function("return this")(), and regenerator-runtime's fallback, Function("r", "regeneratorRuntime = r"), both reached only where globalThis is missing, which never happens in Firefox 142+. The extension's own code has no eval, new Function or remote code. Readability uses innerHTML on its own detached copy of the page (it is injected only when the user asks for a summary of that tab).
+DANGEROUS_EVAL (3): in the unmodified Tesseract.js files, the globalThis fallbacks of webpack and regenerator-runtime, never reached in Firefox 142+. Our own code has no eval, new Function or remote code. innerHTML (2): Readability works on its own detached copy of the page; it is injected only when the user asks for a summary of that tab.
 
 DATA COLLECTION
-data_collection_permissions: websiteContent is required (the text the user asks to have translated goes to the translation service; with an AI provider the user connects, the text they ask about goes to that provider). The optional categories are used only by the feedback form, which shows the exact data before sending.
+websiteContent is required: the text the user asks to have translated goes to the translation service, and, with an AI provider the user connects, the text they ask about goes to that provider. The optional categories are used only by the feedback form, which shows the exact data before sending.
 
 TEST STEPS
-1. Double-click a word on an English article: a translation bubble opens. "Add to vault" saves it.
-2. Toolbar button: the vault. Settings → "Quiz" tab → "Why is there no quiz?" → "Test now" (needs 4 saved words).
+1. Double-click a word on an English article: a translation bubble opens; "Add to vault" saves it.
+2. Settings → Quiz tab → "Why is there no quiz?" → "Test now" (needs 4 saved words).
 3. YouTube with captions: hold the pointer over a caption word.
-4. Alt+Shift+S (macOS: Command+Shift+E) or right-click → "Scan text on screen": drag over text; recognition is local.
-5. Settings → "Contact and feedback" → "Show the data to be sent": nothing is sent before "Send".
-AI features are off by default and need the user's own provider (an API key, or Ollama on the same computer).
+4. Alt+Shift+S or right-click → "Scan text on screen", drag over text; recognition is local.
+5. Settings → Contact → "Show the data to be sent": nothing is sent before "Send".
+AI features are off by default and need the user's own provider.
 ```
