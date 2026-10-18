@@ -12,7 +12,7 @@ const read = (path) => readFileSync(new URL(`../${path}`, import.meta.url), 'utf
 const json = (path) => JSON.parse(read(path));
 
 test('short descriptions fit the 132 characters the stores allow', () => {
-  const listing = read('store/listing.md');
+  const listing = read('docs/store/en/listing.md') + read('docs/store/tr/listing.md');
   for (const lang of ['en', 'tr']) {
     const inManifest = json(`src/_locales/${lang}/messages.json`).extDescription.message;
     assert.ok([...inManifest].length <= 132, `${lang}: ${[...inManifest].length}`);
@@ -21,7 +21,7 @@ test('short descriptions fit the 132 characters the stores allow', () => {
 });
 
 test('every permission of both manifests has a justification', () => {
-  const justifications = read('store/permissions.md');
+  const justifications = read('docs/store/en/permissions.md');
   for (const target of ['chrome', 'firefox']) {
     const manifest = json(`manifest.${target}.json`);
     const asked = [...manifest.permissions, ...(manifest.optional_permissions || []), ...manifest.host_permissions, ...(manifest.optional_host_permissions || [])];
@@ -44,7 +44,7 @@ test('the privacy documents name the place feedback goes to, and what is never s
 });
 
 test('the declaration says there is no remote code, and the package has none', () => {
-  assert.match(read('store/privacy-practices.md'), /No, I am not using remote code/);
+  assert.match(read('docs/store/en/privacy-practices.md'), /No, I am not using remote code/);
   for (const target of ['chrome', 'firefox']) {
     assert.equal(json(`manifest.${target}.json`).content_security_policy.extension_pages, "script-src 'self' 'wasm-unsafe-eval'; object-src 'self'");
   }

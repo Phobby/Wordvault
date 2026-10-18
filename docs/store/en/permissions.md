@@ -1,9 +1,9 @@
-# İzin gerekçeleri
+# Permission justifications (English)
 
-Chrome Web Store'un "Privacy practices" sekmesi her izin için ayrı bir gerekçe ister. Aşağıdaki
-İngilizce metinler oraya yapıştırılmak içindir. Kaynak: `manifest.chrome.json`, `manifest.firefox.json`
-ve `README.md`'nin "İzinler" bölümü. Manifestteki her izin burada olmalıdır (`tests/store.test.js`
-bunu denetler).
+The Chrome Web Store's "Privacy practices" tab asks for a reason for every permission; paste the quoted
+text of each section into its field. AMO has no such form, but its reviewers read the same reasons in
+the reviewer notes (`reviewer-notes.md`). Every permission of both manifests must be here
+(`tests/store.test.js` checks this). Turkish version: `../tr/permissions.md`.
 
 ## `storage`
 
@@ -23,13 +23,13 @@ bunu denetler).
 
 ## `activeTab`
 
-> "Scan text on screen": when the user presses the keyboard shortcut or picks the menu item, the extension takes one picture of the current tab (chrome.tabs.captureVisibleTab) so that the area the user selects can be read with on-device text recognition. activeTab limits this to the tab the user invoked the extension on, at that moment. The picture is processed locally, is not stored and is never transmitted. The same gesture (context menu item or keyboard shortcut) is what lets "Translate with Wordvault" reach a tab that was open before the extension was installed.
+> "Scan text on screen": when the user presses the keyboard shortcut or picks the menu item, the extension takes one picture of the current tab (chrome.tabs.captureVisibleTab) so that the area the user selects can be read with on-device text recognition. activeTab limits this to the tab the user invoked the extension on, at that moment. The picture is processed locally and is not stored. "Ask about the image" (an optional AI feature, off by default) starts the same way; only after a preview, a separate consent for images and the user pressing "Ask" is the selected area sent, to the AI provider the user connected. The same gesture (context menu item, toolbar popup or keyboard shortcut) is what lets "Translate with Wordvault", "Summarise this page" and "Translate this page with AI" reach the tab the user is on.
 
 ## `contextMenus`
 
-> Adds two items: "Translate with Wordvault" in the context menu of selected text (translates the selected sentence or paragraph; the user can switch the item off in the settings), and "Scan text on screen" in the page's context menu and the toolbar button's menu, as a second way to start a scan besides the keyboard shortcut.
+> Adds two items: "Translate with Wordvault" in the context menu of selected text (translates the selected sentence or paragraph; the user can switch the item off in the settings), and "Scan text on screen" in the page's context menu and the toolbar button's menu, as a second way to start a scan besides the keyboard shortcut. While the user has connected an AI provider of their own, the page's context menu also has "Summarise this page" and "Translate this page with AI".
 
-## `offscreen`
+## `offscreen` (Chrome only)
 
 > On-device text recognition (Tesseract compiled to WebAssembly, bundled with the extension) needs a Web Worker and a canvas, which a Manifest V3 service worker cannot create. An offscreen document runs the recognition. It is created when a scan starts and closed after a minute of inactivity. Reason: WORKERS.
 
@@ -49,7 +49,7 @@ bunu denetler).
 
 ## Host permission: `https://en.wiktionary.org/*`
 
-> When the user adds a word to the vault, its word type, definitions and example sentences are fetched from Wiktionary. In Firefox-based browsers on macOS it is also asked for a pronunciation recording.
+> When the user adds a word to the vault, its word type, definitions and example sentences are fetched from Wiktionary. When a human pronunciation recording is used (Firefox-based browsers on macOS, or if the user turns it on), Wiktionary is also asked which recording a word has.
 
 ## Host permission: `https://upload.wikimedia.org/*`
 
@@ -69,10 +69,10 @@ bunu denetler).
 
 > Allows extension pages to compile WebAssembly. The text recognition engine (Tesseract core) is a WebAssembly module that is bundled in the package. No code is loaded from the network.
 
-## Yalnızca Firefox: `data_collection_permissions`
+## Firefox only: `data_collection_permissions`
 
-- Zorunlu: `websiteContent` (çevirisi istenen metin çeviri servisine, kasaya eklenen kelime Wiktionary'ye;
-  eşitleme açılırsa kasadaki kelimeler kullanıcının seçtiği yere).
-- İsteğe bağlı, yalnızca geri bildirim gönderilirken: `personalCommunications` (yazılan metin),
-  `technicalAndInteraction` (teknik bilgi ya da hata kayıtları eklendiyse), `personallyIdentifyingInfo`
-  (e-posta yazıldıysa).
+Declared in `manifest.firefox.json`; the table with the reasons is in `privacy-practices.md`.
+
+- Required: `websiteContent`.
+- Optional (asked for only when feedback is sent): `personalCommunications`, `technicalAndInteraction`,
+  `personallyIdentifyingInfo`.
