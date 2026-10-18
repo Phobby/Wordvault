@@ -37,6 +37,6 @@ See `../visual-assets.md`.
 
 ## Links for the listing forms
 
-- Privacy policy: the public address of `docs/privacy.html` → `[PRIVACY_POLICY_URL]`
+- Privacy policy: the public address of `docs/privacy.html` → https://phobby.github.io/wordvault-privacy/ (`docs/privacy.html` published as `index.html` in the public repository Phobby/wordvault-privacy)
 - Support / contact e-mail: `phoby.dev@gmail.com`
 - Homepage (optional): `[HOMEPAGE_URL]`

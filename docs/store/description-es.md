@@ -58,7 +58,7 @@ SINCRONIZACIÓN OPCIONAL ENTRE DISPOSITIVOS
 Mantén tu colección al día en varios ordenadores con la sincronización de tu navegador, tu propio Google Drive o tu propio servidor WebDAV. Google Drive requiere tu cuenta de Google; el archivo se guarda en una carpeta oculta que solo Wordvault puede ver y puedes protegerlo con una contraseña. La sincronización está desactivada hasta que tú la actives.
 
 PRIVACIDAD
-Sin cuenta, sin anuncios, sin analíticas, sin rastreo. Tu colección vive en tu navegador; Wordvault no tiene ningún servidor que reciba tus palabras ni las páginas que visitas. Al servicio de traducción solo llega el texto que pides traducir. Las capturas para leer texto de la pantalla se procesan en tu dispositivo y no se guardan. El formulario de comentarios muestra exactamente lo que enviará y solo lo envía cuando pulsas "Send". Todos los detalles: [PRIVACY_POLICY_URL]
+Sin cuenta, sin anuncios, sin analíticas, sin rastreo. Tu colección vive en tu navegador; Wordvault no tiene ningún servidor que reciba tus palabras ni las páginas que visitas. Al servicio de traducción solo llega el texto que pides traducir. Las capturas para leer texto de la pantalla se procesan en tu dispositivo y no se guardan. El formulario de comentarios muestra exactamente lo que enviará y solo lo envía cuando pulsas "Send". Todos los detalles: https://phobby.github.io/wordvault-privacy/
 
 Wordvault es gratuito y no tiene versión de pago. Si te resulta útil, en los ajustes hay un enlace opcional para apoyar el proyecto ("Support the project").
 ```

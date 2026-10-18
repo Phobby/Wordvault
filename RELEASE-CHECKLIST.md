@@ -8,7 +8,7 @@ The steps of a release, in order. Building: `BUILD.md`. Store texts and images: 
 | --- | --- | --- |
 | ~~`[EFFECTIVE_DATE]`~~ | `PRIVACY.md` | Done: 18 October 2026 (`docs/privacy.html` regenerated) |
 | ~~`[CONTACT_EMAIL]`~~ | `PRIVACY.md`, `docs/store/en/listing.md` | Done: phoby.dev@gmail.com |
-| `[PRIVACY_POLICY_URL]` | `docs/store/en/listing.md`, the store dashboards, Google's Branding page | The public address of `docs/privacy.html` |
+| ~~`[PRIVACY_POLICY_URL]`~~ | store descriptions, `docs/store/en/listing.md`, the store dashboards, Google's Branding page | Done: https://phobby.github.io/wordvault-privacy/ (`docs/privacy.html` as `index.html` in the public repository Phobby/wordvault-privacy; upload it again after every `npm run privacy`) |
 | `[HOMEPAGE_URL]` | `docs/store/en/listing.md` (optional) | A home page, e.g. the repository |
 | `YOUR_GOOGLE_CLIENT_ID` | `src/sync/config.js` (stays a placeholder in git); the real ID goes into `oauth.local.json` | The Google OAuth client ID (`SETUP-OAUTH.md`). A local `oauth.local.json` with an ID already exists on the build machine; check it is the production client |
 | `<item-id>` (Chrome Item ID) | `SETUP-OAUTH.md`, Google Cloud Console → Client → Authorized redirect URIs | `https://<item-id>.chromiumapp.org/`, known only after the first upload to the Chrome Web Store |
@@ -21,7 +21,7 @@ The steps of a release, in order. Building: `BUILD.md`. Store texts and images: 
 - [ ] The version in `package.json`, `manifest.chrome.json` and `manifest.firefox.json` is the same and
       higher than the published one (`build.js` refuses a mismatch).
 - [ ] `PRIVACY.md` says "version x and later" for this version if what leaves the browser changed.
-- [ ] `docs/privacy.html` is published at `[PRIVACY_POLICY_URL]` and opens without signing in.
+- [ ] `docs/privacy.html` is published at https://phobby.github.io/wordvault-privacy/ (same content) and opens without signing in.
 - [ ] Everything is committed (the source zip is made from `HEAD`).
 
 ## 3. Build and check

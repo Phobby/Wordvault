@@ -57,7 +57,7 @@ OPTIONAL SYNC ACROSS DEVICES
 Keep your vault in step on several computers with your browser's own sync, your own Google Drive, or your own WebDAV server. Google Drive needs your Google account; the file goes into a hidden folder only Wordvault can see, and it can be protected with a password of your choice. Sync is off until you turn it on.
 
 PRIVACY
-No account, no ads, no analytics, no tracking. Your vault lives in your browser; Wordvault has no server that receives your words or the pages you visit. Only the text you ask to have translated goes to the translation service. Screenshots for text scanning are read on your device and not stored. The feedback form shows exactly what it will send, and sends it only when you press "Send". Full details: [PRIVACY_POLICY_URL]
+No account, no ads, no analytics, no tracking. Your vault lives in your browser; Wordvault has no server that receives your words or the pages you visit. Only the text you ask to have translated goes to the translation service. Screenshots for text scanning are read on your device and not stored. The feedback form shows exactly what it will send, and sends it only when you press "Send". Full details: https://phobby.github.io/wordvault-privacy/
 
 The interface is available in English and Turkish.
 

@@ -69,7 +69,7 @@ The three certifications are true and are ticked:
 
 ## Privacy policy URL
 
-The public address of `docs/privacy.html` (`[PRIVACY_POLICY_URL]`; see `RELEASE-CHECKLIST.md`).
+The public address of `docs/privacy.html`: https://phobby.github.io/wordvault-privacy/ (see `RELEASE-CHECKLIST.md`).
 
 ## Google user data (Drive)
 

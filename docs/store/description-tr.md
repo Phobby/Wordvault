@@ -57,7 +57,7 @@ API anahtarın tarayıcında kalır ve yalnızca ait olduğu sağlayıcıya gide
 Kasanı birden çok bilgisayarda güncel tut: tarayıcının kendi senkronuyla, kendi Google Drive'ınla ya da kendi WebDAV sunucunla. Google Drive için kendi Google hesabın gerekir; dosya yalnızca Wordvault'un görebildiği gizli bir klasöre kaydedilir ve istersen kendi belirlediğin bir parolayla şifrelenir. Eşitleme sen açana kadar kapalıdır.
 
 GİZLİLİK
-Hesap yok, reklam yok, analitik yok, izleme yok. Kasan tarayıcında durur; Wordvault'un kelimelerini ya da gezdiğin sayfaları alan bir sunucusu yoktur. Çeviri servisine yalnızca çevirmesini istediğin metin gider. Ekran taramasındaki görüntü cihazında okunur ve saklanmaz. Geri bildirim formu tam olarak neyi göndereceğini gösterir ve yalnızca "Gönder"e bastığında gönderir. Ayrıntılar: [PRIVACY_POLICY_URL]
+Hesap yok, reklam yok, analitik yok, izleme yok. Kasan tarayıcında durur; Wordvault'un kelimelerini ya da gezdiğin sayfaları alan bir sunucusu yoktur. Çeviri servisine yalnızca çevirmesini istediğin metin gider. Ekran taramasındaki görüntü cihazında okunur ve saklanmaz. Geri bildirim formu tam olarak neyi göndereceğini gösterir ve yalnızca "Gönder"e bastığında gönderir. Ayrıntılar: https://phobby.github.io/wordvault-privacy/
 
 Arayüz Türkçe ve İngilizce kullanılabilir.
 
