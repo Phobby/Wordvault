@@ -10,6 +10,7 @@ and services of the third parties named below.
 | Tesseract.js | 7.0.0 | Apache-2.0 | `vendor/tesseract/tesseract.esm.min.js`, `vendor/tesseract/worker.min.js` (licence: `vendor/tesseract/LICENSE.md`) | https://github.com/naptha/tesseract.js/tree/v7.0.0 |
 | tesseract.js-core (LSTM builds) | 7.0.0 | Apache-2.0 | `vendor/tesseract/core/` (licence: `vendor/tesseract/core/LICENSE`) | https://github.com/naptha/tesseract.js-core/tree/v7.0.0 |
 | Tesseract trained data (`eng`, `tur`, 4.0.0_best_int) | `@tesseract.js-data/*` 1.0.0 | Apache-2.0 | `vendor/tesseract/lang/` | https://github.com/tesseract-ocr/tessdata_best |
+| Readability | 0.6.0 (`@mozilla/readability`) | Apache-2.0 | `vendor/readability/Readability.js` (licence: `vendor/readability/LICENSE.md`); put into a tab only for "Summarise this page" | https://github.com/mozilla/readability/tree/0.6.0 |
 
 Bundled inside the Tesseract.js files, as their own notices say (`vendor/tesseract/*.LICENSE.txt`):
 regenerator-runtime (MIT, Facebook, Inc.), buffer (MIT, Feross Aboukhadijeh), ieee754

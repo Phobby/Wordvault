@@ -100,7 +100,9 @@ tools/check-locales.js  npm run i18n:check (the check itself: tools/i18n/check.j
 tools/i18n/descriptions.json  What each interface string is for (context for translators; not packaged)
 tools/self-hosted-server.js  A one-file example server for "My own server" (see docs/self-hosted.md)
 docs/self-hosted.md     Self-hosted mode: WebDAV, the HTTP endpoint's protocol, the example server
-store/                  Store preparation: descriptions, permission reasons, data declaration, test instructions, images
+docs/store/             Store preparation: listings (en, tr), permission reasons, data declaration, reviewer notes, images
+BUILD.md                How the store packages are built from the source, and how to check them
+RELEASE-CHECKLIST.md    The steps of a release, with the placeholders still to fill in
 docs/privacy.html       The web version of the privacy policy (en + tr), for GitHub Pages
 SETUP-OAUTH.md          The one-time developer setup for the cloud providers
 PRIVACY.md              Privacy policy: what leaves the browser, when, and where to
@@ -329,8 +331,8 @@ permission.
 ### Contact and feedback
 
 The last tab of the settings page (`options/options.html#feedback`), with the support card under it. A form: type (Bug / Idea /
-Other), the feature concerned, a text of 10-1500 characters, an optional e-mail address, "Add
-technical information" (on by default) and "Add recent error records" (off by default). No e-mail
+Other), the feature concerned, a text of 10-1500 characters, an optional e-mail address, "Include
+technical information" (on by default) and "Include recent error records" (off by default). No e-mail
 program is opened (no `mailto`).
 
 **Nothing goes without the user seeing it.** The form's only button is "Show the data to be sent";

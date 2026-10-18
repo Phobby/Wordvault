@@ -1,6 +1,6 @@
 # Readability (vendored, unmodified)
 
-Finds the main text of a page for "Sayfayı özetle" (`features/summary/content/extract.js`). The
+Finds the main text of a page for "Summarise this page" (`features/summary/content/extract.js`). The
 file is copied byte for byte from Mozilla's official npm package; nothing is loaded from the
 network at run time (MV3 does not allow remote code). It is not part of every page: it is put
 into a tab only when its user asks for a summary of it.

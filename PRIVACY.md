@@ -139,10 +139,10 @@ The "Contact and feedback" form sends nothing until you press **Send**. "Show th
 shows you everything that will go; what is sent is exactly what you saw.
 
 **Sent:** the kind of message and the feature it is about; your text; your e-mail address only if you
-enter one (otherwise the message is anonymous); **if "Add technical information" is ticked:** browser
+enter one (otherwise the message is anonymous); **if "Include technical information" is ticked:** browser
 name and version, operating system name, extension version, interface language, which features are on
 (yes/no only) and the kind of sync (off / browser / cloud / own server — not which service or account);
-**if "Add recent error records" is ticked** (off by default): the local error log described above.
+**if "Include recent error records" is ticked** (off by default): the local error log described above.
 **Never sent:** page addresses or content, the words in your vault, API keys, sign-in tokens, any user
 or installation ID (the extension creates none).
 
