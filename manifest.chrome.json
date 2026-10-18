@@ -3,7 +3,7 @@
   "name": "__MSG_extName__",
   "short_name": "Wordvault",
   "description": "__MSG_extDescription__",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "default_locale": "en",
   "minimum_chrome_version": "116",
   "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEArnCNWLQ/Kd3EzHvIPQ0zDlnXmD+Yh5GfxK0ThMua2alhDDPdp86T4z6ZuuhTkoc1DDtqMepvgJrFauZCvmHcEEcgN9cc3g232RZ4gYeM0N4XlfmYkknwodKj0mroosFYzO+P+vSEMc17aZGTh56OLskGz4KNBY7FR/qFT+pLnUjzr8pVyNYQ/OwLw6hyUBJe855UcWDm95psj8a2BK38Ev6EJyiJrVLdymCK0EfplvgGmqRdXAs0ytpdyTPIlHk46l3e+1iBx+LweTGJBLn8DOWIc7RVEr5Ws/Gq0utViagppeBycWeIl5VS2nIOkMrdnt5G45Fh0imawzPzR2JERQIDAQAB",

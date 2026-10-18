@@ -1,6 +1,6 @@
 # Wordvault Privacy Policy
 
-**Effective date:** [EFFECTIVE_DATE] · **Applies to:** Wordvault browser extension, version 0.1.0 and later
+**Effective date:** [EFFECTIVE_DATE] · **Applies to:** Wordvault browser extension, version 1.0.0 and later
 **Contact:** [CONTACT_EMAIL]
 
 Wordvault is a browser extension for learning vocabulary while you browse. It has **no server of its
