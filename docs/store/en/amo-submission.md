@@ -37,7 +37,7 @@ for byte.
 | Support e-mail | `phoby.dev@gmail.com` |
 | Support website | `https://github.com/Phobby/Wordvault/issues` |
 | License | **Other** / custom: name `PolyForm Noncommercial License 1.0.0`, text: the contents of `LICENSE` |
-| Privacy policy | Tick "This add-on has a privacy policy" and paste the text of `PRIVACY.md` (it is also published at https://phobby.github.io/wordvault-privacy/) |
+| Privacy policy | Tick "This add-on has a privacy policy" and paste `privacy-amo.txt`: `PRIVACY.md` as plain text (AMO shows no Markdown tables), with the address of the published page at the top |
 | Notes to reviewer | The "addons.mozilla.org: notes to reviewer" block in `reviewer-notes.md` |
 
 ## 5. After submitting
