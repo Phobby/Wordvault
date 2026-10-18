@@ -12,6 +12,7 @@ How to build the packages: `BUILD.md`. The steps of a release, in order: `RELEAS
 | `tr/permissions.md` | The same reasons in Turkish, for reading (the dashboard is filled in English) | Turkish |
 | `en/privacy-practices.md` | Single purpose, remote code declaration, data use declaration, AMO data collection | English |
 | `en/reviewer-notes.md` | Chrome's test instructions and AMO's notes to reviewer (source code, third-party libraries, linter warnings) | English |
+| `en/amo-submission.md` | The addons.mozilla.org submission form, field by field | English |
 | `visual-assets.md` | Every image the stores ask for, its size and state | English |
 | `screenshots/` | 1280×800 screenshots | |
 | `promo-440x280.png`, `marquee-1400x560.png` | Chrome's small (required) and marquee (optional) promotional tiles | |
