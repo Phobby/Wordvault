@@ -28,7 +28,7 @@ intercepts it. Google compares it character by character (the trailing `/` inclu
 
 | Browser | Extension ID | Redirect address to register |
 | --- | --- | --- |
-| Chrome (published) | the **Item ID** shown in the Chrome Web Store developer dashboard | `https://<item-id>.chromiumapp.org/` |
+| Chrome (published) | `mdkccpldchknchmdappapkhccbdpholk` (the Item ID in the Chrome Web Store developer dashboard) | `https://mdkccpldchknchmdappapkhccbdpholk.chromiumapp.org/` |
 | Chrome (developer mode, unpacked) | `caggefgbpnebadhdlcaijbfcgdocednk` (from the `key` in `manifest.chrome.json`) | `https://caggefgbpnebadhdlcaijbfcgdocednk.chromiumapp.org/` |
 | Firefox | `wordvault@phobby` (`gecko.id` in `manifest.firefox.json`) | `http://127.0.0.1/mozoauth2/4e1e83b4f82a40a825858d9d7610ba8b8558e84e` |
 

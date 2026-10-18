@@ -11,7 +11,7 @@ The steps of a release, in order. Building: `BUILD.md`. Store texts and images: 
 | ~~`[PRIVACY_POLICY_URL]`~~ | store descriptions, `docs/store/en/listing.md`, the store dashboards, Google's Branding page | Done: https://phobby.github.io/wordvault-privacy/ (`docs/privacy.html` as `index.html` in the public repository Phobby/wordvault-privacy; upload it again after every `npm run privacy`) |
 | `[HOMEPAGE_URL]` | `docs/store/en/listing.md` (optional) | A home page, e.g. the repository |
 | `YOUR_GOOGLE_CLIENT_ID` | `src/sync/config.js` (stays a placeholder in git); the real ID goes into `oauth.local.json` | The Google OAuth client ID (`SETUP-OAUTH.md`). A local `oauth.local.json` with an ID already exists on the build machine; check it is the production client |
-| `<item-id>` (Chrome Item ID) | `SETUP-OAUTH.md`, Google Cloud Console → Client → Authorized redirect URIs | `https://<item-id>.chromiumapp.org/`, known only after the first upload to the Chrome Web Store |
+| ~~`<item-id>`~~ (Chrome Item ID) | `SETUP-OAUTH.md`, Google Cloud Console → Client → Authorized redirect URIs | Done: `mdkccpldchknchmdappapkhccbdpholk` → `https://mdkccpldchknchmdappapkhccbdpholk.chromiumapp.org/` |
 
 ## 2. Before building
 
@@ -45,7 +45,7 @@ The steps of a release, in order. Building: `BUILD.md`. Store texts and images: 
 - [ ] Privacy practices: single purpose, permission reasons (`docs/store/en/permissions.md`), remote code
       "No", data types and certifications (`docs/store/en/privacy-practices.md`), privacy policy URL.
 - [ ] Test instructions: `docs/store/en/reviewer-notes.md`.
-- [ ] Note the **Item ID**, add `https://<item-id>.chromiumapp.org/` to the Google client's redirect URIs
+- [ ] Note the **Item ID** (`mdkccpldchknchmdappapkhccbdpholk`), add `https://mdkccpldchknchmdappapkhccbdpholk.chromiumapp.org/` to the Google client's redirect URIs
       (`SETUP-OAUTH.md`, section 2), then test Google Drive sync with the store copy once it is live.
 - [ ] Submit.
 
