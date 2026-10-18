@@ -52,6 +52,8 @@ What "Website content" covers, all of it only on the user's request:
     are left out; at most 120,000 characters);
   - "Translate this page with AI": after the same kind of confirmation, the page's visible text and
     title (the same parts left out; at most 100,000 characters);
+  - "Create a test with AI": up to 20 words from the vault with the user's saved translations, the
+    language and the level (no sentences, notes or page addresses);
 - the words the user saved go to the account or server the user chose, if they turn on
   synchronisation.
 
