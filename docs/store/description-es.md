@@ -6,6 +6,11 @@ line breaks but no Markdown. Keep it true to the code and to `PRIVACY.md`.
 The extension's interface is in English and Turkish only; the text says so, so that nobody installs it
 expecting Spanish menus. Translating into Spanish works (Spanish is one of the target languages).
 
+## Screenshots
+
+`../../store-assets/chrome/localized-es/1-translation-es.png` (English → Spanish translation) in place
+of `screenshots/1-translation.png`; the other screenshots stay the same.
+
 ## Descripción breve (132 caracteres como máximo)
 
 The store takes the short description from the package. There is no `src/_locales/es/` yet, so the

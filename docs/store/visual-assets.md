@@ -13,6 +13,13 @@ What each store asks for, and what is ready. Requirements as published by the Ch
 | `promo-440x280.png` | 440×280 | Small promotional tile (required) | Not used | Icon, name, "Learn words while you browse." and a translation card | Ready (legible at half size) |
 | `marquee-1400x560.png` | 1400×560 | Marquee promotional tile (optional, used only if the item is featured) | Not used | Icon, name, tagline, three places it works, a translation card and a quiz card | Ready |
 
+## Localized screenshot for the Spanish listing
+
+`store-assets/chrome/localized-es/1-translation-es.png` (1280×800): the same page, layout and English
+interface as `screenshots/1-translation.png`; only the translation is English → Spanish (MyMemory's
+real answer: "serendipia", with its alternatives). Upload it under Store listing → Español → Screenshots;
+the default (English) listing keeps `screenshots/1-translation.png` (English → Turkish).
+
 Optional, not made: a fifth screenshot of an AI feature (for example the "Summarise this page" card).
 It would need a real provider's answer on screen; nothing in the image may suggest that the AI
 features work without the user's own provider.

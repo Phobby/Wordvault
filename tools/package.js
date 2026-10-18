@@ -80,7 +80,7 @@ for (const target of ['chrome', 'firefox']) {
 // extension anyway) is added so that the rebuilt sync/config.js is the same as the one in the package.
 const sourceZip = path.join(OUT, `wordvault-${version}-source.zip`);
 fs.rmSync(sourceZip, { force: true });
-execFileSync('git', ['archive', '--format=zip', `--output=${sourceZip}`, 'HEAD', '--', '.', ':(exclude)docs/store/screenshots', ':(exclude)docs/store/*.png', ':(exclude)SPEC*.md'], { cwd: ROOT });
+execFileSync('git', ['archive', '--format=zip', `--output=${sourceZip}`, 'HEAD', '--', '.', ':(exclude)docs/store/screenshots', ':(exclude)docs/store/*.png', ':(exclude)store-assets', ':(exclude)SPEC*.md'], { cwd: ROOT });
 if (fs.existsSync(path.join(ROOT, 'oauth.local.json'))) execFileSync('zip', ['-q', '-X', sourceZip, 'oauth.local.json'], { cwd: ROOT });
 console.log(`${path.relative(ROOT, sourceZip)}: ${mb(fs.statSync(sourceZip).size)}`);
 
