@@ -7,6 +7,7 @@ How to build the packages: `BUILD.md`. The steps of a release, in order: `RELEAS
 | --- | --- | --- |
 | `en/listing.md` | Name, short description, AMO summary, category, long description, listing links | English |
 | `tr/listing.md` | The same for the Turkish listing | Turkish |
+| `description-en.md`, `description-tr.md`, `description-es.md` | The detailed description for each listing language, and short description drafts | English, Turkish, Spanish |
 | `en/permissions.md` | The reason to paste into the dashboard for every permission | English |
 | `tr/permissions.md` | The same reasons in Turkish, for reading (the dashboard is filled in English) | Turkish |
 | `en/privacy-practices.md` | Single purpose, remote code declaration, data use declaration, AMO data collection | English |
