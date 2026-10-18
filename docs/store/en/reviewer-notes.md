@@ -31,12 +31,18 @@ Permissions are explained one by one in the "Privacy practices" tab. Optional ho
 ## addons.mozilla.org: notes to reviewer
 
 ```
-No account is needed; the test steps are the same as for Chrome (see below).
+No account or login is needed to test; see TEST STEPS at the end.
 
-SOURCE CODE
-The package is not minified, transpiled or bundled: build.js copies src/ as it is and writes the Firefox manifest next to it. The source zip (wordvault-<version>-source.zip) contains BUILD.md with the exact steps (Node.js 22, no npm dependencies, "node build.js --release firefox"). The two changes the build makes: shared/i18n.js gets DEV = false, and sync/config.js gets the Google OAuth client ID from oauth.local.json (included in the source zip; the ID is public, there is no client secret).
+SOURCE CODE AND BUILD
+Our own code is not minified, transpiled or bundled: build.js copies src/ as it is and writes manifest.firefox.json next to it as manifest.json. The build makes exactly two changes: shared/i18n.js gets "const DEV = false;", and sync/config.js gets the Google OAuth client ID from oauth.local.json (included in the source zip; a client ID is public, there is no client secret).
 
-THIRD-PARTY LIBRARIES (all unmodified, official releases)
+Build steps (also in BUILD.md inside the source zip):
+1. Install Node.js 22.2 or later (tested with 22.22.1). Any OS. No npm install: there are no dependencies.
+2. Unzip wordvault-1.0.0-source.zip and open a terminal in that folder.
+3. Run: node build.js --release firefox
+4. The result is dist/firefox/, identical file for file to the uploaded package. To compare: cd dist/firefox && find . -type f | LC_ALL=C sort | xargs sha256sum
+
+THIRD-PARTY LIBRARIES (all unmodified, official releases; in the source under src/vendor/, in the package under vendor/)
 - Tesseract.js 7.0.0: vendor/tesseract/tesseract.esm.min.js and vendor/tesseract/worker.min.js
   https://registry.npmjs.org/tesseract.js/-/tesseract.js-7.0.0.tgz (files under dist/)
 - tesseract.js-core 7.0.0: vendor/tesseract/core/tesseract-core-{lstm,simd-lstm,relaxedsimd-lstm}.wasm.js
@@ -50,7 +56,7 @@ LINTER WARNINGS
 The three DANGEROUS_EVAL warnings are in the unmodified Tesseract.js files: webpack's globalThis fallback, new Function("return this")(), and regenerator-runtime's fallback, Function("r", "regeneratorRuntime = r"), both reached only where globalThis is missing, which never happens in Firefox 142+. The extension's own code has no eval, new Function or remote code. Readability uses innerHTML on its own detached copy of the page (it is injected only when the user asks for a summary of that tab).
 
 DATA COLLECTION
-data_collection_permissions: websiteContent is required (the text the user asks to have translated goes to the translation service). The optional categories are used only by the feedback form, which shows the exact data before sending.
+data_collection_permissions: websiteContent is required (the text the user asks to have translated goes to the translation service; with an AI provider the user connects, the text they ask about goes to that provider). The optional categories are used only by the feedback form, which shows the exact data before sending.
 
 TEST STEPS
 1. Double-click a word on an English article: a translation bubble opens. "Add to vault" saves it.
