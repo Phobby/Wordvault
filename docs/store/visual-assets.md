@@ -10,8 +10,8 @@ What each store asks for, and what is ready. Requirements as published by the Ch
 | `screenshots/2-vault.png` | 1280×800 | Screenshot | Screenshot | The vault window | Ready |
 | `screenshots/3-quiz.png` | 1280×800 | Screenshot | Screenshot | The quiz card on a page | Ready |
 | `screenshots/4-settings.png` | 1280×800 | Screenshot | Screenshot | The settings page | Ready |
-| `promo-440x280.png` | 440×280 | Small promotional tile (required) | Not used | Name and icon | **Draft**: replace before submitting |
-| — | 1400×560 | Marquee promotional tile (optional, only for featuring) | Not used | — | Not made |
+| `promo-440x280.png` | 440×280 | Small promotional tile (required) | Not used | Icon, name, "Learn words while you browse." and a translation card | Ready (legible at half size) |
+| `marquee-1400x560.png` | 1400×560 | Marquee promotional tile (optional, used only if the item is featured) | Not used | Icon, name, tagline, three places it works, a translation card and a quiz card | Ready |
 
 Optional, not made: a fifth screenshot of an AI feature (for example the "Summarise this page" card).
 It would need a real provider's answer on screen; nothing in the image may suggest that the AI
@@ -27,6 +27,12 @@ the vault window and the settings page before they were redesigned. Make them ag
 bubble, the toolbar window, the quiz card or the settings page change visibly. They show the English
 interface; Turkish screenshots are optional (both stores can show the same images for every listing
 language).
+
+## How the promotional tiles were made
+
+From an HTML page rendered by Chromium at their exact size (Noto Sans, the colours of the icon, the
+icon itself). The cards in them are drawn for the tile, after the real translation bubble and quiz
+card, and show real words and translations.
 
 ## Rules both stores apply
 

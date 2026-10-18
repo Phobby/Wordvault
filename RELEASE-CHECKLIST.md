@@ -41,7 +41,7 @@ The steps of a release, in order. Building: `BUILD.md`. Store texts and images: 
 - [ ] Developer account; contact e-mail verified.
 - [ ] Upload `wordvault-<version>-chrome.zip`.
 - [ ] Store listing: `docs/store/en/listing.md` (and Turkish: `docs/store/tr/listing.md`); category
-      Education; images: `docs/store/visual-assets.md` (replace the draft promotional tile).
+      Education; images: `docs/store/visual-assets.md` (four screenshots, small promotional tile, optionally the marquee tile).
 - [ ] Privacy practices: single purpose, permission reasons (`docs/store/en/permissions.md`), remote code
       "No", data types and certifications (`docs/store/en/privacy-practices.md`), privacy policy URL.
 - [ ] Test instructions: `docs/store/en/reviewer-notes.md`.

@@ -13,7 +13,7 @@ How to build the packages: `BUILD.md`. The steps of a release, in order: `RELEAS
 | `en/reviewer-notes.md` | Chrome's test instructions and AMO's notes to reviewer (source code, third-party libraries, linter warnings) | English |
 | `visual-assets.md` | Every image the stores ask for, its size and state | English |
 | `screenshots/` | 1280×800 screenshots | |
-| `promo-440x280.png` | Chrome's small promotional tile (draft) | |
+| `promo-440x280.png`, `marquee-1400x560.png` | Chrome's small (required) and marquee (optional) promotional tiles | |
 
 Privacy policy: `PRIVACY.md` (English) and `docs/privacy.html`, generated from it with `npm run privacy`
 (`tests/privacy-page.test.js` fails while the page is out of date).
