@@ -28,7 +28,7 @@ when you uninstall the extension:
   remembered — the key derived from your sync encryption password.
 - **Past practice tests** ("Create a test with AI"): the last 10.
 - **Caches:** translations you looked up (kept for 7 days without use), AI answers (in memory only,
-  until the browser closes; can be switched off).
+  until the browser closes; can be switched off). The text of a page you summarise is held in memory only while the summary card is open.
 - **A local error log:** the last 20 errors of the extension itself (message, which part, time). It
   holds no page address or content and goes nowhere unless you add it to feedback.
 - **A feedback draft:** what you typed in the form but did not send (removed when sent).
@@ -81,7 +81,8 @@ own computer — the following is sent **only to that provider**, **only when yo
 | --- | --- |
 | "Explain with AI" | The word, the sentence it is in, and the page's title; or the text you selected and the page's title. For a screen scan: the text read from the area (or the part you selected), never the screenshot. |
 | "Ask about the image" | The area of the screen you selected (as an image, at most 1536 px on its longest side), your question and the page's title, after a preview and after you press "Ask". Asked for separately from text. A one-time 64×64 plain red test image is sent to check whether the model reads images. |
-| "Translate this page with AI" (experimental) | The visible text of the page and its title, in several requests, after the card has shown you how much text it is (at most 100,000 characters) and you press "Translate". Text that appears later is sent only if you ask. |
+| "Summarise this page" | The main text of the page and its title (menus, adverts and side content are left out), in one request or, for a long page, in several, after the card has shown you how much text it is, in how many parts and to which provider (at most 120,000 characters; you are told if the page is longer), and you press "Summarise". |
+| "Translate this page with AI" | The visible text of the page and its title, in several requests, after the card has shown you how much text it is (at most 100,000 characters) and you press "Translate". Text that appears later is sent only if you ask. |
 | "Create a test with AI" | Up to 20 words from your vault, your saved translations of them, the language and the level. Not the sentences, notes or page addresses of those words, and nothing else of your vault. |
 
 **Never sent to an AI provider:** the page's address, password fields, form fields, hidden parts of

@@ -13,9 +13,10 @@ import { resolveTargetLanguage } from '../lib/translator.js';
 import { PROMPT_SITES, activeAi, getAiConfig, missing, settingsFor, updateAiConfig } from './config.js';
 import { DEFAULT_TIMEOUT_MS } from './http.js';
 import { PAGE_ANSWER_TOKENS, PAGE_CHUNK_CHARS, PAGE_CHUNK_ITEMS, PAGE_MAX_CHARS, parsePageTranslation, tidyItems } from './page-translate.js';
-import { MAX_ANSWER_TOKENS, asOneText, explainPassagePrompt, explainScreenPrompt, explainWordPrompt, imageQuestionPrompt, pageTranslatePrompt } from './prompts.js';
+import { MAX_ANSWER_TOKENS, asOneText, explainPassagePrompt, explainScreenPrompt, explainWordPrompt, imageQuestionPrompt, pageTranslatePrompt, summaryJoinPrompt, summaryPartPrompt, summaryPrompt } from './prompts.js';
 import { getAiProvider } from './providers/index.js';
 import { siteStatus } from './sites.js';
+import { PART_SUMMARY_CHARS, lengthOf, planSummary } from './summary.js';
 import { knownVision, probeVision, refusedPicture, visionKey } from './vision.js';
 
 /** Answers kept for this browser session: `ai:<digest>` in storage.session. Never on disk. */
@@ -255,6 +256,72 @@ async function askAboutImage(payload, sender) {
   }
 }
 
+// --- Summarise this page -----------------------------------------------------------------------
+
+/**
+ * What a summary of this text would send, for the page to show before the user agrees.
+ * Nothing is sent to find this out.
+ * @param {{ text: string }} payload
+ */
+async function summaryPlan(payload, sender) {
+  const state = await activeAi();
+  const plan = planSummary(payload?.text, state.provider);
+  return {
+    ...(await status(sender)),
+    chars: plan.chars,
+    total: plan.total,
+    truncated: plan.truncated,
+    parts: plan.parts.length,
+    requests: plan.requests,
+    length: lengthOf(state.config.summaryLength),
+  };
+}
+
+/**
+ * "Summarise this page": the page's main text, in one request or, if it is long, part by part.
+ * @param {{ text: string, title?: string, length?: string, requestId?: string, agree?: boolean }} payload
+ */
+async function summarize(payload, sender) {
+  const state = await cleared(payload, sender);
+  const plan = planSummary(payload?.text, state.provider);
+  if (plan.parts.length === 0) throw new WordvaultError('empty');
+  const length = lengthOf(payload?.length);
+  if (lengthOf(state.config.summaryLength) !== length) await updateAiConfig({ summaryLength: length }); // offered again next time
+  const title = typeof payload?.title === 'string' ? payload.title : '';
+  const targetLang = await resolveTargetLanguage();
+  const requestId = typeof payload?.requestId === 'string' ? payload.requestId : '';
+  const controller = new AbortController();
+  if (requestId) underWay.set(requestId, controller);
+  /** Tells the page how far it is: `done` of `total` requests have been answered. */
+  const tell = (done) => {
+    if (sender?.tab?.id == null || !requestId) return;
+    chrome.tabs.sendMessage(sender.tab.id, { type: 'wv:summary:progress', requestId, done, total: plan.requests }, { frameId: sender.frameId || 0 }).catch(() => {});
+  };
+  /** One request of the task; "Cancel" stops the one under way and none follows it. */
+  const step = async (prompt) => {
+    if (controller.signal.aborted) throw new WordvaultError('aborted');
+    return (await ask(state, prompt, controller)).text;
+  };
+  try {
+    let text;
+    if (plan.parts.length === 1) {
+      text = await step({ ...summaryPrompt({ text: plan.parts[0], title, targetLang, length }), task: ['summary', plan.parts[0], title, targetLang, length] });
+    } else {
+      const notes = [];
+      for (const [index, part] of plan.parts.entries()) {
+        // (the notes on a part do not depend on the length asked for: another length reuses them)
+        const note = await step({ ...summaryPartPrompt({ text: part, title, part: index + 1, parts: plan.parts.length, targetLang }), task: ['summary-part', part, title, index + 1, plan.parts.length, targetLang] });
+        notes.push(note.slice(0, PART_SUMMARY_CHARS));
+        tell(index + 1);
+      }
+      text = await step({ ...summaryJoinPrompt({ notes, title, targetLang, length }), task: ['summary-join', notes, title, targetLang, length] });
+    }
+    return { text, provider: named(state), parts: plan.parts.length, chars: plan.chars, truncated: plan.truncated, length };
+  } finally {
+    if (requestId) underWay.delete(requestId);
+  }
+}
+
 // --- Translate this page -----------------------------------------------------------------------
 
 /** How a page is to cut its text for the provider in use, for it to show before the user agrees. Nothing is sent. */
@@ -325,6 +392,8 @@ export const aiHandlers = {
   'wv:ai:status': (payload, sender) => status(sender),
   'wv:ai:explain': explain,
   'wv:ai:image': askAboutImage,
+  'wv:ai:summary:plan': summaryPlan,
+  'wv:ai:summarize': summarize,
   'wv:ai:page:plan': pagePlan,
   'wv:ai:page:chunk': translateChunk,
   'wv:ai:cancel': (payload) => {

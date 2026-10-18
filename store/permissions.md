@@ -37,7 +37,7 @@ bunu denetler).
 
 > Chrome does not inject content scripts into tabs that were already open when the extension was installed or updated. If the user starts a screen scan in such a tab, or asks for the selected text to be translated there (context menu item or keyboard shortcut), the extension's own bundled content scripts are injected into that tab with chrome.scripting.executeScript. It is used only together with activeTab, in the tab the user invoked the extension on, and only with files from the package (no remote code, no code strings).
 >
-> "Translate this page with AI" (experimental; only there when the user has connected an AI provider of their own): what reads the page's visible text and shows the card (two small scripts of the extension) is not part of every page. It is injected with chrome.scripting.executeScript into the tab the user asked it for, at that moment. This is why Firefox has the permission too.
+> "Summarise this page" (only there when the user has connected an AI provider of their own): what reads the page's main text and shows the summary card (Mozilla's Readability, bundled unmodified, and two small scripts of the extension) is not part of every page. It is injected with chrome.scripting.executeScript into the tab the user asked a summary of, at that moment. This is why Firefox has the permission too. "Translate this page with AI" works the same way: two small scripts of the extension, injected into the tab the user asked it for.
 
 ## `notifications` (optional)
 
@@ -59,7 +59,7 @@ bunu denetler).
 
 > Optional and not granted at installation. The pattern is broad because the address is not known in advance, but the extension always requests one specific origin at the moment it is needed, with the browser's own prompt: (1) the API hosts of the cloud provider the user connects for synchronisation (for example www.googleapis.com), (2) the address of the user's own WebDAV/HTTP server, which only the user knows (localhost for a server on their own computer), (3) the host of the feedback receiver (wordvault-feedback.phoby.workers.dev) the first time the user sends feedback, and (4) DeepL's API host (api-free.deepl.com or api.deepl.com) if the user chooses DeepL as the translation service and tests their own API key. No origin is requested without a user action.
 
-> AI features (off by default): if the user connects an AI provider of their own, the browser asks for that provider's address only (generativelanguage.googleapis.com, api.anthropic.com, integrate.api.nvidia.com, the OpenAI-compatible address the user typed, or localhost for Ollama), when the provider is chosen or "Test" is pressed. Requests are made only when the user presses "Explain with AI", or asks for "Translate this page with AI" and confirms on the card how much text is sent.
+> AI features (off by default): if the user connects an AI provider of their own, the browser asks for that provider's address only (generativelanguage.googleapis.com, api.anthropic.com, integrate.api.nvidia.com, the OpenAI-compatible address the user typed, or localhost for Ollama), when the provider is chosen or "Test" is pressed. Requests are made only when the user presses "Explain with AI", or asks for "Summarise this page" or "Translate this page with AI" and confirms on the card how much text is sent.
 
 ## Content scripts: `<all_urls>`
 

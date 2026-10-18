@@ -477,8 +477,9 @@ rest is under "Advanced" or, for explanations, "Details".
 
 ### AI features (with the user's own provider)
 
-`SPEC-AI.md`. Done: the provider layer and "Explain with AI", and "Translate this page with AI"
-(labelled **experimental**). Off by default; translation, vault and quiz work without them. There is no server: the
+`SPEC-AI.md`. Three stages; **stage 1** (provider layer and "Explain with AI"), **stage 2**
+("Summarise this page") and **stage 3** ("Translate this page with AI", labelled **experimental**)
+are done. Off by default; translation, vault and quiz work without them. There is no server: the
 request goes from the browser straight to the provider.
 
 **Providers** (`src/ai/providers/`; details checked against the official documentation on
@@ -504,10 +505,33 @@ can be copied and, if the word is in the vault, added to its note if the user wa
 the device and in the backup, not in sync). Without a provider the same button offers a short hint
 and "Copy the prompt and open".
 
+**"Summarise this page"** (`features/summary/`, `ai/summary.js`). Only there while a provider is set
+up: in the page's right-click menu and as a button in the vault popup's header. The files that read
+the page and show the card are not loaded on every page; they are added to that tab with
+`chrome.scripting` when the user asks for a summary (which is why Firefox has the `scripting`
+permission too).
+
+- **Main text** (`content/extract.js`): works on a copy of the document and does not touch the page.
+  First removed from the copy: `input`, `textarea`, `select`, `button`, editable areas
+  (`contenteditable`, `role="textbox"`), what is `hidden`/`aria-hidden`, what the page's style hides
+  (`display: none`, `visibility: hidden`; the real page is asked), `script`/`style`/`iframe` and
+  Wordvault's own interface. Then Mozilla **Readability** (`vendor/readability`, unchanged, 0.6.0)
+  finds the article; if it finds fewer than 250 characters, the page's `main`/`article` or its body
+  (without `nav`, `header`, `footer`, `aside`) is taken.
+- **Confirmation**: the card first shows the approximate number of characters, how many parts and
+  requests it will be and which provider it goes to; nothing is sent before "Summarise" is pressed.
+  On first use the same card carries the privacy notice.
+- **Parts** (`ai/summary.js`): one request up to 24,000 characters (8,000 with Ollama: its default
+  context is 4k tokens). Longer text is cut into roughly equal parts at paragraph ends; notes are asked
+  for each part, then one summary from the notes (map-reduce). The limit is 120,000 characters and 12
+  parts; anything beyond is not sent and the card says so. Progress shows as "request 2 of 4" and can
+  be cancelled.
+- **Output**: in the target language, short/medium/detailed (the last choice is remembered), plain
+  text; can be copied. The parts' notes stay in the session cache, so asking for another length only
+  sends the joining request again.
+
 **"Translate this page with AI" (experimental)** (`features/page-translate/`, `ai/page-translate.js`).
-Only there while a provider is set up: in the page's right-click menu and as a button in the vault
-popup's header. The files that read the page and show the card are not loaded on every page; they are
-added to that tab with `chrome.scripting` (`background/cards.js`) only when the user asks for it.
+In the same two places as the summary, and added to the tab the same way, only when asked for.
 
 - **What is read** (`content/collect.js`): the visible text nodes of the main frame, including those in
   open shadow roots (web components). Not read: `input`/`textarea`/`select`, editable areas, hidden
@@ -561,8 +585,11 @@ kept only in `storage.session` (30 min, 40 records).
 
 **Tests:** `tests/ai-providers.test.js` (four providers against a fake server, cancelling, error
 mapping), `tests/ai-safety.test.js` (the key stays out of backup/sync/log/cache, the data block, site
-rules, consent, the session cache), `tests/ai-page-translate.test.js` (cutting and size estimate,
-prompt and numbering, reading the answer, putting text in place and back, page memory, gates).
+rules, consent, the session cache), `tests/ai-summary.test.js` (cutting, limit, prompts, single request
+and map-reduce, progress, cancelling, gates), `tests/ai-page-translate.test.js` (cutting and size
+estimate, prompt and numbering, reading the answer, putting text in place and back, page memory,
+gates), `tests/page-text.test.js` (main text extraction and the filter for sensitive fields;
+Readability is run with a small HTML parser from the same package).
 
 ### Translation cache
 
@@ -1150,7 +1177,7 @@ switched while the extension runs. So `src/shared/i18n.js` is a small loader of 
   is for is in `tools/i18n/descriptions.json` (not packaged).
 - **Keys** keep the existing flat camelCase scheme with a prefix per surface or feature: `popup…` (the
   translation popup), `tb…` (vault popup), `opt…` (settings), `quiz…`, `streak…`/`rank…`/`freeze…`,
-  `sync…`, `ai…`, `pt…` (page translation and OCR settings), `ocr…`, `fb…` (feedback),
+  `sync…`, `ai…`, `sum…` (summary), `pt…` (page translation and OCR settings), `ocr…`, `fb…` (feedback),
   `support…`, `welcome…`, `err…` (errors), `diff…` (difficulty). A new key follows the prefix of the place
   that shows it.
 - **Placeholders** are named: `"Translated by {provider}"`, filled with `t('popupTranslatedBy', { provider })`.
@@ -1173,7 +1200,7 @@ page (often many ads) only when something there needs a text.
 
 **Switching.** `WV.i18n.setLanguage()` (the settings page) stores the choice and the strings together.
 Every part listens to the storage change: the extension's pages reload themselves; the translation popup,
-the selection button, the page-translation card and the screen-scan selector are drawn
+the selection button, the summary and page-translation cards and the screen-scan selector are drawn
 again in place; the quiz card relabels its frame at once and redraws the question if nothing has been
 done in it yet (otherwise the next question comes in the new language); the background script gives the
 right-click menu its new titles with `contextMenus.update`, and notifications and the toolbar title are
@@ -1209,10 +1236,10 @@ same keys as `en.json`, add `{ code, name }` (the name in the language itself) t
 | `alarms` | For the quiz scheduler. It wakes the background script when the time comes. |
 | `activeTab` | For reading text from the screen: taking a screenshot of that tab only (`tabs.captureVisibleTab`), when the user presses the shortcut or picks the menu item. Not a lasting permission; no tab's image can be taken unless the user starts a scan. |
 | `offscreen` (Chrome only) | To open an invisible extension page that runs text recognition (WebAssembly, Worker): Chrome's service worker cannot start a Worker. In Firefox the background page does it itself; the permission does not exist there. |
-| `scripting` | When the user asks for "Translate this page with AI", to add the files that read the page and show the card to that tab only. In Chrome also: if the user starts a scan or a translation of selected text (right-click menu, shortcut) in a tab opened before the extension was loaded, to add the content scripts to that tab (Chrome does not do this by itself). Works only with `activeTab`, i.e. in the tab where the user started it. |
+| `scripting` | When the user asks for "Summarise this page" or "Translate this page with AI", to add the files that read the page and show the card (including the packaged Readability) to that tab only. In Chrome also: if the user starts a scan or a translation of selected text (right-click menu, shortcut) in a tab opened before the extension was loaded, to add the content scripts to that tab (Chrome does not do this by itself). Works only with `activeTab`, i.e. in the tab where the user started it. |
 | `contextMenus` | To add "Translate with Wordvault" to the right-click menu of selected text (can be switched off in the settings), and "Scan text on screen" to the page's right-click menu and the toolbar icon's menu. Gives no access to page content. |
 | `identity` | To open the provider's sign-in window when connecting a cloud account (`identity.launchWebAuthFlow`). The browser account's e-mail is not asked for (no `identity.email`). |
-| Optional host permission: `https://*/*`, `http://localhost/*`, `http://127.0.0.1/*` | Not granted at install. When a cloud account or your own server is connected, the browser asks for that address only (Google Drive: `www.googleapis.com`, `oauth2.googleapis.com`). The pattern is broad because the server address the user will enter cannot be known in advance; what is granted is only the address asked for. Sending feedback uses the same path: on the first send the browser asks only for the feedback receiver's domain (`FEEDBACK_ENDPOINT`); no other address is asked for. If DeepL is chosen, `api-free.deepl.com` or `api.deepl.com` is asked the same way, when "Test key" is pressed. If an AI provider is connected, its address is asked too (`generativelanguage.googleapis.com`, `api.anthropic.com`, the OpenAI-compatible address the user enters, or `localhost`), when the provider is chosen or "Test" is pressed. |
+| Optional host permission: `https://*/*`, `http://localhost/*`, `http://127.0.0.1/*` | Not granted at install. When a cloud account or your own server is connected, the browser asks for that address only (Google Drive: `www.googleapis.com`, `oauth2.googleapis.com`; OneDrive: `graph.microsoft.com`, `login.microsoftonline.com`; Dropbox: `api.dropboxapi.com`, `content.dropboxapi.com`). The pattern is broad because the server address the user will enter cannot be known in advance; what is granted is only the address asked for. Sending feedback uses the same path: on the first send the browser asks only for the feedback receiver's domain (`FEEDBACK_ENDPOINT`); no other address is asked for. If DeepL is chosen, `api-free.deepl.com` or `api.deepl.com` is asked the same way, when "Test key" is pressed. If an AI provider is connected, its address is asked too (`generativelanguage.googleapis.com`, `api.anthropic.com`, the OpenAI-compatible address the user enters, or `localhost`), when the provider is chosen or "Test" is pressed. |
 | `notifications` (optional) | Not asked at install. The browser asks only if **Allow** is pressed in the settings; to tell about a quiz when it cannot be shown any other way, and for the evening reminder. Can be revoked in the settings. |
 | `unlimitedStorage` | So that a growing vault does not hit the 10 MB limit of `storage.local`. Words in the vault are never deleted automatically. |
 | Content script: `*://*.youtube.com/*`, `*://*.youtube-nocookie.com/*` (all frames) | To find the word hovered in the captions. Loaded only on YouTube (embedded players included); not a new permission, it is within the scope of the `<all_urls>` script, but the captions code is never added to other sites. Caption text is not saved or downloaded. |

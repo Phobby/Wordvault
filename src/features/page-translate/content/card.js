@@ -63,6 +63,7 @@
   const CSS = `
     .wv-pt {
       position: fixed;
+      /* (the summary card is at the top of the same side) */
       bottom: 16px;
       right: 16px;
       display: flex;
@@ -221,7 +222,7 @@
     const row = (...children) => h('div', { class: 'wv-pt-row' }, ...children.filter(Boolean));
     let children = [];
     if (state.step === 'reading') {
-      children = [h('div', { class: 'wv-pt-loading' }, h('span', { class: 'wv-spinner' }), t('pageReading'))];
+      children = [h('div', { class: 'wv-pt-loading' }, h('span', { class: 'wv-spinner' }), t('sumReading'))];
     } else if (state.step === 'empty') {
       children = [note(t('ptNoText'), 'wv-pt-strong'), row(button('popupClose', close))];
     } else if (state.step === 'site') {
@@ -235,7 +236,7 @@
           'div',
           { class: 'wv-pt-facts', 'data-role': 'pt-facts' },
           h('div', { text: t('ptSize', { count: job.chars }) }),
-          h('div', { text: job.chunks.length === 1 ? t('pageOneRequest') : t('ptRequests', { count: job.chunks.length }) }),
+          h('div', { text: job.chunks.length === 1 ? t('sumOnePart') : t('ptRequests', { count: job.chunks.length }) }),
           h('div', { text: t('ptInto', { language: WV.languages?.name?.(plan.targetLang) || plan.targetLang }) }),
         ),
         job.left > 0 && note(t('ptTruncated', { limit: job.chars, total: job.total }), 'wv-pt-strong'),

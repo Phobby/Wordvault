@@ -19,5 +19,5 @@ test('the converter escapes text and keeps only https links', () => {
 
 test('the policy mentions no removed provider or feature', () => {
   const text = readFileSync(SOURCE, 'utf8');
-  for (const gone of ['OneDrive', 'Dropbox', 'Microsoft API', 'Summarise this page', 'Readability']) assert.ok(!text.includes(gone), gone);
+  for (const gone of ['OneDrive', 'Dropbox', 'Microsoft API']) assert.ok(!text.includes(gone), gone);
 });
