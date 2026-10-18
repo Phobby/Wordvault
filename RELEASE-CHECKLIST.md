@@ -6,8 +6,8 @@ The steps of a release, in order. Building: `BUILD.md`. Store texts and images: 
 
 | Placeholder | Where | What goes there |
 | --- | --- | --- |
-| `[EFFECTIVE_DATE]` | `PRIVACY.md` (then `npm run privacy` for `docs/privacy.html`) | The date the policy takes effect, e.g. the first release day |
-| `[CONTACT_EMAIL]` | `PRIVACY.md` (three times; then `npm run privacy`), `docs/store/en/listing.md` | The developer contact e-mail; it is shown on the Chrome store page and used for deletion requests |
+| ~~`[EFFECTIVE_DATE]`~~ | `PRIVACY.md` | Done: 18 October 2026 (`docs/privacy.html` regenerated) |
+| ~~`[CONTACT_EMAIL]`~~ | `PRIVACY.md`, `docs/store/en/listing.md` | Done: phoby.dev@gmail.com |
 | `[PRIVACY_POLICY_URL]` | `docs/store/en/listing.md`, the store dashboards, Google's Branding page | The public address of `docs/privacy.html` |
 | `[HOMEPAGE_URL]` | `docs/store/en/listing.md` (optional) | A home page, e.g. the repository |
 | `YOUR_GOOGLE_CLIENT_ID` | `src/sync/config.js` (stays a placeholder in git); the real ID goes into `oauth.local.json` | The Google OAuth client ID (`SETUP-OAUTH.md`). A local `oauth.local.json` with an ID already exists on the build machine; check it is the production client |

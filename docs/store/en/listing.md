@@ -38,5 +38,5 @@ See `../visual-assets.md`.
 ## Links for the listing forms
 
 - Privacy policy: the public address of `docs/privacy.html` → `[PRIVACY_POLICY_URL]`
-- Support / contact e-mail: `[CONTACT_EMAIL]`
+- Support / contact e-mail: `phoby.dev@gmail.com`
 - Homepage (optional): `[HOMEPAGE_URL]`

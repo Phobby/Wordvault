@@ -1,7 +1,7 @@
 # Wordvault Privacy Policy
 
-**Effective date:** [EFFECTIVE_DATE] · **Applies to:** Wordvault browser extension, version 1.0.0 and later
-**Contact:** [CONTACT_EMAIL]
+**Effective date:** 18 October 2026 · **Applies to:** Wordvault browser extension, version 1.0.0 and later
+**Contact:** phoby.dev@gmail.com
 
 Wordvault is a browser extension for learning vocabulary while you browse. It has **no server of its
 own** for your vocabulary or settings: the developer does not collect, see or store your words, the
@@ -187,7 +187,7 @@ vault.
   remove the extension to delete everything it stored in your browser.
 - **Sync:** "Disconnect" stops it; "also delete the file in the cloud" removes the remote copy. In Google
   Drive you can also remove it under Settings → Manage apps → Wordvault.
-- **Feedback you sent:** to have a message deleted, write to [CONTACT_EMAIL] with enough to identify it
+- **Feedback you sent:** to have a message deleted, write to phoby.dev@gmail.com with enough to identify it
   (approximate date and time, and the e-mail address if you gave one). It is deleted from the Telegram
   chat; there is no other copy.
 - **AI consent:** "Withdraw consent" in the AI settings.
@@ -210,4 +210,4 @@ release notes will say so before the change takes effect.
 
 ## 8. Contact
 
-[CONTACT_EMAIL]
+phoby.dev@gmail.com
