@@ -178,7 +178,7 @@ src/
     triggers.js         What opens the popup (double-click)
   ui/popup/popup.js     The translation popup (bubble): the same popup for selected text and for a word
                         a word source found (openForHit)
-  core/hover/           The "word under the pointer" pipeline; independent of any feature (loaded on YouTube only)
+  core/hover/           The "word under the pointer" pipeline; independent of any feature
     word-source.js      The WordSource contract: a source that gives the word at a point on screen (text,
                         line, rectangle) and says when the text has gone
     words.js            Word boundaries (Intl.Segmenter), sound descriptions, split lines
@@ -189,6 +189,7 @@ src/
   features/captions/    The captions feature: only picks the site's adapter
     selectors.js        Every selector used in the sites' players (one place)
     adapters/youtube.js YouTube captions, as a word source
+    adapters/videojs.js Captions of Video.js players (Brightcove, e.g. Cisco's training videos), on any site
   features/screen-ocr/  Reading text from the screen
     background.js       Ways to start it (shortcut, right-click menu, toolbar menu, vault button);
                         in Chrome adds the content scripts to a tab that has none
@@ -249,9 +250,10 @@ src/
 All interface added to pages lives inside a closed Shadow DOM: the page's CSS cannot reach the
 extension and the extension's CSS cannot reach the page. The page's own content is not changed.
 
-### Video captions (YouTube)
+### Video captions (YouTube, Video.js / Brightcove)
 
-On YouTube, holding the pointer over a word in the captions for about 150 ms opens the translation
+On YouTube, and on any site whose player is Video.js (Brightcove's player is Video.js; Cisco's
+training videos use it), holding the pointer over a word in the captions for about 150 ms opens the translation
 popup, whether the video is playing or paused. The word is found from the pointer's position
 (`caretPositionFromPoint`, or by measuring the letters) and its boundaries come from
 `Intl.Segmenter`; the captions' DOM is not touched, the highlight uses the CSS Custom Highlight API.
@@ -262,7 +264,7 @@ line. Sound descriptions like `♪` and `[Music]` do not count as words.
 
 There are two layers: `core/hover/` and `ui/popup/` know nothing about captions, only the
 `WordSource` contract (see `core/hover/word-source.js`); `features/captions/` implements that
-contract for YouTube's DOM. Another source (for example text recognised in an image) can later use
+contract for YouTube's DOM and for Video.js. Another source (for example text recognised in an image) can later use
 the same pipeline with its own `wordAt`.
 
 The selectors are in `features/captions/selectors.js` and were checked against the real embedded
@@ -270,9 +272,25 @@ player on 12 October 2026. Tests: `tests/hover-words.test.js` (word boundaries, 
 wait rule, the contract) and the offline page `tests/fixtures/youtube-captions.html`, which imitates
 YouTube's caption DOM.
 
+**Video.js / Brightcove.** Video.js draws captions in Chrome and Firefox as ordinary text in
+`.vjs-text-track-display`, a layer the pointer passes through (`pointer-events: none`): the element
+under the pointer is the video, so the caption under it is found by its box and the word by
+measuring its letters. Video.js draws the captions again when the control bar appears or hides (the
+captions move up and down with it); a word that was being waited on is dropped then, as with a
+redrawn YouTube caption, and the next pointer move finds it again. Because such a player can be on
+any site, the captions script is loaded on every page but stays idle (follows no pointer) until a
+`.video-js` player is on it, either when the page loads or when a video in one starts loading or
+playing. The selectors were checked against Brightcove's real player (Video.js 8.23.4) on
+23 October 2026: a caption track added to a Cisco Networking Academy video, played in Firefox; the
+bubble opened for a hovered word while the video was playing. Cisco's course pages themselves
+(netacad.com, u.cisco.com) need an account and were not checked. Not covered: captions that the
+browser draws itself (a plain `<video>` with a `<track>`, or Video.js in Safari): they are not in
+the page's DOM. Tests: `tests/captions-videojs.test.js` and the offline page
+`tests/fixtures/videojs-captions.html`.
+
 Not there yet (later stages of SPEC-CAPTIONS.md): automatic pause, trigger modes, stable hits on
 scrolling automatic captions, "Translate the line", settings and diagnostics, shortcuts, line
-history, sites other than YouTube.
+history, players other than YouTube's and Video.js.
 
 ### Reading text from the screen (OCR)
 
@@ -427,7 +445,7 @@ Chosen in the "Translation provider" section of the settings (`options/provider.
 | What | Which service |
 | --- | --- |
 | A word double-clicked on a page / a selection | The chosen provider |
-| A word hovered in YouTube captions | The chosen provider |
+| A word hovered in video captions (YouTube, Video.js) | The chosen provider |
 | A word clicked in a screen scan | The chosen provider |
 | Part of speech, definitions, example sentences | Wiktionary (independent of the provider) |
 | Pronunciation recording (Firefox/macOS) | Wiktionary / Wikimedia Commons (independent of the provider) |
@@ -1289,7 +1307,7 @@ same keys as `en.json`, add `{ code, name }` (the name in the language itself) t
 | Optional host permission: `https://*/*`, `http://localhost/*`, `http://127.0.0.1/*` | Not granted at install. When a cloud account or your own server is connected, the browser asks for that address only (Google Drive: `www.googleapis.com`, `oauth2.googleapis.com`; OneDrive: `graph.microsoft.com`, `login.microsoftonline.com`; Dropbox: `api.dropboxapi.com`, `content.dropboxapi.com`). The pattern is broad because the server address the user will enter cannot be known in advance; what is granted is only the address asked for. Sending feedback uses the same path: on the first send the browser asks only for the feedback receiver's domain (`FEEDBACK_ENDPOINT`); no other address is asked for. If DeepL is chosen, `api-free.deepl.com` or `api.deepl.com` is asked the same way, when "Test key" is pressed. If an AI provider is connected, its address is asked too (`generativelanguage.googleapis.com`, `api.anthropic.com`, the OpenAI-compatible address the user enters, or `localhost`), when the provider is chosen or "Test" is pressed. |
 | `notifications` (optional) | Not asked at install. The browser asks only if **Allow** is pressed in the settings; to tell about a quiz when it cannot be shown any other way, and for the evening reminder. Can be revoked in the settings. |
 | `unlimitedStorage` | So that a growing vault does not hit the 10 MB limit of `storage.local`. Words in the vault are never deleted automatically. |
-| Content script: `*://*.youtube.com/*`, `*://*.youtube-nocookie.com/*` (all frames) | To find the word hovered in the captions. Loaded only on YouTube (embedded players included); not a new permission, it is within the scope of the `<all_urls>` script, but the captions code is never added to other sites. Caption text is not saved or downloaded. |
+| Content script: `<all_urls>` (all frames), captions | To find the word hovered in video captions: YouTube (embedded players included) and Video.js players such as Brightcove's, which can be on any site, also inside a frame. Not a new permission (the same scope as the double-click script). On a page without such a player it follows no pointer and reads nothing; on one with a player it looks only at the caption layer under the pointer. Caption text is not saved or downloaded. |
 | Content script: `<all_urls>` (top frame only) | The interface for choosing the scan area and the layer of scanned text. Does nothing and reads nothing from the page until the user starts a scan. |
 | Content script: `<all_urls>` | Double-click has to work on any page. The script reads nothing from the page until the user double-clicks a word. |
 | Host permission: `https://api.mymemory.translated.net/*` | The default translation service. Requests go from the background script. |
@@ -1322,7 +1340,7 @@ documentation (extensionworkshop.com, "Firefox built-in consent for data collect
 The required part of the same declaration has `websiteContent`. If sync is switched on, the words in the
 vault (text taken from web pages) go to the account or server the user chose; that is the same kind of
 data and does not reach the developer. Details: `PRIVACY.md`. The data that leaves the browser: the text
-you want translated (selected, or hovered in YouTube captions) goes to the chosen translation service,
+you want translated (selected, or hovered in video captions) goes to the chosen translation service,
 a word you add to the vault goes to Wiktionary; in Firefox-based browsers on macOS a word whose
 pronunciation button you press is also asked from Wiktionary for its recording; if you switched sync on,
 your vault goes where you chose. Apart from that no data leaves the browser; there is no analytics or

@@ -22,5 +22,19 @@
       /** A run of text within a row. Automatic captions draw a row in several of these. */
       segment: '.ytp-caption-segment',
     },
+    // Video.js and the players built on it (Brightcove, which Cisco's training videos use).
+    // Checked against Brightcove's player (Video.js 8.23.4) on 2026-10-23:
+    //   .video-js > .vjs-text-track-display (pointer-events: none) > div
+    //     > .vjs-text-track-cue[lang] > div > text, rows separated by "\n" (white-space: pre-line)
+    // Video.js draws captions itself in Chrome and Firefox; only in Safari does it leave them to
+    // the browser, where they are not in the DOM.
+    videojs: {
+      /** The player; also the element whose presence turns the feature on for a page. */
+      player: '.video-js',
+      /** The layer captions are drawn in. The pointer goes through it to the video. */
+      display: '.vjs-text-track-display',
+      /** One caption on screen, all its rows. */
+      cue: '.vjs-text-track-cue',
+    },
   };
 })(globalThis.WV);

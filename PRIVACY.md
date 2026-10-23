@@ -42,8 +42,8 @@ service named; there is no Wordvault server in between.
 ### 2.1 Translation (when you ask for a translation)
 
 When you double-click a word, select text and use "Translate with Wordvault" (right-click menu,
-the "Translate" button next to a selection, or the keyboard shortcut), hover a word in YouTube
-captions, or click a word read by a screen scan: **only that word or selected text** and the language
+the "Translate" button next to a selection, or the keyboard shortcut), hover a word in the
+captions of a video on YouTube or in a Video.js player (such as Brightcove's), or click a word read by a screen scan: **only that word or selected text** and the language
 pair go to the translation service you chose. Not the rest of the page, not its address, not your
 identity.
 

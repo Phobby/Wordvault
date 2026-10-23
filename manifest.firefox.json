@@ -78,7 +78,7 @@
       "all_frames": true
     },
     {
-      "matches": ["*://*.youtube.com/*", "*://*.youtube-nocookie.com/*"],
+      "matches": ["<all_urls>"],
       "js": [
         "core/hover/words.js",
         "core/hover/word-source.js",
@@ -88,6 +88,7 @@
         "core/hover/hover.js",
         "features/captions/selectors.js",
         "features/captions/adapters/youtube.js",
+        "features/captions/adapters/videojs.js",
         "features/captions/captions.js"
       ],
       "run_at": "document_idle",
