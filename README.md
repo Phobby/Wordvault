@@ -569,10 +569,21 @@ viewer, the stores) the right-click translation is shown in a small window (`pas
 the text is handed to that window through `storage.session`, never through the address or the disk.
 The shortcut cannot read the selection on those pages; a sign on the toolbar button says so.
 
+**Pages that do not let text be selected.** Some pages cancel every selection: `user-select: none`,
+or a script that cancels `selectstart` and the press of a double-click and clears whatever gets
+selected. Cisco's courses (`www.netacad.com/content/…`) do this on every page with a quiz, quiz or
+not, with the text in nested shadow trees (`tests/fixtures/blocked-selection.html` imitates it). A
+double-click that leaves nothing selected still looks the word up: `content/triggers.js` reads the
+word under the pointer from the text of its paragraph (`core/hover/text-point.js`, told about the
+open shadow trees the text is in), and the page's selection is left as it is. Not on buttons, links,
+labels and media. A passage cannot be selected on such a page; the screen scan reads it instead
+(click the paragraph, then "Translate").
+
 **Settings** (the "Translation settings" group, `options/passage.js`): the target language and
-"Translate on double click" first, then "Right-click menu" and "Translate button on selection"; the
-length limit and where a selection goes are under "Details" (`options/disclosure.js`). The shortcuts
-of all commands are listed together in "Keyboard shortcuts" (`options/shortcuts.js`).
+"Translate on double click" first, then "Right-click menu", "Translate button on selection" and
+"Show the translation on the page"; the length limit and where a selection goes are under "Details"
+(`options/disclosure.js`). The shortcuts of all commands are listed together in "Keyboard shortcuts"
+(`options/shortcuts.js`).
 
 The settings page has one tab per subject, each with an address of its own: Translation (no
 address), `#quiz`, `#ai`, `#data` (backup, synchronisation and the cache; `#backup` opens it too and

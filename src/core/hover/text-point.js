@@ -16,11 +16,14 @@
   // two of them has to belong to exactly one (the last letter of a word, not the space after).
   const inside = (rect, x, y) => x >= rect.left && x < rect.right && y >= rect.top - SLACK && y <= rect.bottom + SLACK;
 
-  /** The text position the browser reports for a point: { node, offset }, or null. */
-  function caretAt(doc, x, y) {
+  /**
+   * The text position the browser reports for a point: { node, offset }, or null. Inside a
+   * shadow tree the browser reports the host instead, unless that tree is among `shadowRoots`.
+   */
+  function caretAt(doc, x, y, shadowRoots) {
     try {
       if (typeof doc.caretPositionFromPoint === 'function') {
-        const position = doc.caretPositionFromPoint(x, y);
+        const position = shadowRoots.length > 0 ? doc.caretPositionFromPoint(x, y, { shadowRoots }) : doc.caretPositionFromPoint(x, y);
         return position ? { node: position.offsetNode, offset: position.offset } : null;
       }
       if (typeof doc.caretRangeFromPoint === 'function') {
@@ -48,8 +51,8 @@
    * browser gives no caret (text that cannot be selected, in some browsers) the letters of the
    * line are measured one by one instead.
    */
-  function charAt(doc, nodes, x, y) {
-    const caret = caretAt(doc, x, y);
+  function charAt(doc, nodes, x, y, shadowRoots) {
+    const caret = caretAt(doc, x, y, shadowRoots);
     const piece = caret ? nodes.indexOf(caret.node) : -1;
     if (piece >= 0) {
       for (const offset of [caret.offset, caret.offset - 1]) {
@@ -79,12 +82,13 @@
    *                                  across several of them.
    * @param {string} [query.locale]   Language of the line, if known.
    * @param {Document} [query.doc]    The document the nodes are in.
+   * @param {ShadowRoot[]} [query.shadowRoots]  Shadow trees the nodes are in, if any.
    * @returns {{ text: string, start: number, end: number, range: Range, rect: DOMRect } | null}
    *          `start`/`end` are positions in the text of the whole line.
    */
-  function wordAt({ x, y, nodes, locale = '', doc = document }) {
+  function wordAt({ x, y, nodes, locale = '', doc = document, shadowRoots = [] }) {
     if (!nodes || nodes.length === 0) return null;
-    const hit = charAt(doc, nodes, x, y);
+    const hit = charAt(doc, nodes, x, y, shadowRoots);
     if (!hit) return null;
     const line = WV.words.join(nodes.map((node) => node.data));
     const word = WV.words.at(line.text, line.indexOf(hit.piece, hit.offset), locale);

@@ -96,5 +96,5 @@
     return element?.closest?.('[lang]')?.getAttribute('lang') || document.documentElement.lang || '';
   }
 
-  WV.selection = { tidy, tidyWord, isEditable, context, languageOf };
+  WV.selection = { tidy, tidyWord, isEditable, blockOf, context, languageOf };
 })(globalThis.WV);

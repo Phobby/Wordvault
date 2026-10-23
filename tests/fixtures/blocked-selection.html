@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Pages that do not let text be selected</title>
+<style>
+  body { font: 18px/1.5 system-ui, sans-serif; max-width: 760px; margin: 40px auto; padding: 0 16px; }
+  .no-select { user-select: none; -webkit-user-select: none; }
+  section { margin-bottom: 32px; }
+</style>
+</head>
+<body>
+<!--
+  Double-clicking a word should open Wordvault's bubble in every section below, although the
+  browser selects nothing in any of them.
+
+  1. Cisco's courses (www.netacad.com/content/<course>/1.0/), on any page that has a quiz:
+     text inside nested open shadow trees, and document listeners that cancel selectstart,
+     cancel the press of a double-click, and clear every selection (handleSelectStart,
+     handleMouseDown, handleSelectionChange in the course player, checked 2026-10-23).
+  2. user-select: none.
+-->
+<section>
+  <h2>Shadow trees, selection cleared by the page</h2>
+  <course-page id="course"></course-page>
+</section>
+<section class="no-select">
+  <h2>user-select: none</h2>
+  <p id="plain">Routers forward packets between networks using the information in their routing tables.</p>
+</section>
+<script>
+  // Nested open shadow trees, as the course player's components are.
+  class Box extends HTMLElement {
+    constructor() { super(); this.attachShadow({ mode: 'open' }); }
+  }
+  customElements.define('course-page', class extends Box {
+    connectedCallback() { this.shadowRoot.innerHTML = '<course-block></course-block>'; }
+  });
+  customElements.define('course-block', class extends Box {
+    connectedCallback() {
+      this.shadowRoot.innerHTML = '<p id="quiz">Threat actors can hijack banking sessions and other personal information by using a <b>switch</b> attack.</p>';
+    }
+  });
+
+  const interactive = (el) => /^(INPUT|TEXTAREA|SELECT|BUTTON)$/.test(el.tagName) || el.isContentEditable;
+  document.addEventListener('selectstart', (e) => { if (!interactive(e.target)) e.preventDefault(); });
+  document.addEventListener('mousedown', (e) => { if (!interactive(e.target) && e.detail > 1) e.preventDefault(); });
+  document.addEventListener('selectionchange', () => {
+    const s = getSelection();
+    if (s && s.toString().length > 0) s.removeAllRanges();
+  });
+  document.addEventListener('copy', (e) => e.preventDefault());
+  document.addEventListener('contextmenu', (e) => e.preventDefault());
+</script>
+</body>
+</html>
