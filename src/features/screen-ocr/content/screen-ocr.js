@@ -171,6 +171,52 @@
     WV.popup.openForHit(hit, { fromField: overFields, origin: 'screen' });
   }
 
+  /** Lines of a translated passage (one per block that was sent). */
+  const linesOf = (text) =>
+    String(text || '')
+      .split(/\n+/)
+      .map((line) => line.trim())
+      .filter(Boolean);
+
+  /**
+   * "Translate": every block of the scan, translated and written over the block. One request
+   * for all of them, a block per line; if the service joined or split lines, block by block.
+   */
+  async function translateScan() {
+    const found = result;
+    if (!found) return;
+    const blocks = found.blocks.filter((block) => block.text.trim());
+    if (blocks.length === 0) return;
+    const texts = blocks.map((block) => block.text.replace(/\s+/g, ' ').trim());
+    const pageLang = scanLanguage();
+    WV.ocrLayer.showTranslating(t('ocrTranslating'));
+    try {
+      const ask = (text) => WV.translateClient.translate({ text, passage: true, pageLang });
+      const data = await ask(texts.join('\n'));
+      if (data.sameLanguage) {
+        // Nothing to write over it: the same words again would only cover the picture.
+        if (result === found) WV.ocrLayer.showTranslateError(t('noteSameLanguage', { language: WV.languages.name(data.targetLang) }));
+        return;
+      }
+      let translations = linesOf(data.translation);
+      if (translations.length !== texts.length) {
+        translations =
+          texts.length === 1
+            ? [translations.join(' ')]
+            : await Promise.all(texts.map((text) => ask(text).then((answer) => (answer.sameLanguage ? text : linesOf(answer.translation).join(' ')))));
+      }
+      if (result !== found) return; // closed, or scanned again, meanwhile
+      const lineCount = (block) => new Set(block.words.map((id) => found.words.find((word) => word.id === id)?.lineId)).size;
+      WV.ocrLayer.showTranslation(
+        blocks.map((block, index) => ({ rect: block.rect, text: translations[index], lines: lineCount(block), colours: block.colours })),
+        { lang: data.targetLang, status: t('ocrResult', { count: found.words.length }) },
+      );
+    } catch (error) {
+      if (result !== found) return;
+      WV.ocrLayer.showTranslateError(t('ocrTranslateFailed', { reason: error?.detail || error?.code || '' }));
+    }
+  }
+
   function showError(area, error) {
     result = null;
     WV.ocrLayer.showError(area, t(ERROR_MESSAGES[error?.code] || 'ocrErrEngine'));
@@ -201,7 +247,7 @@
       } else {
         result = found;
         overFields = coversFields(found.area);
-        WV.ocrLayer.showResult(found, { showBoxes: settings.ocrShowBoxes === true, onWord: openWord, onPhrase, onAction });
+        WV.ocrLayer.showResult(found, { showBoxes: settings.ocrShowBoxes === true, onWord: openWord, onPhrase, onAction, onTranslate: translateScan });
         WV.ocrLayer.onClose(() => {
           result = null;
           source.emit({ type: 'gone' });
@@ -226,5 +272,5 @@
     return false;
   });
 
-  WV.screenOcr = { start, source };
+  WV.screenOcr = { start, source, translate: translateScan };
 })(globalThis.WV);

@@ -68,5 +68,38 @@
     return isUsable(box) ? box : null;
   }
 
-  WV.ocrArea = { MIN_SIZE, fromDrag, isUsable, adjust, restore };
+  /** A box picked by pointing at it is at least this large (CSS px); smaller ones give way to the one around them. */
+  const PICK_MIN_WIDTH = 40;
+  const PICK_MIN_HEIGHT = 18;
+  /** A box that covers this much of the viewport both ways is the page's frame, not a part of it. */
+  const PICK_MAX_SHARE = 0.9;
+  /** Elements that are a picture by themselves, whatever their display. */
+  const REPLACED = new Set(['img', 'video', 'canvas', 'svg', 'iframe', 'embed', 'object', 'picture']);
+
+  /**
+   * The part of the page a click would scan, as the browser's own screenshot tool picks it: the
+   * element under the pointer, or the nearest one around it that is a box of its own (not a run
+   * of text inside a line) and large enough to be worth scanning. The page's frame (html, body,
+   * or anything that fills the viewport) is never picked: that is what dragging or Enter is for.
+   *
+   * @param {{ tag: string, display: string, rect: { left: number, top: number, width: number, height: number } }[]} chain
+   *        The element under the pointer first, then its ancestors.
+   * @param {{ width: number, height: number }} bounds  The viewport.
+   * @returns {{ x: number, y: number, width: number, height: number } | null}  Clipped to the viewport.
+   */
+  function pick(chain, bounds) {
+    for (const element of chain) {
+      if (element.tag === 'html' || element.tag === 'body') return null;
+      const { rect } = element;
+      const picture = REPLACED.has(element.tag);
+      const inline = element.display.startsWith('inline') && element.display !== 'inline-block' && element.display !== 'inline-flex' && element.display !== 'inline-grid';
+      if ((!picture && (inline || element.display === 'contents')) || rect.width < PICK_MIN_WIDTH || rect.height < PICK_MIN_HEIGHT) continue;
+      if (!picture && rect.width >= bounds.width * PICK_MAX_SHARE && rect.height >= bounds.height * PICK_MAX_SHARE) return null;
+      const box = fromDrag({ x: rect.left, y: rect.top }, { x: rect.left + rect.width, y: rect.top + rect.height }, bounds);
+      return isUsable(box) ? box : null;
+    }
+    return null;
+  }
+
+  WV.ocrArea = { MIN_SIZE, fromDrag, isUsable, adjust, restore, pick };
 })(globalThis.WV);

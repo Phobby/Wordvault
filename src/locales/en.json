@@ -336,7 +336,7 @@
   "optOcrRemember": "Remember the last area",
   "optOcrRememberHelp": "The next scan starts with the last area.",
   "ocrMenuScan": "Scan text on screen",
-  "ocrHint": "Drag to choose an area · Enter or double-click: whole screen · Esc: cancel",
+  "ocrHint": "Click a part of the page to scan it · Drag to choose an area · Enter: whole screen · Esc: cancel",
   "ocrScan": "Scan",
   "ocrCancel": "Cancel",
   "ocrClose": "Close the scanned text",
@@ -890,5 +890,15 @@
   "quizDiagVoiceValue": "{language}: {voice} ({kind}, {local}), {rank} of {of}",
   "operaSidebarNote": "In Opera, Wordvault may not work in sidebar panels (X, messengers). Open the page in a normal tab instead.",
   "operaSidebarNoteOk": "Got it",
-  "dtCredit": "Definitions:"
+  "dtCredit": "Definitions:",
+  "optSelInPlace": "Show the translation on the page",
+  "optSelInPlaceHelp": "A translated sentence or paragraph also replaces the selected text in the page. A switch next to it goes back to the original and to the translation again.",
+  "viewOriginal": "Original",
+  "viewTranslation": "Translation",
+  "ipClose": "Back to the original and remove this switch",
+  "ipLabel": "Original or translation",
+  "ocrTranslate": "Translate",
+  "ocrTranslateHint": "Write the translation over the scanned text",
+  "ocrTranslating": "Translating…",
+  "ocrTranslateFailed": "Could not translate: {reason}"
 }

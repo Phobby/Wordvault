@@ -73,6 +73,8 @@ export const DEFAULT_SETTINGS = Object.freeze({
   contextMenuTranslate: true,
   /** A small "Translate" button next to a selection of more than one word. */
   selectionButton: true,
+  /** A translated passage is also shown in the page, in place of the selected text, with a switch back to the original. */
+  passageInPlace: true,
   /** Screen text scanning: start the next selection with the area that was scanned last. */
   ocrRememberArea: false,
   /** Screen text scanning, for troubleshooting: draw the box of every word that was found. */

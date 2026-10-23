@@ -1,6 +1,6 @@
 // The "Translation settings" group: the rows the page puts first (the target language, double
-// click), then how a selection is translated: the right-click menu item and the button next to a
-// selection. The shortcut is with the others (options/shortcuts.js).
+// click), then how a selection is translated: the right-click menu item, the button next to a
+// selection, and whether the translation also takes the selected text's place in the page. The shortcut is with the others (options/shortcuts.js).
 
 import { disclosure } from './disclosure.js';
 import { PASSAGE_MAX_CHARS } from '../lib/passage.js';
@@ -27,6 +27,7 @@ export function createPassageSection({ flashSaved, switchRow, leadRows = [] }) {
   };
   const menu = toggle('contextMenuTranslate');
   const button = toggle('selectionButton');
+  const inPlace = toggle('passageInPlace');
 
   // The limit and where a selection goes: said once, on request.
   const groupDetails = disclosure([h('p', { class: 'help', text: t('optSelHelp', { max: PASSAGE_MAX_CHARS }) }), h('p', { class: 'help', text: t('optSelPrivacy') })], { describedBy: 'selection-title' });
@@ -42,6 +43,7 @@ export function createPassageSection({ flashSaved, switchRow, leadRows = [] }) {
       ...leadRows,
       switchRow(menu, 'optSelMenu'),
       switchRow(button, 'optSelButton', 'optSelButtonHelp'),
+      switchRow(inPlace, 'optSelInPlace', 'optSelInPlaceHelp'),
     ),
   );
 
@@ -49,6 +51,7 @@ export function createPassageSection({ flashSaved, switchRow, leadRows = [] }) {
     const settings = await getSettings();
     menu.checked = settings.contextMenuTranslate !== false;
     button.checked = settings.selectionButton !== false;
+    inPlace.checked = settings.passageInPlace !== false;
   }
 
   return { element, render };

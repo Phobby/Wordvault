@@ -7,6 +7,7 @@
 
 import { WordvaultError } from '../../lib/errors.js';
 import { getEngine } from './engines/index.js';
+import { blockColours } from './colours.js';
 import { DEFAULT_MIN_CONFIDENCE, filterWords, meanConfidence, mergeReadings } from './filters.js';
 import { createMapping, placeOnPage, wholeViewport } from './geometry.js';
 import { resolveLanguages } from './languages.js';
@@ -122,6 +123,17 @@ export async function readCapture(request, onProgress = () => {}) {
     }
     const raw = { length: found };
     const placed = placeOnPage({ words: kept }, mapping, crop);
+    // The colours of each block, for a translation written over it (taken from the picture
+    // as it was captured, before any of the reading profiles changed it).
+    for (const block of placed.blocks) {
+      const members = kept.filter((word) => word.blockId === block.id).map((word) => word.bbox);
+      if (members.length === 0) continue;
+      const x = Math.min(...members.map((bbox) => bbox.x));
+      const y = Math.min(...members.map((bbox) => bbox.y));
+      const width = Math.max(...members.map((bbox) => bbox.x + bbox.width)) - x;
+      const height = Math.max(...members.map((bbox) => bbox.y + bbox.height)) - y;
+      block.colours = blockColours(pixels, { x: x * enlargedX, y: y * enlargedY, width: width * enlargedX, height: height * enlargedY });
+    }
     return {
       ...placed,
       area,

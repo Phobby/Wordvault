@@ -1,8 +1,9 @@
 'use strict';
 
-// Choosing the area to scan: the page dims, the pointer becomes a cross, and the user drags a
-// rectangle that can then be adjusted by its edges. Lives in its own shadow surface; the page
-// is not changed.
+// Choosing the area to scan: the page dims, the pointer becomes a cross, and the user either
+// clicks a part of the page (the box under the pointer is outlined as it moves, as in the
+// browser's own screenshot tool, and a click scans it at once) or drags a rectangle that can
+// then be adjusted by its edges. Lives in its own shadow surface; the page is not changed.
 
 (function (WV) {
   if (!WV.supported || !WV.ocrArea || WV.ocrSelector) return;
@@ -20,6 +21,12 @@
     .wv-ocr-area {
       position: fixed; cursor: move;
       border: 1.5px solid #ffffff; outline: 1px solid rgba(0, 0, 0, 0.6);
+      box-shadow: 0 0 0 100vmax rgba(0, 0, 0, 0.38);
+    }
+    /* The part of the page a click would scan. */
+    .wv-ocr-pick {
+      position: fixed; pointer-events: none;
+      border: 2px dashed #ffffff; outline: 1px solid rgba(0, 0, 0, 0.55); border-radius: 2px;
       box-shadow: 0 0 0 100vmax rgba(0, 0, 0, 0.38);
     }
     .wv-ocr-handle {
@@ -63,20 +70,63 @@
       h('button', { class: 'wv-btn wv-btn-sm', type: 'button', text: t('ocrCancel'), onclick: () => finish(undefined) }),
     );
     const hint = h('div', { class: 'wv-ocr-hint', role: 'status', text: t('ocrHint') });
-    const shade = h('div', { class: 'wv-ocr-shade' }, area, bar, hint);
+    const pickBox = h('div', { class: 'wv-ocr-pick', hidden: true });
+    const shade = h('div', { class: 'wv-ocr-shade' }, pickBox, area, bar, hint);
     shade.addEventListener('pointerdown', onPointerDown);
     shade.addEventListener('pointermove', onPointerMove);
     shade.addEventListener('pointerup', onPointerUp);
     shade.addEventListener('pointercancel', onPointerUp);
     shade.addEventListener('dblclick', onDoubleClick);
     surface.root.append(shade);
-    return { surface, shade, area, bar, hint };
+    return { surface, shade, area, bar, hint, pickBox };
+  }
+
+  // --- Pointing at a part of the page ----------------------------------------------------------
+
+  /** The page's element under a point, under the selector's own layer. */
+  function elementAt(x, y) {
+    for (const element of document.elementsFromPoint(x, y)) {
+      if (element.localName !== 'wordvault-ui') return element;
+    }
+    return null;
+  }
+
+  /** The element and its ancestors, as the picking rule (area.js) wants them. */
+  function chainAt(x, y) {
+    const chain = [];
+    for (let element = elementAt(x, y); element; element = element.parentElement || element.getRootNode()?.host || null) {
+      let display = 'block';
+      try {
+        display = getComputedStyle(element).display;
+      } catch {
+        // not an element with style
+      }
+      chain.push({ tag: element.localName, display, rect: element.getBoundingClientRect() });
+    }
+    return chain;
+  }
+
+  let pickFrame = 0;
+  let pickPoint = null;
+
+  function schedulePick(x, y) {
+    pickPoint = { x, y };
+    if (pickFrame) return;
+    pickFrame = requestAnimationFrame(() => {
+      pickFrame = 0;
+      if (!state || state.drag || WV.ocrArea.isUsable(state.area)) return;
+      state.pick = WV.ocrArea.pick(chainAt(pickPoint.x, pickPoint.y), viewport());
+      render();
+    });
   }
 
   function render() {
     const { area } = state;
     const shown = WV.ocrArea.isUsable(area) || Boolean(state.drag && area);
-    ui.shade.classList.toggle('wv-has-area', shown);
+    const pick = !shown && !state.drag ? state.pick : null;
+    ui.pickBox.hidden = !pick;
+    if (pick) Object.assign(ui.pickBox.style, { left: `${pick.x}px`, top: `${pick.y}px`, width: `${pick.width}px`, height: `${pick.height}px` });
+    ui.shade.classList.toggle('wv-has-area', shown || Boolean(pick));
     ui.area.hidden = !shown;
     // The buttons wait until the drag is over: they would be in the way of it.
     ui.bar.hidden = !shown || Boolean(state.drag);
@@ -99,8 +149,9 @@
     event.preventDefault();
     const point = { x: event.clientX, y: event.clientY };
     const handle = event.target.dataset?.handle || (event.target === ui.area ? 'move' : null);
-    // On the area: adjust it. Anywhere else: start a new one.
-    state.drag = handle ? { handle, from: point, box: state.area } : { handle: null, from: point, box: null };
+    // On the area: adjust it. Anywhere else: start a new one, or, if the pointer does not
+    // move far, take the part of the page that was outlined there.
+    state.drag = handle ? { handle, from: point, box: state.area } : { handle: null, from: point, box: null, pick: state.pick };
     if (!handle) state.area = null;
     ui.shade.setPointerCapture(event.pointerId);
     render();
@@ -108,7 +159,10 @@
 
   function onPointerMove(event) {
     const { drag } = state;
-    if (!drag) return;
+    if (!drag) {
+      if (!WV.ocrArea.isUsable(state.area)) schedulePick(event.clientX, event.clientY);
+      return;
+    }
     const point = { x: event.clientX, y: event.clientY };
     state.area = drag.handle
       ? WV.ocrArea.adjust(drag.box, drag.handle, point.x - drag.from.x, point.y - drag.from.y, viewport())
@@ -117,14 +171,22 @@
   }
 
   function onPointerUp(event) {
-    if (!state.drag) return;
+    const { drag } = state;
+    if (!drag) return;
     state.drag = null;
     if (ui.shade.hasPointerCapture(event.pointerId)) ui.shade.releasePointerCapture(event.pointerId);
-    if (!WV.ocrArea.isUsable(state.area)) state.area = null; // a click, not a drag
+    if (!WV.ocrArea.isUsable(state.area)) {
+      state.area = null; // a click, not a drag
+      // A click on an outlined part of the page scans it straight away.
+      if (!drag.handle && drag.pick) {
+        finish(drag.pick);
+        return;
+      }
+    }
     render();
   }
 
-  /** A double-click outside the area scans everything that is visible. */
+  /** A double-click outside the area, where no part of the page is outlined, scans everything that is visible. */
   function onDoubleClick(event) {
     if (ui.area.contains(event.target) || ui.bar.contains(event.target)) return;
     finish(null);
@@ -163,7 +225,7 @@
     if (state) finish(undefined);
     ui ||= build();
     return new Promise((resolve) => {
-      state = { area: WV.ocrArea.restore(initial, viewport()), drag: null, resolve };
+      state = { area: WV.ocrArea.restore(initial, viewport()), drag: null, pick: null, resolve };
       window.addEventListener('keydown', onKeyDown, true);
       ui.surface.mount();
       render();

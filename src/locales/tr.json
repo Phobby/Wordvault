@@ -336,7 +336,7 @@
   "optOcrRemember": "Son alanı hatırla",
   "optOcrRememberHelp": "Sonraki tarama son alanla başlar.",
   "ocrMenuScan": "Ekrandan metin tara",
-  "ocrHint": "Sürükleyerek alan seç · Enter ya da çift tıklama: tüm ekran · Esc: iptal",
+  "ocrHint": "Taramak için sayfanın bir parçasına tıkla · Sürükleyerek alan seç · Enter: tüm ekran · Esc: iptal",
   "ocrScan": "Tara",
   "ocrCancel": "İptal",
   "ocrClose": "Taranan metni kapat",
@@ -890,5 +890,15 @@
   "quizDiagVoiceValue": "{language}: {voice} ({kind}, {local}), {of} sesten {rank}. sırada",
   "operaSidebarNote": "Opera'da Wordvault kenar çubuğu panellerinde (X, mesajlaşma uygulamaları) çalışmayabilir. Sayfayı normal bir sekmede aç.",
   "operaSidebarNoteOk": "Anladım",
-  "dtCredit": "Tanımlar:"
+  "dtCredit": "Tanımlar:",
+  "optSelInPlace": "Çeviriyi sayfada göster",
+  "optSelInPlaceHelp": "Çevrilen cümle ya da paragraf sayfada seçili metnin yerine de yazılır. Yanındaki düğmeyle orijinaline dönülür ve yeniden çeviriye geçilir.",
+  "viewOriginal": "Orijinal",
+  "viewTranslation": "Çeviri",
+  "ipClose": "Orijinale dön ve bu düğmeyi kaldır",
+  "ipLabel": "Orijinal ya da çeviri",
+  "ocrTranslate": "Çevir",
+  "ocrTranslateHint": "Çeviriyi taranan metnin üzerine yaz",
+  "ocrTranslating": "Çevriliyor…",
+  "ocrTranslateFailed": "Çevrilemedi: {reason}"
 }

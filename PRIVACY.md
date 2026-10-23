@@ -43,7 +43,8 @@ service named; there is no Wordvault server in between.
 
 When you double-click a word, select text and use "Translate with Wordvault" (right-click menu,
 the "Translate" button next to a selection, or the keyboard shortcut), hover a word in the
-captions of a video (YouTube, Netflix, Prime Video, Udemy, Brightcove/Video.js and others), or click a word read by a screen scan: **only that word or selected text** and the language
+captions of a video (YouTube, Netflix, Prime Video, Udemy, Brightcove/Video.js and others), or click a word read by a screen scan (or press "Translate" on the scan's bar, which sends all the
+text read from the scanned area): **only that word or selected text** and the language
 pair go to the translation service you chose. Not the rest of the page, not its address, not your
 identity.
 
@@ -103,7 +104,8 @@ chat site you chose in a new tab; the extension sends nothing — you paste it y
 A screenshot of the current tab is taken and the area you choose is read **inside your browser**
 (Tesseract.js, packaged with the extension; nothing is downloaded). The screenshot and the text read
 from it do not leave your device and are not stored. Only what you then choose to translate or
-explain goes out, as described above. The extension can only capture the tab you are in, at the
+explain goes out, as described above; "Translate" on the scan's bar sends all the text read from the
+area to the translation service. The extension can only capture the tab you are in, at the
 moment you start a scan (`activeTab`).
 
 ### 2.5 Synchronisation (off by default; only if you turn it on)

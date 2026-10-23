@@ -325,10 +325,25 @@ own shortcuts (Cmd+Shift+3/4/5 screenshots) or Chrome's and Firefox's on the Mac
 Firefox's screenshot tool). On Windows/Linux, Ctrl+Shift+E opens Firefox's network monitor, so
 Alt+Shift+S stayed there; Alt does not produce special characters on those systems.
 
-**Choosing the area:** the page darkens and the pointer becomes a cross; dragging selects an area,
-which is adjusted from its edges and corners and moved by holding it inside. **Scan** or `Enter`
-scans the area; with no area, `Enter` or a double-click scans the whole visible screen; `Esc`
-cancels.
+**Choosing the area:** the page darkens and the pointer becomes a cross. As in the browser's own
+screenshot tool, the part of the page under the pointer is outlined while it moves, and **one click
+scans that part at once** (`content/area.js`: `pick`): the element under the pointer, or the nearest
+one around it that is a box of its own (not a word inside a line) and at least 40 × 18 px; a picture,
+video, canvas or frame as it is. The page's frame (html, body, anything that fills the viewport both
+ways) is never outlined. Dragging selects an area by hand instead, which is adjusted from its edges
+and corners and moved by holding it inside; **Scan** or `Enter` scans it. With no area, `Enter` (or a
+double-click where nothing is outlined) scans the whole visible screen; `Esc` cancels.
+
+**Translating a scan:** the scan bar has **Translate**. Every block the engine found is translated
+(one passage request, a block per line; block by block if the service joined or split lines) and the
+translation is written over its block in the block's own colours, so the part of the page reads in
+the target language (a picture, a video frame, a button included). The colours are taken from the
+captured picture inside the pipeline (`features/screen-ocr/colours.js`: the median colour of the
+pixels there are more of is the background, the median of the letters' core the text; black or white
+if the two are too close to read), and only the two colours leave it. The font starts at the size of
+the original letters and gets smaller until the translation fits the block. **Original** and
+**Translation** on the bar switch between the two without a new request. If the text is already in
+the target language, that is said and nothing is written over it.
 
 **Screenshot:** taken with `tabs.captureVisibleTab` (`activeTab`: only when the user starts it, only
 that tab) after the selection interface has been removed and the browser has drawn the page without
@@ -458,6 +473,7 @@ Chosen in the "Translation provider" section of the settings (`options/provider.
 | A word double-clicked on a page / a selection | The chosen provider |
 | A word hovered in video captions | The chosen provider |
 | A word clicked in a screen scan | The chosen provider |
+| The text read in a screen scan, when **Translate** is pressed on the scan bar | The chosen provider |
 | Part of speech, definitions, example sentences | Wiktionary (independent of the provider) |
 | Pronunciation recording (Firefox/macOS) | Wiktionary / Wikimedia Commons (independent of the provider) |
 | Language detection | The browser's local detector; the chosen provider's detection if that is not enough |
@@ -505,6 +521,18 @@ ways; selecting a single word is still looked up as a word (`shared/passage-text
 | Right-click menu: "Translate with Wordvault" | `features/passage/background.js` | The menu is built at `onInstalled` and `onStartup` (`background/menus.js`; in the same place as the OCR item, because the menu is emptied first) and its titles follow the interface language; the click listener is at the top level. The message goes to the frame the menu was opened in (`frameId`). The page's own selection is used if there is one (it has line breaks and a place), otherwise `info.selectionText`. |
 | The "Translate" button next to the selection | `content/translate-button.js` | Appears when the selection has been still for 250 ms, after the mouse button is released. Lives in its own closed Shadow DOM, takes no focus, swallows the press: the page's selection stays intact. Not shown for a single word, in text fields or in edited text. |
 | Keyboard shortcut (`translate-selection`) | the manifests, `features/passage/background.js` | Default: Mac `Command+Shift+U`, others `Ctrl+Shift+U`. Every frame of the tab is asked; the frame with the selection and focus answers. |
+
+**In the page** (`content/in-place.js`, setting "Show the translation on the page", on by default).
+When a passage selected in the page has been translated (fully; not in a text field), its
+translation also replaces the selected text, paragraph by paragraph, and a small switch next to it
+offers **Original** / **Translation** and × (back to the original, switch removed). Switching back
+and forth asks for nothing again. As with the AI page translation, only the text of the text nodes
+that were selected changes (`nodeValue`); no element is added, removed or given an attribute, and
+every change is recorded and put back. Paragraphs are told apart where the selection's text has line
+breaks (blocks and `<br>`); if the translation's lines do not match them, each paragraph is
+translated on its own. A paragraph with links or emphasis inside shows its translation as plain text
+in its first piece while translated (the link elements stay, empty). Translating the same text again
+(in another language, from the popup) gives the old one back first.
 
 **The popup (sentence mode).** The same `ui/popup/popup.js`, with `mode: 'passage'`: the selected
 text (cut at three lines, "Show all"), the translation with its line breaks kept (with its own scroll

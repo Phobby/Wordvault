@@ -69,6 +69,7 @@
         "content/selection.js",
         "shared/translate-client.js",
         "shared/passage-text.js",
+        "content/in-place.js",
         "ui/popup/popup.js",
         "content/quiz.js",
         "content/translate-button.js",

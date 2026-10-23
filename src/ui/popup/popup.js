@@ -857,6 +857,7 @@
       if (data.sourceMode === 'site') current.sitePinned = true;
       if (prefs) prefs.targetLang = data.targetLang;
       showResult(data);
+      if (current.inPlace && data.translation && !data.partial) showInPage(current, data);
     } catch (error) {
       if (isStale() || error?.code === 'aborted') return;
       current.error = { code: 'internal', ...error };
@@ -872,6 +873,16 @@
     renderLanguages();
     updateSpeakButton();
     position();
+  }
+
+  /** The passage's translation in the page, where it was selected. */
+  function showInPage(current, data) {
+    // The selection's text is about to change under the popup: it stays where it is now.
+    const rect = anchorRect();
+    if (rect && !current.pinned) current.pinned = new DOMRect(rect.left, rect.top, rect.width, rect.height);
+    WV.inPlace
+      .show(current.inPlace, data, { pageLang: current.pageLang, source: current.source, provider: current.provider })
+      .catch(() => {});
   }
 
   // --- Positioning -----------------------------------------------------------------------------
@@ -1027,6 +1038,8 @@
       requestId: 0,
       controller: null, // gives up the lookup that is under way
       prefsReady: null,
+      // A passage selected in the page: what it covers, to show its translation there (in-place.js).
+      inPlace: mode === 'passage' && !fromField && !standalone ? WV.inPlace?.capture(range) || null : null,
     };
 
     ui.word.textContent = text;
