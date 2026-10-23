@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="tr">
+  <head>
+    <meta charset="utf-8" />
+    <title>Plain HTML5 video with captions the browser draws (Wordvault captions test)</title>
+    <!--
+      A <video> with a captions track in "showing" mode: the browser paints the captions itself,
+      outside the DOM (as on Coursera and many course sites). The picture is a canvas stream, so
+      the page needs no video file; the cue lasts an hour.
+
+      window.fake:
+        say(text)     Replaces the cue with one saying `text`.
+        off()         Turns captions off, as a player's CC button does (mode "disabled").
+        on()          Turns them on again (mode "showing").
+    -->
+    <style>
+      body { margin: 0; background: #222; color: #ddd; font: 14px/1.4 sans-serif; }
+      video { width: 854px; height: 480px; margin: 20px; background: #000; display: block; }
+    </style>
+  </head>
+  <body>
+    <video id="video" muted autoplay playsinline></video>
+    <p>Captions drawn by the browser.</p>
+    <script>
+      const video = document.getElementById('video');
+      const canvas = Object.assign(document.createElement('canvas'), { width: 320, height: 180 });
+      const g = canvas.getContext('2d');
+      let n = 0;
+      setInterval(() => { g.fillStyle = `hsl(${n++ % 360} 40% 30%)`; g.fillRect(0, 0, 320, 180); }, 100);
+      video.srcObject = canvas.captureStream(10);
+      const track = video.addTextTrack('captions', 'English', 'en');
+      track.mode = 'showing';
+      let cue = null;
+      function say(text) {
+        if (cue) track.removeCue(cue);
+        cue = new VTTCue(0, 3600 * 1000, text);
+        track.addCue(cue);
+      }
+      say('Configure the router interface\nwith an IPv4 address.');
+      window.fake = { say, off: () => (track.mode = 'disabled'), on: () => (track.mode = 'showing'), track };
+    </script>
+  </body>
+</html>

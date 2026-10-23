@@ -88,7 +88,8 @@
         "core/hover/hover.js",
         "features/captions/selectors.js",
         "features/captions/adapters/youtube.js",
-        "features/captions/adapters/videojs.js",
+        "features/captions/adapters/dom.js",
+        "features/captions/adapters/tracks.js",
         "features/captions/captions.js"
       ],
       "run_at": "document_idle",

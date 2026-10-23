@@ -189,7 +189,8 @@ src/
   features/captions/    The captions feature: only picks the site's adapter
     selectors.js        Every selector used in the sites' players (one place)
     adapters/youtube.js YouTube captions, as a word source
-    adapters/videojs.js Captions of Video.js players (Brightcove, e.g. Cisco's training videos), on any site
+    adapters/dom.js     Captions drawn as text: Netflix, Prime Video, Udemy, Video.js (Brightcove) … (table in selectors.js)
+    adapters/tracks.js  Captions the browser draws itself (<track>): drawn again in a layer of our own
   features/screen-ocr/  Reading text from the screen
     background.js       Ways to start it (shortcut, right-click menu, toolbar menu, vault button);
                         in Chrome adds the content scripts to a tab that has none
@@ -250,10 +251,9 @@ src/
 All interface added to pages lives inside a closed Shadow DOM: the page's CSS cannot reach the
 extension and the extension's CSS cannot reach the page. The page's own content is not changed.
 
-### Video captions (YouTube, Video.js / Brightcove)
+### Video captions (YouTube, streaming and course sites)
 
-On YouTube, and on any site whose player is Video.js (Brightcove's player is Video.js; Cisco's
-training videos use it), holding the pointer over a word in the captions for about 150 ms opens the translation
+Holding the pointer over a word in a video's captions for about 150 ms opens the translation
 popup, whether the video is playing or paused. The word is found from the pointer's position
 (`caretPositionFromPoint`, or by measuring the letters) and its boundaries come from
 `Intl.Segmenter`; the captions' DOM is not touched, the highlight uses the CSS Custom Highlight API.
@@ -264,33 +264,44 @@ line. Sound descriptions like `♪` and `[Music]` do not count as words.
 
 There are two layers: `core/hover/` and `ui/popup/` know nothing about captions, only the
 `WordSource` contract (see `core/hover/word-source.js`); `features/captions/` implements that
-contract for YouTube's DOM and for Video.js. Another source (for example text recognised in an image) can later use
-the same pipeline with its own `wordAt`.
+contract. Another source (for example text recognised in an image) can later use the same pipeline
+with its own `wordAt`. `captions.js` asks three adapters in turn, one pointer pipeline for all:
 
-The selectors are in `features/captions/selectors.js` and were checked against the real embedded
-player on 12 October 2026. Tests: `tests/hover-words.test.js` (word boundaries, point to word, the
-wait rule, the contract) and the offline page `tests/fixtures/youtube-captions.html`, which imitates
-YouTube's caption DOM.
+| Adapter | Where | How |
+| --- | --- | --- |
+| `youtube.js` | YouTube, embedded players included | YouTube's caption DOM; checked in the real embedded player on 12 October 2026 |
+| `dom.js` | Players that draw captions as text in the page; the entries in `selectors.js` (`dom`) | The caption under the pointer is found by its box, not by the element under the pointer: many players draw captions in a layer the pointer passes through (`pointer-events: none`) or cover them with a transparent control layer. The word is looked for in the row under the pointer only (rows split by `<br>` or in separate elements do not run together). |
+| `tracks.js` | A `<video>` whose captions the browser draws itself (a `<track>` in "showing" mode: plain HTML5 players, MediaElement.js, Video.js in Safari) | Those captions are not in the DOM. The track is switched to "hidden" (the browser stops painting it, its cues stay current) and the same captions are drawn in a layer of our own (closed shadow root, top layer, no pointer events), above the browser's control bar when the video shows it. Turning captions off in the player removes the layer; when the feature stops, the track is given back to the browser. A player that keeps switching the track back on is left to the browser after three rounds. Cue positions and VTT styling other than `<b>`, `<i>`, `<u>`, `<ruby>` are not reproduced. |
 
-**Video.js / Brightcove.** Video.js draws captions in Chrome and Firefox as ordinary text in
-`.vjs-text-track-display`, a layer the pointer passes through (`pointer-events: none`): the element
-under the pointer is the video, so the caption under it is found by its box and the word by
-measuring its letters. Video.js draws the captions again when the control bar appears or hides (the
-captions move up and down with it); a word that was being waited on is dropped then, as with a
-redrawn YouTube caption, and the next pointer move finds it again. Because such a player can be on
-any site, the captions script is loaded on every page but stays idle (follows no pointer) until a
-`.video-js` player is on it, either when the page loads or when a video in one starts loading or
-playing. The selectors were checked against Brightcove's real player (Video.js 8.23.4) on
-23 October 2026: a caption track added to a Cisco Networking Academy video, played in Firefox; the
-bubble opened for a hovered word while the video was playing. Cisco's course pages themselves
-(netacad.com, u.cisco.com) need an account and were not checked. Not covered: captions that the
-browser draws itself (a plain `<video>` with a `<track>`, or Video.js in Safari): they are not in
-the page's DOM. Tests: `tests/captions-videojs.test.js` and the offline page
-`tests/fixtures/videojs-captions.html`.
+Entries of `dom.js` (`features/captions/selectors.js`, the one file to update when a site changes):
+
+| Player or site | Status |
+| --- | --- |
+| Video.js (Brightcove: Cisco's training videos; Moodle, LinkedIn Learning and other course sites built on it) | Checked: Brightcove's real player (Video.js 8.23.4) with a Cisco Networking Academy video playing in Firefox, and Video.js 8.23.4 from the CDN in Chromium and Firefox |
+| Shaka Player (4.11.7), Plyr (3.7.8) | Checked: the real libraries from the CDN with a local video, Chromium and Firefox |
+| Kaltura (playkit), JW Player | From their source / stylesheets and Firefox's picture-in-picture code; not run |
+| Netflix, Prime Video, Disney+, Max, Hulu, Peacock, Udemy, edX, Dailymotion, Tubi | From the markup Firefox's picture-in-picture captions read (`browser/extensions/pictureinpicture/video-wrappers/` in mozilla-firefox/firefox), Netflix's player code and subtitle extensions; these sites need an account (and DRM), so they were not checked in the real site. Offline imitations of Netflix, Prime Video, Udemy, Max, Disney+ and Vimeo pass under the real host names. Netflix draws some languages as pictures: no text to point at there. |
+| Vimeo | From the player's own code (4.46.132); the video does not play in a test browser |
+
+Coursera's lecture pages need an account and were not checked; its player uses either Video.js or
+the browser's own captions, and both are covered.
+
+Players that can be on any site (Video.js, Shaka, Plyr, Kaltura, JW Player, `<video>`) are why the
+captions script is loaded on every page; it stays idle (follows no pointer) until such a player or a
+`<video>` is on it, either when the page loads or when a video starts loading or playing. On a site
+with an entry of its own it starts at once. While the pointer rests on a word, the word is checked
+every 250 ms: players draw the same caption again (Video.js when its control bar appears, for
+example), and the same word at the same place keeps the hit; a new caption drops it.
+
+Tests: `tests/hover-words.test.js` (word boundaries, point to word, the wait rule, the contract),
+`tests/captions-dom.test.js` (finding the caption by its box, rows, redraws, which entries apply),
+and the offline pages `tests/fixtures/youtube-captions.html`, `videojs-captions.html`,
+`site-captions.html` (streaming sites, `?site=`) and `native-captions.html` (captions the browser
+draws).
 
 Not there yet (later stages of SPEC-CAPTIONS.md): automatic pause, trigger modes, stable hits on
 scrolling automatic captions, "Translate the line", settings and diagnostics, shortcuts, line
-history, players other than YouTube's and Video.js.
+history.
 
 ### Reading text from the screen (OCR)
 
@@ -445,7 +456,7 @@ Chosen in the "Translation provider" section of the settings (`options/provider.
 | What | Which service |
 | --- | --- |
 | A word double-clicked on a page / a selection | The chosen provider |
-| A word hovered in video captions (YouTube, Video.js) | The chosen provider |
+| A word hovered in video captions | The chosen provider |
 | A word clicked in a screen scan | The chosen provider |
 | Part of speech, definitions, example sentences | Wiktionary (independent of the provider) |
 | Pronunciation recording (Firefox/macOS) | Wiktionary / Wikimedia Commons (independent of the provider) |
@@ -1307,7 +1318,7 @@ same keys as `en.json`, add `{ code, name }` (the name in the language itself) t
 | Optional host permission: `https://*/*`, `http://localhost/*`, `http://127.0.0.1/*` | Not granted at install. When a cloud account or your own server is connected, the browser asks for that address only (Google Drive: `www.googleapis.com`, `oauth2.googleapis.com`; OneDrive: `graph.microsoft.com`, `login.microsoftonline.com`; Dropbox: `api.dropboxapi.com`, `content.dropboxapi.com`). The pattern is broad because the server address the user will enter cannot be known in advance; what is granted is only the address asked for. Sending feedback uses the same path: on the first send the browser asks only for the feedback receiver's domain (`FEEDBACK_ENDPOINT`); no other address is asked for. If DeepL is chosen, `api-free.deepl.com` or `api.deepl.com` is asked the same way, when "Test key" is pressed. If an AI provider is connected, its address is asked too (`generativelanguage.googleapis.com`, `api.anthropic.com`, the OpenAI-compatible address the user enters, or `localhost`), when the provider is chosen or "Test" is pressed. |
 | `notifications` (optional) | Not asked at install. The browser asks only if **Allow** is pressed in the settings; to tell about a quiz when it cannot be shown any other way, and for the evening reminder. Can be revoked in the settings. |
 | `unlimitedStorage` | So that a growing vault does not hit the 10 MB limit of `storage.local`. Words in the vault are never deleted automatically. |
-| Content script: `<all_urls>` (all frames), captions | To find the word hovered in video captions: YouTube (embedded players included) and Video.js players such as Brightcove's, which can be on any site, also inside a frame. Not a new permission (the same scope as the double-click script). On a page without such a player it follows no pointer and reads nothing; on one with a player it looks only at the caption layer under the pointer. Caption text is not saved or downloaded. |
+| Content script: `<all_urls>` (all frames), captions | To find the word hovered in video captions: YouTube (embedded players included), streaming and course sites (Netflix, Prime Video, Udemy …), players that can be on any site (Video.js/Brightcove, Shaka, Plyr, Kaltura, JW Player), also inside a frame, and a plain `<video>` whose captions the browser draws (those are drawn again in the extension's own layer). Not a new permission (the same scope as the double-click script). On a page without a video it follows no pointer and reads nothing; with one it looks only at the captions under the pointer. Caption text is not saved or downloaded. |
 | Content script: `<all_urls>` (top frame only) | The interface for choosing the scan area and the layer of scanned text. Does nothing and reads nothing from the page until the user starts a scan. |
 | Content script: `<all_urls>` | Double-click has to work on any page. The script reads nothing from the page until the user double-clicks a word. |
 | Host permission: `https://api.mymemory.translated.net/*` | The default translation service. Requests go from the background script. |

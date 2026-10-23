@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="tr">
+  <head>
+    <meta charset="utf-8" />
+    <title>Fake streaming players (Wordvault captions test)</title>
+    <!--
+      Offline imitations of the caption markup of streaming and course sites, as described in
+      src/features/captions/selectors.js (dom.sites). Served under the real host name in tests
+      (?site= picks the markup), with a transparent control layer over the picture, as these
+      players have, so the caption is never the element under the pointer.
+
+      window.fake:
+        show(rows)   Draws a caption: rows is a list of strings.
+        redraw()     Draws the same caption again with new elements.
+        clear()      Removes the caption.
+    -->
+    <style>
+      body { margin: 0; background: #141414; color: #ddd; font: 14px/1.4 sans-serif; }
+      #player { position: relative; width: 854px; height: 480px; margin: 20px; background: #000; overflow: hidden; }
+      video { width: 100%; height: 100%; display: block; }
+      #captions { position: absolute; left: 0; right: 0; bottom: 8%; text-align: center; pointer-events: none; }
+      #captions .row, #captions [data-row] { color: #fff; font: 28px sans-serif; text-shadow: 0 0 4px #000; }
+      #controls { position: absolute; inset: 0; background: transparent; }
+      .block { display: block; }
+    </style>
+  </head>
+  <body>
+    <div id="player">
+      <video></video>
+      <div id="captions"></div>
+      <div id="controls"></div>
+    </div>
+    <p>A page imitating a streaming player.</p>
+    <script>
+      const site = new URLSearchParams(location.search).get('site') || location.hostname.split('.').slice(-2, -1)[0];
+      const layer = document.getElementById('captions');
+      const el = (tag, attrs = {}, ...children) => {
+        const e = document.createElement(tag);
+        for (const [k, v] of Object.entries(attrs)) e.setAttribute(k, v);
+        e.append(...children);
+        return e;
+      };
+      // One builder per site: rows → the caption's elements.
+      const builders = {
+        // .player-timedtext > .player-timedtext-text-container > span (rows split by <br>)
+        netflix: (rows) => {
+          const span = el('span', { class: 'row' });
+          rows.forEach((row, i) => { if (i) span.append(el('br')); span.append(row); });
+          return el('div', { class: 'player-timedtext' }, el('div', { class: 'player-timedtext-text-container' }, span));
+        },
+        // one .atvwebplayersdk-captions-text per row
+        primevideo: (rows) => el('div', { class: 'atvwebplayersdk-captions-overlay' }, ...rows.map((row) => el('span', { class: 'atvwebplayersdk-captions-text row block' }, row))),
+        udemy: (rows) => el('div', { class: 'captions-display--captions-container--abc' }, el('div', { 'data-purpose': 'captions-cue-text', class: 'row' }, rows.join('\n'))),
+        max: (rows) => el('div', { 'data-testid': 'CueBoxContainer' }, ...rows.map((row) => el('div', { 'data-testid': 'cueBoxRowTextCue', class: 'row' }, row))),
+        disneyplus: (rows) => el('div', { class: 'TimedTextOverlay' }, el('div', { class: 'hive-subtitle-renderer-wrapper' }, ...rows.map((row) => el('div', { class: 'hive-subtitle-renderer-line row' }, row)))),
+        vimeo: (rows) => el('div', { class: 'vp-captions CaptionsRenderer_module_captions__x', lang: 'en' }, el('span', {}, ...rows.map((row) => el('span', { class: 'row block' }, row)))),
+      };
+      builders.hbomax = builders.max;
+      let current = [];
+      function draw(rows) {
+        layer.textContent = '';
+        if (rows.length) layer.append(builders[site](rows));
+      }
+      window.fake = {
+        show(rows) { current = rows; draw(rows); },
+        redraw() { draw(current); },
+        clear() { current = []; draw([]); },
+      };
+      fake.show(['Configure the router interface', 'with an IPv4 address.']);
+    </script>
+  </body>
+</html>

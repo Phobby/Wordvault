@@ -43,7 +43,7 @@ service named; there is no Wordvault server in between.
 
 When you double-click a word, select text and use "Translate with Wordvault" (right-click menu,
 the "Translate" button next to a selection, or the keyboard shortcut), hover a word in the
-captions of a video on YouTube or in a Video.js player (such as Brightcove's), or click a word read by a screen scan: **only that word or selected text** and the language
+captions of a video (YouTube, Netflix, Prime Video, Udemy, Brightcove/Video.js and others), or click a word read by a screen scan: **only that word or selected text** and the language
 pair go to the translation service you chose. Not the rest of the page, not its address, not your
 identity.
 
